@@ -59,6 +59,13 @@ describe('isDay', () => {
 		expect(isDay('2026-08-20T19:00', R, null)).toEqual({ isDay: false, source: 'fallback' });
 	});
 
+	it('empty sunrise/sunset strings (polar latitudes) → fallback window, no crash', () => {
+		expect(isDay('2026-08-20T12:00', '', '')).toEqual({ isDay: true, source: 'fallback' });
+		expect(isDay('2026-08-20T22:00', '', '')).toEqual({ isDay: false, source: 'fallback' });
+		expect(isDay('2026-08-20T07:00', '', S)).toEqual({ isDay: true, source: 'fallback' });
+		expect(isDay('2026-08-20T19:00', R, '')).toEqual({ isDay: false, source: 'fallback' });
+	});
+
 	it('DST transition day: compares wall-time HH:MM only, no Date math', () => {
 		expect(isDay('2026-03-29T12:00', '2026-03-29T05:30', '2026-03-29T18:45')).toEqual({
 			isDay: true,

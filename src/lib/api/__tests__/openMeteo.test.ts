@@ -134,6 +134,22 @@ describe('normalizeForecast', () => {
 		expect(payload.daily[1].uvIndexMax).toBeNull();
 	});
 
+	it('normalizes empty sunrise/sunset strings (polar latitudes) to null', () => {
+		const polar = {
+			...RAW,
+			daily: {
+				...RAW.daily,
+				sunrise: ['', '2026-08-21T05:11'],
+				sunset: ['', '2026-08-21T20:21']
+			}
+		};
+		const payload = normalizeForecast(polar);
+
+		expect(payload.daily[0].sunrise).toBeNull();
+		expect(payload.daily[0].sunset).toBeNull();
+		expect(payload.daily[1].sunrise).toBe('2026-08-21T05:11');
+	});
+
 	it('throws malformed when timezone is missing', () => {
 		const { timezone: _timezone, ...noTz } = RAW;
 		expect(() => normalizeForecast(noTz)).toThrow(/malformed forecast response/);

@@ -44,8 +44,8 @@ export type DayForecast = {
 	precipitationSum: number;
 	windSpeedMax: number;
 	windGustMax: number;
-	sunrise: string; // ISO wall-time in location tz
-	sunset: string; // ISO wall-time in location tz
+	sunrise: string | null; // ISO wall-time in location tz; null in polar latitudes (Open-Meteo returns "")
+	sunset: string | null; // ISO wall-time in location tz; null in polar latitudes
 	uvIndexMax: number | null;
 };
 

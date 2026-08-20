@@ -18,7 +18,7 @@ function minutesFromMidnight(isoWallTime: string): number {
  * sunset missing (polar day/night, provider gap) → fixed 07:00–19:00 window.
  */
 export function isDay(at: string, sunrise: string | null, sunset: string | null): DayResult {
-	if (sunrise == null || sunset == null) {
+	if (!sunrise || !sunset) {
 		const t = minutesFromMidnight(at);
 		return { isDay: t >= FALLBACK_START && t < FALLBACK_END, source: 'fallback' };
 	}

@@ -164,8 +164,8 @@ function normalizeDaily(block: JsonObject): DayForecast[] {
 		precipitationSum: precipitationSum[i],
 		windSpeedMax: windSpeedMax[i],
 		windGustMax: windGustMax[i],
-		sunrise: sunrise[i],
-		sunset: sunset[i],
+		sunrise: sunrise[i] === '' ? null : sunrise[i],
+		sunset: sunset[i] === '' ? null : sunset[i],
 		uvIndexMax: uvIndexMax[i]
 	}));
 }
