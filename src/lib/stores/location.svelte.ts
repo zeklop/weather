@@ -107,11 +107,13 @@ function deviceTimezone(): string {
 }
 
 function locationFromCoords(latitude: number, longitude: number): Location {
+	const lat = Number(latitude.toFixed(4));
+	const lon = Number(longitude.toFixed(4));
 	return {
-		id: geoId(latitude, longitude),
+		id: geoId(lat, lon),
 		name: GEOLOCATION_NAME,
-		latitude,
-		longitude,
+		latitude: lat,
+		longitude: lon,
 		timezone: deviceTimezone()
 	};
 }

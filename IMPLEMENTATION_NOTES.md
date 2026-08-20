@@ -70,8 +70,11 @@ This document records the architectural decisions, implemented features, intenti
 
 ## 2. Intentionally Deferred to Phase 2
 
-As specified in Phase 1 scope (§44) and the Phase 1 Design Document:
+As specified in Phase 1 scope (§44), the Phase 1 Design Document, and the Phase 2 Plan (`plans/weather-pwa-phase2.md`):
 
+- **Bilingual Interface (i18n):** English by default, optional Russian interface, language selector in Settings, localized WMO descriptions, units, compass directions, date/time formatting, and Open-Meteo geocoding search language integration.
+- **Platform-Specific PWA Install Banners:** Top banner with direct native install button for Android (`beforeinstallprompt`) and interactive step-by-step installation instructions modal for iOS Safari.
+- **Weather Change Notifications:** Multi-tier notification system for precipitation transitions, severe weather (thunderstorms, gale), frost warnings, and sudden temperature shifts with quiet hours and rate limiting.
 - **Details Screen Metrics Card:** Expanded atmospheric metrics (UV index, air quality index, detailed humidity / dew point breakdown) deferred to Phase 2.
 - **Precipitation SVG Chart:** Interactive 24-hour precipitation curve chart deferred to Phase 2.
 - **Dark Theme:** v1 ships with a polished, consistent Light Theme; dark mode toggle deferred to Phase 2 (settings state structure is prepared for Phase 2).

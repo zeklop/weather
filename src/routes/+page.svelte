@@ -59,14 +59,15 @@
 	}
 
 	function spanWord(minutes: number): string {
-		if (minutes < 60) {
-			const m10 = minutes % 10;
-			const m100 = minutes % 100;
-			if (m10 === 1 && m100 !== 11) return `${minutes} минуту`;
-			if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${minutes} минуты`;
-			return `${minutes} минут`;
+		const m = Math.max(1, minutes);
+		if (m < 60) {
+			const m10 = m % 10;
+			const m100 = m % 100;
+			if (m10 === 1 && m100 !== 11) return `${m} минуту`;
+			if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${m} минуты`;
+			return `${m} минут`;
 		}
-		const h = Math.round((minutes / 60) * 2) / 2;
+		const h = Math.round((m / 60) * 2) / 2;
 		if (h <= 1) return '1 час';
 		if (h <= 1.5) return '1,5 часа';
 		return '2 часа';
@@ -75,12 +76,14 @@
 	const nowIso = $derived(payload ? wallNow(payload.timezone, nowMs) : null);
 
 	// First hourly entry at or before "now": the current hour in a fresh payload.
+	// Old payload ("now" past the last hourly entry, e.g. offline for 2+ days):
+	// start from the first hour instead of collapsing to a single row.
 	const hourStartIdx = $derived.by(() => {
 		if (!payload || !nowIso) return 0;
-		for (let i = payload.hourly.length - 1; i >= 0; i--) {
-			if (payload.hourly[i].time <= nowIso) return i;
-		}
-		return 0;
+		let idx = payload.hourly.length - 1;
+		while (idx > 0 && payload.hourly[idx].time > nowIso) idx--;
+		if (idx === payload.hourly.length - 1 && payload.hourly[idx].time < nowIso) return 0;
+		return idx;
 	});
 
 	const railHours = $derived(payload ? payload.hourly.slice(hourStartIdx, hourStartIdx + 24) : []);
@@ -182,6 +185,8 @@
 				<button class="retry-btn" type="button" onclick={() => store?.refresh()}>Повторить</button>
 			</div>
 		{/if}
+
+		<h1 class="sr-only">Погода сейчас</h1>
 
 		<div class="hero">
 			<div class="hero-main">

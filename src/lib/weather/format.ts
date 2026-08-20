@@ -12,12 +12,15 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})/;
 // calendar carrier, formatted back in UTC, so output equals the location
 // wall-time calendar with no timezone shift.
 function wallDate(isoDate: string): Date {
-	const [, y, m, d] = DATE_RE.exec(isoDate)!;
+	const match = DATE_RE.exec(isoDate);
+	if (!match) return new Date();
+	const [, y, m, d] = match;
 	return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
 }
 
 export function formatHour(isoTime: string): string {
-	return HOUR_RE.exec(isoTime)![1];
+	const match = HOUR_RE.exec(isoTime);
+	return match ? match[1] : '00:00';
 }
 
 export function formatTimeShort(isoDateTime: string): string {

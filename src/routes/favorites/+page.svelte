@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { getForecast } from '$lib/api/openMeteo';
@@ -60,9 +60,12 @@
 	// Client-side only: load every favorite that has no row yet. Runs once on
 	// open and covers favorites toggled from the header star while on the page.
 	$effect(() => {
-		for (const loc of favorites.list) {
-			if (!rows.has(loc.id)) load(loc);
-		}
+		const favoriteList = favorites.list;
+		untrack(() => {
+			for (const loc of favoriteList) {
+				if (!rows.has(loc.id)) load(loc);
+			}
+		});
 	});
 
 	function remove(id: string): void {
@@ -76,8 +79,8 @@
 	}
 
 	function subLabel(loc: Location): string {
-		const parts = [loc.admin1, loc.country].filter(
-			(value, index, arr) => value != null && value !== '' && value !== loc.name && arr.indexOf(value) === index
+		const parts = [...new Set([loc.admin1, loc.country])].filter(
+			(value): value is string => value != null && value !== '' && value !== loc.name
 		);
 		return parts.join(', ');
 	}

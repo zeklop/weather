@@ -1,7 +1,9 @@
 {
 	"name": "weather",
-	"private": true,
-	"version": "0.0.1",
+	"description": "Автономное PWA-приложение прогноза погоды на SvelteKit 5",
+	"version": "0.1.0",
+	"license": "MIT",
+	"author": "zeandre",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",

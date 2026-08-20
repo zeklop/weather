@@ -8,9 +8,10 @@ const FALLBACK_END = 19 * 60;
 // Wall-time HH:MM only, per the format.ts contract: never parse these strings
 // with `new Date` — the date part is irrelevant and tz math is wrong here.
 function minutesFromMidnight(isoWallTime: string): number {
-	const [, hhmm] = HOUR_RE.exec(isoWallTime)!;
-	const [h, m] = hhmm.split(':').map(Number);
-	return h * 60 + m;
+	const match = HOUR_RE.exec(isoWallTime);
+	if (!match) return 0;
+	const [h, m] = match[1].split(':').map(Number);
+	return (h || 0) * 60 + (m || 0);
 }
 
 /**

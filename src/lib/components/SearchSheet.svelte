@@ -14,6 +14,8 @@
 </script>
 
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { searchLocations } from '$lib/api/geocoding';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import type { Location } from '$lib/types';
@@ -43,12 +45,12 @@
 	function select(loc: Location): void {
 		location.setLocation(loc);
 		closeSearch();
+		goto(base + '/');
 	}
 
 	function subLabel(loc: Location): string {
-		const parts = [loc.admin1, loc.country].filter(
-			(value, index, arr) =>
-				value != null && value !== '' && value !== loc.name && arr.indexOf(value) === index
+		const parts = [...new Set([loc.admin1, loc.country])].filter(
+			(value): value is string => value != null && value !== '' && value !== loc.name
 		);
 		return parts.join(', ');
 	}

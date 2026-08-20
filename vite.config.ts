@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
 				base: urlBase,
 				scope: urlBase,
 				registerType: 'prompt',
-				injectRegister: 'auto',
+				injectRegister: null,
 
 				// Mirror +layout.ts trailingSlash='always' so prerendered page URLs get a trailing '/'
 				// in the precache manifest (offline navigation matches /forecast/ etc.).
@@ -75,23 +75,6 @@ export default defineConfig(({ mode }) => {
 					// home precache entry); offline navigation to unknown URLs serves the app shell.
 					navigateFallback: urlBase,
 					runtimeCaching: [
-						{
-							// Open-Meteo API: network first with a 3s budget, only successful
-							// responses cached, bounded size and age.
-							urlPattern: /^https:\/\/api\.open-meteo\.com\/.*/i,
-							handler: 'NetworkFirst',
-							options: {
-								networkTimeoutSeconds: 3,
-								cacheName: 'open-meteo-api',
-								expiration: {
-									maxEntries: 30,
-									maxAgeSeconds: 6 * 60 * 60
-								},
-								cacheableResponse: {
-									statuses: [0, 200]
-								}
-							}
-						},
 						{
 							// Same-origin static assets (precache already covers build assets;
 							// this covers the rest — icons, fonts, etc.): cache first, bounded, 30 days.

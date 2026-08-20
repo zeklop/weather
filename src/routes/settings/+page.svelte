@@ -76,7 +76,7 @@
 	const geoNote = $derived(
 		mounted
 			? location.geoState === 'denied'
-				? 'Доступ запрещён — разрешите геолокацию в настройках браузера'
+				? 'Доступ запрещён. Если вы включили доступ в настройках браузера, нажмите кнопку ещё раз.'
 				: location.geoState === 'unavailable'
 					? 'Геолокация недоступна на этом устройстве'
 					: null
@@ -109,7 +109,7 @@
 				<button
 					class="geo-btn"
 					type="button"
-					disabled={geoNote !== null}
+					disabled={location.geoState === 'unavailable'}
 					onclick={() => location.requestGeolocation()}
 				>
 					Определить автоматически
