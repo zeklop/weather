@@ -1,8 +1,8 @@
 import { getForecast } from '../api/openMeteo';
 import { cacheKey, createForecastCache, statusOf } from '../cache/forecastCache';
 import type { ForecastPayload, ForecastStatus, Location } from '../types';
-import { effect, effect_root } from './effectRoot';
 import { getLocationStore, type LocationStore } from './location.svelte';
+import { memoryStorage } from './memoryStorage';
 import { getSettingsStore, type SettingsStore } from './settings.svelte';
 
 export const REFRESH_ERROR_MESSAGE = 'Не удалось обновить прогноз';
@@ -13,6 +13,7 @@ export type ForecastStore = {
 	readonly fetchedAt: number | null;
 	readonly refreshing: boolean;
 	readonly error: string | null;
+	load(location?: Location, force?: boolean): void;
 	refresh(): void;
 	destroy(): void;
 };
@@ -24,30 +25,6 @@ export type ForecastStoreOptions = {
 	settingsStore?: Pick<SettingsStore, 'touchLastUpdated'>;
 	onLine?: () => boolean;
 };
-
-function memoryStorage(): Storage {
-	const data = new Map<string, string>();
-	return {
-		get length() {
-			return data.size;
-		},
-		clear() {
-			data.clear();
-		},
-		getItem(key: string) {
-			return data.has(key) ? data.get(key)! : null;
-		},
-		key(index: number) {
-			return Array.from(data.keys())[index] ?? null;
-		},
-		removeItem(key: string) {
-			data.delete(key);
-		},
-		setItem(key: string, value: string) {
-			data.set(key, value);
-		}
-	};
-}
 
 function defaultStorage(): Storage {
 	return typeof localStorage !== 'undefined' ? localStorage : memoryStorage();
@@ -127,7 +104,7 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		});
 	}
 
-	function load(location: Location, force = false): void {
+	function load(location: Location = locationStore.current, force = false): void {
 		const key = cacheKey(location.latitude, location.longitude);
 		const entry = cache.get(key);
 		const cachedStatus = entry === null ? 'miss' : statusOf(entry, Date.now());
@@ -169,41 +146,11 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 	}
 
 	function refresh(): void {
-		load(locationStore.current, true);
-	}
-
-	// Owned effect root: the location watcher outlives whichever component
-	// first called getForecastStore, and survives SPA navigation.
-	const disposeRoot = effect_root(() => {
-		effect(() => {
-			load(locationStore.current);
-		});
-	});
-
-	function onVisibilityChange(): void {
-		if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
-		load(locationStore.current);
-	}
-
-	function onPageshow(): void {
-		load(locationStore.current);
-	}
-
-	if (typeof document !== 'undefined') {
-		document.addEventListener('visibilitychange', onVisibilityChange);
-	}
-	if (typeof window !== 'undefined') {
-		window.addEventListener('pageshow', onPageshow);
+		load(payloadLocation ?? locationStore.current, true);
 	}
 
 	function destroy(): void {
-		if (typeof document !== 'undefined') {
-			document.removeEventListener('visibilitychange', onVisibilityChange);
-		}
-		if (typeof window !== 'undefined') {
-			window.removeEventListener('pageshow', onPageshow);
-		}
-		disposeRoot();
+		// Clean-up hook for consumers/lifecycle wrappers
 	}
 
 	return {
@@ -222,14 +169,8 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		get error() {
 			return error;
 		},
+		load,
 		refresh,
 		destroy
 	};
-}
-
-let singleton: ForecastStore | null = null;
-
-export function getForecastStore(): ForecastStore {
-	singleton ??= createForecastStore();
-	return singleton;
 }

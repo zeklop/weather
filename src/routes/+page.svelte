@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
-	import { getForecastStore } from '$lib/stores/forecast.svelte';
+	import { getForecastStore } from '$lib/stores/context';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
@@ -10,12 +10,10 @@
 	import { isDay } from '$lib/weather/dayNight';
 	import type { DayForecast } from '$lib/types';
 
-	// The store owns an effect root with a location watcher; it must not be
-	// created during prerender (client-internal effect API + no network at build).
-	const store = typeof document !== 'undefined' ? getForecastStore() : null;
-	const payload = $derived(store?.payload ?? null);
-	const status = $derived(store?.status ?? 'idle');
-	const refreshing = $derived(store?.refreshing ?? false);
+	const store = getForecastStore();
+	const payload = $derived(store.payload);
+	const status = $derived(store.status);
+	const refreshing = $derived(store.refreshing);
 
 	// Minute ticker keeps «Сейчас»/current-hour highlight honest while the SPA
 	// stays open across an hour boundary.
@@ -181,7 +179,7 @@
 			{#if status === 'offline'}
 				<div class="state-text">Проверьте подключение к интернету и попробуйте ещё раз.</div>
 			{/if}
-			<button class="retry-btn" type="button" onclick={() => store?.refresh()}>Повторить</button>
+			<button class="retry-btn" type="button" onclick={() => store.refresh()}>Повторить</button>
 		</div>
 	</div>
 {:else if payload}
@@ -200,7 +198,7 @@
 					{status === 'error' ? 'Не удалось обновить прогноз.' : 'Нет соединения.'}
 					Показаны данные на {formatTimeShort(payload.current.time)}.
 				</span>
-				<button class="retry-btn" type="button" onclick={() => store?.refresh()}>Повторить</button>
+				<button class="retry-btn" type="button" onclick={() => store.refresh()}>Повторить</button>
 			</div>
 		{/if}
 

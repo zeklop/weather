@@ -7,6 +7,8 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { createForecastStore } from '$lib/stores/forecast.svelte';
+	import { setForecastStore } from '$lib/stores/context';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 
 	let { children } = $props();
@@ -22,6 +24,32 @@
 
 	const location = getLocationStore();
 	const favorites = getFavoritesStore();
+	const forecastStore = createForecastStore({ locationStore: location });
+	setForecastStore(forecastStore);
+
+	$effect(() => {
+		forecastStore.load(location.current);
+	});
+
+	$effect(() => {
+		function onVisibilityChange(): void {
+			if (document.visibilityState === 'visible') {
+				forecastStore.load(location.current);
+			}
+		}
+		function onPageshow(): void {
+			forecastStore.load(location.current);
+		}
+
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		window.addEventListener('pageshow', onPageshow);
+
+		return () => {
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+			window.removeEventListener('pageshow', onPageshow);
+			forecastStore.destroy();
+		};
+	});
 
 	const routeId = $derived(page.route.id);
 

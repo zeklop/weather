@@ -1,18 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getForecastStore } from '$lib/stores/forecast.svelte';
+	import { getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 
 	const INSTALL_HINT_KEY = 'weather:installHintSeen';
 
-	// Same document-gate as the Home route: the forecast store owns an effect
-	// root and must not be created during prerender.
-	const forecast = typeof document !== 'undefined' ? getForecastStore() : null;
+	const forecast = getForecastStore();
 	const location = getLocationStore();
 	const settings = getSettingsStore();
 
-	const refreshing = $derived(forecast?.refreshing ?? false);
+	const refreshing = $derived(forecast.refreshing);
 
 	// Hydration gate: city and lastUpdated come from localStorage, so the
 	// server render shows neutral placeholders until the client mounts
@@ -53,7 +51,7 @@
 	});
 
 	function refresh(): void {
-		forecast?.refresh();
+		forecast.refresh();
 	}
 
 	// Device-event timestamp (epoch ms), not an Open-Meteo wall-time string:

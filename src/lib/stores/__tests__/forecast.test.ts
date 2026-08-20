@@ -1,13 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-// @ts-ignore — svelte/internal/client ships no types (untyped JS module)
-import { get, set, state } from 'svelte/internal/client';
-import { createForecastCache, cacheKey } from '../../cache/forecastCache';
-import { FRESH_MS, STALE_MS } from '../../cache/limits';
+import { cacheKey, createForecastCache } from '../../cache/forecastCache';
 import type { ForecastPayload, Location } from '../../types';
+import { getForecastStore, setForecastStore } from '../context';
 import {
-	REFRESH_ERROR_MESSAGE,
 	createForecastStore,
-	getForecastStore
+	REFRESH_ERROR_MESSAGE
 } from '../forecast.svelte';
 import { makeMemoryStorage } from './memoryStorage';
 
@@ -89,19 +86,14 @@ function makeSettings() {
 	return { touchLastUpdated: vi.fn() };
 }
 
-/**
- * Reactive location store fake built on the raw svelte internal runtime,
- * which is the same module instance the store's effect bridge resolves to
- * in the vitest node environment.
- */
 function makeLocationStore(initial: Location = MOSCOW) {
-	const current = state<Location>(initial);
+	let current = initial;
 	return {
 		get current() {
-			return get(current);
+			return current;
 		},
 		setLocation(location: Location) {
-			set(current, location);
+			current = location;
 		}
 	};
 }
@@ -133,6 +125,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: settings
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('fresh');
@@ -149,7 +142,7 @@ describe('createForecastStore — SWR', () => {
 		const storage = makeMemoryStorage();
 		const stalePayload = makePayload(5);
 		const freshPayload = makePayload(9);
-		seedCache(storage, MOSCOW, stalePayload, NOW - STALE_MS / 2);
+		seedCache(storage, MOSCOW, stalePayload, NOW - 30 * 60 * 1000);
 		const pending: Array<{ resolve: (payload: ForecastPayload) => void }> = [];
 		const fetcher = vi.fn(
 			() => new Promise<ForecastPayload>((resolve) => pending.push({ resolve }))
@@ -162,11 +155,12 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: settings
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('stale');
 		expect(store.payload).toEqual(stalePayload);
-		expect(store.fetchedAt).toBe(NOW - STALE_MS / 2);
+		expect(store.fetchedAt).toBe(NOW - 30 * 60 * 1000);
 		expect(store.refreshing).toBe(true);
 		expect(fetcher).toHaveBeenCalledTimes(1);
 		expect(fetcher).toHaveBeenCalledWith(MOSCOW);
@@ -197,6 +191,7 @@ describe('createForecastStore — SWR', () => {
 			settingsStore: makeSettings(),
 			onLine: () => false
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('offline');
@@ -217,6 +212,7 @@ describe('createForecastStore — SWR', () => {
 			settingsStore: makeSettings(),
 			onLine: () => false
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('offline');
@@ -239,6 +235,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('offline');
@@ -259,6 +256,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('offline');
@@ -277,6 +275,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('error');
@@ -298,6 +297,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('error');
@@ -322,7 +322,7 @@ describe('createForecastStore — SWR', () => {
 		const storage = makeMemoryStorage();
 		const stalePayload = makePayload(5);
 		const freshPayload = makePayload(11);
-		seedCache(storage, MOSCOW, stalePayload, NOW - STALE_MS / 2);
+		seedCache(storage, MOSCOW, stalePayload, NOW - 30 * 60 * 1000);
 		const fetcher = vi
 			.fn()
 			.mockRejectedValueOnce(new Error('timeout'))
@@ -333,6 +333,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('error');
@@ -361,6 +362,7 @@ describe('createForecastStore — SWR', () => {
 			locationStore: makeLocationStore(),
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		expect(store.status).toBe('fresh');
@@ -398,12 +400,14 @@ describe('createForecastStore — SWR', () => {
 			locationStore,
 			settingsStore: makeSettings()
 		});
+		store.load(MOSCOW);
 		await settle();
 
 		expect(pending).toHaveLength(1);
 		expect(pending[0].location.id).toBe(MOSCOW.id);
 
 		locationStore.setLocation(SPB);
+		store.load(SPB);
 		await settle();
 
 		expect(pending).toHaveLength(2);
@@ -419,109 +423,6 @@ describe('createForecastStore — SWR', () => {
 		await settle();
 		expect(store.status).toBe('fresh');
 		expect(store.payload).toEqual({ ...makePayload(2), fetchedAt: NOW });
-	});
-});
-
-describe('createForecastStore — refresh triggers', () => {
-	function makeFakeDocument() {
-		const handlers = new Map<string, () => void>();
-		const document = {
-			visibilityState: 'visible',
-			addEventListener: vi.fn((type: string, cb: () => void) => handlers.set(type, cb)),
-			removeEventListener: vi.fn((type: string) => handlers.delete(type)),
-			handlers
-		};
-		const window = {
-			addEventListener: vi.fn(),
-			removeEventListener: vi.fn()
-		};
-		return { document, window };
-	}
-
-	it('refreshes on visibilitychange only when the cached data is no longer fresh', async () => {
-		vi.useFakeTimers();
-		vi.setSystemTime(NOW);
-		const { document, window } = makeFakeDocument();
-		vi.stubGlobal('document', document);
-		vi.stubGlobal('window', window);
-
-		const storage = makeMemoryStorage();
-		const payload = makePayload(5);
-		seedCache(storage, MOSCOW, payload, NOW - 60_000);
-		const fetcher = vi.fn(() => Promise.resolve(makePayload(6)));
-		const store = createForecastStore({
-			storage,
-			fetcher,
-			locationStore: makeLocationStore(),
-			settingsStore: makeSettings()
-		});
-		await settle();
-
-		expect(store.status).toBe('fresh');
-		expect(document.addEventListener).toHaveBeenCalledWith(
-			'visibilitychange',
-			expect.any(Function)
-		);
-
-		document.handlers.get('visibilitychange')!();
-		await settle();
-		expect(fetcher).not.toHaveBeenCalled();
-
-		vi.setSystemTime(NOW + FRESH_MS + 1000);
-		document.handlers.get('visibilitychange')!();
-		document.handlers.get('visibilitychange')!();
-		expect(store.status).toBe('stale');
-		expect(store.payload).toEqual(payload);
-
-		await settle();
-
-		expect(fetcher).toHaveBeenCalledTimes(1);
-		expect(store.status).toBe('fresh');
-
-		store.destroy();
-		expect(document.removeEventListener).toHaveBeenCalledWith(
-			'visibilitychange',
-			expect.any(Function)
-		);
-		expect(window.removeEventListener).toHaveBeenCalledWith('pageshow', expect.any(Function));
-	});
-
-	it('does not attach browser listeners when document is unavailable', async () => {
-		vi.useFakeTimers();
-		vi.setSystemTime(NOW);
-		const store = createForecastStore({
-			storage: makeMemoryStorage(),
-			fetcher: vi.fn(() => new Promise<ForecastPayload>(() => {})),
-			locationStore: makeLocationStore(),
-			settingsStore: makeSettings()
-		});
-		await settle();
-
-		expect(store.status).toBe('loading');
-		store.destroy();
-	});
-});
-
-describe('createForecastStore — defaults and singleton', () => {
-	it('wires default dependencies without network when offline', async () => {
-		vi.useFakeTimers();
-		vi.setSystemTime(NOW);
-		const store = createForecastStore({ onLine: () => false });
-		await settle();
-
-		expect(store.status).toBe('offline');
-		store.destroy();
-	});
-
-	it('returns a stable singleton', async () => {
-		vi.useFakeTimers();
-		vi.setSystemTime(NOW);
-		const first = getForecastStore();
-		const second = getForecastStore();
-
-		expect(second).toBe(first);
-		await settle();
-		expect(first.status).toBe('fresh');
 	});
 
 	it('dedupes concurrent fetches for the same city', async () => {
@@ -539,6 +440,7 @@ describe('createForecastStore — defaults and singleton', () => {
 			locationStore,
 			settingsStore: makeSettings()
 		});
+		store.load();
 		await settle();
 
 		store.refresh();
@@ -552,5 +454,22 @@ describe('createForecastStore — defaults and singleton', () => {
 		await settle();
 		expect(store.status).toBe('fresh');
 		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it('wires default dependencies without network when offline', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const store = createForecastStore({ onLine: () => false });
+		store.load();
+		await settle();
+
+		expect(store.status).toBe('offline');
+		store.destroy();
+	});
+});
+
+describe('context — setForecastStore and getForecastStore', () => {
+	it('throws when getForecastStore is called outside Svelte context', () => {
+		expect(() => getForecastStore()).toThrow();
 	});
 });
