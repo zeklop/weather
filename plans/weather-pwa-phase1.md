@@ -25,12 +25,12 @@ status: draft
 - **Manifest и SW — один владелец:** интеграция `@vite-pwa/sveltekit` (а не ручной `static/manifest.webmanifest` в обход PWA-плагина). `registerType: 'prompt'`, `scope` = URL_BASE, `navigateFallback` с учётом base. **Имя SW — `sw.js`** (дефолт vite-plugin-pwa); спека в §4.4 называет `service-worker.js` — фиксируем девиацию в IMPLEMENTATION_NOTES.md и не дублируем файл.
 - **Prerender:** `export const prerender = true` и `trailingSlash = 'always'` в корневом `+layout.ts` (не абстракция в svelte.config). Артефакты проверяются: `forecast/index.html`, `favorites/index.html`, `settings/index.html`, `map/index.html`, `manifest.webmanifest`, `sw.js`.
 - **Время (TZ-безопасно, единый контракт):** `response.timezone` хранится в `ForecastPayload`. Все временные значения Open-Meteo — wall-time ISO в таймзоне локации; **работаем только с wall-time, без конвертации через `new Date()`**. Форматирование меток: HH:MM — строковый срез ISO (никакого Intl/Date); дата/день недели — `Intl.DateTimeFormat` с трюком `Date.UTC(...)` + `timeZone: 'UTC'` (wall-time трактуется как UTC, чтобы не смещаться в TZ телефона) либо чистый алгоритм дня недели. `Intl` никогда не вызывается с TZ локации для wall-time строк.
-- **`isDay(at, sunrise, sunset): boolean` — исполнимые правила** (все значения — минуты-от-полуночи wall-time):
-  1. sunrise или sunset отсутствуют (null/undefined) → fallback-окно 07:00–19:00 wall-time (флаг `source: 'fallback'` в return);
-  2. `R < S` (норма) → `R <= T <= S`;
-  3. `R == S` (вырожденный порог) → day;
-  4. `R > S` (день через полуночь, полярное лето) → `T >= R || T <= S`.
-  Тест-матрица: день, ночь, границы (T==R, T==S), cross-midnight (R>S), вырожденный (R==S), отсутствующие sunrise/sunset, DST-переход (R<S норма, часы не сдвигаются — доказательство отсутствия Date-конверсии), чужая TZ (те же строки → тот же результат).
+- **`isDay(at, sunrise, sunset): DayResult` — единый return-контракт:** `{ isDay: boolean; source: 'calculated' | 'fallback' }`. Исполнимые правила (все значения — минуты-от-полуночи wall-time):
+  1. sunrise или sunset отсутствуют (null/undefined) → fallback-окно 07:00–19:00 wall-time, `source: 'fallback'`;
+  2. `R < S` (норма) → `R <= T <= S`, `source: 'calculated'`;
+  3. `R == S` (вырожденный порог) → day, `source: 'calculated'`;
+  4. `R > S` (день через полуночь, полярное лето) → `T >= R || T <= S`, `source: 'calculated'`.
+  Тест-матрица: день, ночь, границы (T==R, T==S), cross-midnight (R>S), вырожденный (R==S), отсутствующие sunrise/sunset, **границы fallback-окна (T=06:59→night, T=07:00→day, T=18:59→day, T=19:00→night)**, DST-переход (R<S норма, часы не сдвигаются — доказательство отсутствия Date-конверсии), чужая TZ (те же строки → тот же результат).
 - **Сигнатуры:** `isDay(at, sunrise, sunset)` — без `weatherCode`; day/night иконка выбирается по `isDay` + `code`.
 - **State — единый подход:** Svelte 5 runes в `src/lib/stores/*.svelte.ts` (browser-only, cleanup listener'ов). Обычные `.ts` stores не используем.
 - **Кэш с границами (конкретные константы):** `MAX_CACHED_CITIES = 8`, `CACHE_BUDGET_BYTES = 1 * 1024 * 1024`, `RUNTIME_CACHE_CAP = 32` — константы в коде (`src/lib/cache/limits.ts`), с LRU-eviction по обоим лимитам. Обработка битого JSON, миграции версии, `QuotaExceededError` → eviction → работа только с runtime-кэшем. Тесты: eviction по count/budget, битый JSON, миграция, quota-фолбэк.
@@ -54,7 +54,7 @@ status: draft
 - [ ] `src/lib/weather/units.ts` — `hpaToMmhg`, `formatTemp` (Unicode `−`), `formatWind` (м/с). Тесты
 - [ ] `src/lib/weather/direction.ts` — 8 румбов по градусам. Тесты
 - [ ] `src/lib/weather/format.ts` — время/день/«Сейчас»: HH:MM строковым срезом, дата/день недели через `Intl` + `Date.UTC`/`timeZone:'UTC'` (без TZ-сдвигов). Тесты: чужая TZ + DST
-- [ ] `src/lib/weather/dayNight.ts` — `isDay(at, sunrise, sunset)` по правилам контракта (норма / cross-midnight / вырожденный / fallback-окно). Тесты по матрице: день, ночь, границы, cross-midnight, вырожденный, отсутствующие sunrise/sunset, DST, чужая TZ
+- [ ] `src/lib/weather/dayNight.ts` — `isDay(at, sunrise, sunset): DayResult` по правилам контракта (норма / cross-midnight / вырожденный / fallback-окно с source). Тесты по матрице: день, ночь, границы, cross-midnight, вырожденный, отсутствующие sunrise/sunset, границы fallback-окна, DST, чужая TZ
 - [ ] `src/lib/api/openMeteo.ts` — `getForecast(location)`: только запрашиваемые поля (§6), `timezone=auto`, `wind_speed_unit=ms`, нормализация (в т.ч. `timezone` в payload), validation ответа. Тест нормализации + malformed
 - [ ] `src/lib/api/geocoding.ts` — `searchLocations(query)`, normalize в `Location` (name, admin1, country, countryCode, timezone)
 - [ ] `src/lib/cache/forecastCache.ts` — runtime `Map` (cap) + localStorage (max entries, LRU, budget, миграции, `QuotaExceededError` → eviction), ключ `forecast:{lat4}:{lon4}`, SWR: fresh <15 мин, stale <6 ч, offline любой с меткой. Тесты свежести, LRU, битого JSON
@@ -81,7 +81,7 @@ status: draft
 ### Фаза 4. PWA и деплой
 - [ ] Manifest через `@vite-pwa/sveltekit` (§11: standalone, portrait-primary, #F5F7FA), apple meta-теги; `start_url`/`scope`/icon URLs base-safe
 - [ ] SW: NetworkFirst для `api.open-meteo.com` (`networkTimeoutSeconds: 3`, кэшировать только успешные ответы, `maxEntries`/expiry), CacheFirst статика, версии кэшей + чистка; API-ошибки приложения (таймауты, malformed, geocoding) — вне SW, через `AbortController` в api-слое
-- [ ] `.github/workflows/deploy.yml` (§40): push→main + workflow_dispatch, `npm ci → check → test → build` с `PUBLIC_BASE_PATH=/weather`, permissions `contents: read / pages: write / id-token: write`, upload-pages-artifact + deploy-pages
+- [ ] `.github/workflows/deploy.yml` (§40): push→main + workflow_dispatch, `npm ci → check → test → check:icons → build` с `PUBLIC_BASE_PATH=/weather`, permissions `contents: read / pages: write / id-token: write`, upload-pages-artifact + deploy-pages
 - [ ] Smoke-сценарии деплоя: `https://zeklop.github.io/weather/` (все маршруты + refresh + SW scope) и root-mode для custom domain
 - [ ] Скриншоты Home/Forecast/Favorites (iPhone-вьюпорт) для README; Details/Map — исключение §46 (в Phase 2)
 - [ ] `README.md` (§42), `THIRD_PARTY_NOTICES.md` (§43), `Caddyfile` (§40 B), `IMPLEMENTATION_NOTES.md` (§46: исключение по скриншотам Details/Map, девиация имени SW `sw.js` вместо `service-worker.js`, девиация тёмной темы)
