@@ -229,6 +229,26 @@
 				</div>
 			{/if}
 		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.badgeLabel', lang)}</span>
+			<button
+				class="toggle-switch"
+				class:active={mounted && settings.badgeEnabled}
+				type="button"
+				role="switch"
+				aria-checked={mounted && settings.badgeEnabled}
+				aria-label={t('settings.badgeLabel', lang)}
+				onclick={() => {
+					const next = !settings.badgeEnabled;
+					settings.setBadgeEnabled(next);
+					if (!next && typeof navigator !== 'undefined' && 'clearAppBadge' in navigator) {
+						navigator.clearAppBadge().catch(() => {});
+					}
+				}}
+			>
+				<span class="toggle-thumb"></span>
+			</button>
+		</div>
 	</div>
 
 	<div class="card group">

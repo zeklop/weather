@@ -13,6 +13,7 @@ export type SettingsStore = {
 	readonly severeAlerts: boolean;
 	readonly freezeAlerts: boolean;
 	readonly quietHoursEnabled: boolean;
+	readonly badgeEnabled: boolean;
 	setTheme(theme: Theme): void;
 	setLanguage(lang: Language): void;
 	touchLastUpdated(now?: number): void;
@@ -21,6 +22,7 @@ export type SettingsStore = {
 	setSevereAlerts(enabled: boolean): void;
 	setFreezeAlerts(enabled: boolean): void;
 	setQuietHoursEnabled(enabled: boolean): void;
+	setBadgeEnabled(enabled: boolean): void;
 };
 
 type SettingsData = {
@@ -32,6 +34,7 @@ type SettingsData = {
 	severeAlerts: boolean;
 	freezeAlerts: boolean;
 	quietHoursEnabled: boolean;
+	badgeEnabled: boolean;
 };
 
 const DEFAULT_SETTINGS: SettingsData = {
@@ -42,7 +45,8 @@ const DEFAULT_SETTINGS: SettingsData = {
 	precipitationAlerts: true,
 	severeAlerts: true,
 	freezeAlerts: true,
-	quietHoursEnabled: true
+	quietHoursEnabled: true,
+	badgeEnabled: true
 };
 
 function defaultStorage(): Storage | null {
@@ -120,6 +124,10 @@ function readSettings(storage: Storage | null): SettingsData | null {
 		typeof entry['quietHoursEnabled'] === 'boolean'
 			? entry['quietHoursEnabled']
 			: DEFAULT_SETTINGS.quietHoursEnabled;
+	const badgeEnabled =
+		typeof entry['badgeEnabled'] === 'boolean'
+			? entry['badgeEnabled']
+			: DEFAULT_SETTINGS.badgeEnabled;
 
 	return {
 		theme,
@@ -129,7 +137,8 @@ function readSettings(storage: Storage | null): SettingsData | null {
 		precipitationAlerts,
 		severeAlerts,
 		freezeAlerts,
-		quietHoursEnabled
+		quietHoursEnabled,
+		badgeEnabled
 	};
 }
 
@@ -147,6 +156,9 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	let quietHoursEnabled = $state<boolean>(
 		persisted?.quietHoursEnabled ?? DEFAULT_SETTINGS.quietHoursEnabled
 	);
+	let badgeEnabled = $state<boolean>(
+		persisted?.badgeEnabled ?? DEFAULT_SETTINGS.badgeEnabled
+	);
 
 	function persist(): void {
 		if (storage === null) return;
@@ -161,7 +173,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 					precipitationAlerts,
 					severeAlerts,
 					freezeAlerts,
-					quietHoursEnabled
+					quietHoursEnabled,
+					badgeEnabled
 				} satisfies SettingsData)
 			);
 		} catch {
@@ -209,6 +222,11 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		persist();
 	}
 
+	function setBadgeEnabled(enabled: boolean): void {
+		badgeEnabled = enabled;
+		persist();
+	}
+
 	return {
 		get theme() {
 			return theme;
@@ -234,6 +252,9 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get quietHoursEnabled() {
 			return quietHoursEnabled;
 		},
+		get badgeEnabled() {
+			return badgeEnabled;
+		},
 		setTheme,
 		setLanguage,
 		touchLastUpdated,
@@ -241,7 +262,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		setPrecipitationAlerts,
 		setSevereAlerts,
 		setFreezeAlerts,
-		setQuietHoursEnabled
+		setQuietHoursEnabled,
+		setBadgeEnabled
 	};
 }
 

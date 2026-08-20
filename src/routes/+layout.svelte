@@ -12,6 +12,11 @@
 	import { createAlertsStore } from '$lib/stores/alerts.svelte';
 	import { setAlertsStore, setForecastStore } from '$lib/stores/context';
 	import { t } from '$lib/i18n';
+	import { updateDynamicFavicon } from '$lib/weather/dynamicFavicon';
+	import { updateAppBadge } from '$lib/weather/badging';
+	import { formatTemp } from '$lib/weather/units';
+	import { getWeatherVisual } from '$lib/weather/wmo';
+	import { isDay } from '$lib/weather/dayNight';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 	import PwaInstallBanner from '$lib/components/PwaInstallBanner.svelte';
 	import PwaInstallModal, { openPwaInstallModal } from '$lib/components/PwaInstallModal.svelte';
@@ -114,6 +119,36 @@
 		}
 	});
 
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+
+		const payload = forecastStore.payload;
+		const badgeEnabled = settings.badgeEnabled;
+		const currentTheme = settings.theme;
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const resolvedTheme: 'light' | 'dark' =
+			currentTheme === 'system'
+				? mediaQuery.matches
+					? 'dark'
+					: 'light'
+				: currentTheme;
+
+		if (payload && payload.current) {
+			const temp = payload.current.temperature;
+			const weatherCode = payload.current.weatherCode;
+			const day = isDay(
+				payload.current.time,
+				payload.daily[0]?.sunrise ?? null,
+				payload.daily[0]?.sunset ?? null
+			).isDay;
+
+			updateDynamicFavicon(temp, day, weatherCode, resolvedTheme);
+			updateAppBadge(temp, badgeEnabled);
+		} else {
+			updateAppBadge(null, badgeEnabled);
+		}
+	});
+
 	const routeId = $derived(page.route.id);
 
 	const navItems = $derived([
@@ -142,10 +177,20 @@
 	const starTitle = $derived(
 		isUnnamed ? t('header.unnamedLocationTitle', lang) : undefined
 	);
+
+	const pageTitle = $derived.by(() => {
+		if (!mounted) return `${t('app.title', lang)} — ...`;
+		if (forecastStore.payload) {
+			const tempStr = formatTemp(forecastStore.payload.current.temperature);
+			const visual = getWeatherVisual(forecastStore.payload.current.weatherCode, lang);
+			return `${tempStr} ${visual.shortLabel} — ${location.current.name} | ${t('app.title', lang)}`;
+		}
+		return `${t('app.title', lang)} — ${location.current.name}`;
+	});
 </script>
 
 <svelte:head>
-	<title>{t('app.title', lang)} — {mounted ? location.current.name : '...'}</title>
+	<title>{pageTitle}</title>
 	<meta name="description" content={t('app.description', lang)} />
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="{base}/icons/app/icon-180.png" />

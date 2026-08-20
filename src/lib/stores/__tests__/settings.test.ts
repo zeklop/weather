@@ -9,17 +9,33 @@ afterEach(() => {
 });
 
 describe('createSettingsStore', () => {
-	it('defaults to system theme, en language, and no last update', () => {
+	it('defaults to system theme, en language, badgeEnabled true, and no last update', () => {
 		const store = createSettingsStore(makeMemoryStorage());
 
 		expect(store.theme).toBe('system');
 		expect(store.language).toBe('en');
+		expect(store.badgeEnabled).toBe(true);
 		expect(store.lastUpdated).toBeNull();
 		expect(store.alertsEnabled).toBe(false);
 		expect(store.precipitationAlerts).toBe(true);
 		expect(store.severeAlerts).toBe(true);
 		expect(store.freezeAlerts).toBe(true);
 		expect(store.quietHoursEnabled).toBe(true);
+	});
+
+	it('setBadgeEnabled updates badgeEnabled and persists it', () => {
+		const storage = makeMemoryStorage();
+		const store = createSettingsStore(storage);
+
+		expect(store.badgeEnabled).toBe(true);
+		store.setBadgeEnabled(false);
+		expect(store.badgeEnabled).toBe(false);
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
+			badgeEnabled: false
+		});
+
+		const fresh = createSettingsStore(storage);
+		expect(fresh.badgeEnabled).toBe(false);
 	});
 
 	it('setTheme updates the theme and persists it', () => {
@@ -102,7 +118,19 @@ describe('createSettingsStore', () => {
 
 		expect(store.theme).toBe('dark');
 		expect(store.language).toBe('en');
+		expect(store.badgeEnabled).toBe(true);
 		expect(store.lastUpdated).toBe(NOW);
+	});
+
+	it('restores persisted badgeEnabled false', () => {
+		const storage = makeMemoryStorage({
+			[STORAGE_KEY]: JSON.stringify({ theme: 'light', badgeEnabled: false, lastUpdated: NOW })
+		});
+
+		const store = createSettingsStore(storage);
+
+		expect(store.theme).toBe('light');
+		expect(store.badgeEnabled).toBe(false);
 	});
 
 	it('restores persisted ru language', () => {
