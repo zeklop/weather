@@ -9,11 +9,65 @@ afterEach(() => {
 });
 
 describe('createSettingsStore', () => {
-	it('defaults to light theme and no last update', () => {
+	it('defaults to light theme, en language, and no last update', () => {
 		const store = createSettingsStore(makeMemoryStorage());
 
 		expect(store.theme).toBe('light');
+		expect(store.language).toBe('en');
 		expect(store.lastUpdated).toBeNull();
+	});
+
+	it('setLanguage updates the language and persists it', () => {
+		const storage = makeMemoryStorage();
+		const store = createSettingsStore(storage);
+
+		store.setLanguage('ru');
+
+		expect(store.language).toBe('ru');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual({
+			theme: 'light',
+			language: 'ru',
+			lastUpdated: null
+		});
+
+		const fresh = createSettingsStore(storage);
+		expect(fresh.language).toBe('ru');
+	});
+
+	it('migrates legacy settings payload without language field gracefully to en', () => {
+		const storage = makeMemoryStorage({
+			[STORAGE_KEY]: JSON.stringify({ theme: 'dark', lastUpdated: NOW })
+		});
+
+		const store = createSettingsStore(storage);
+
+		expect(store.theme).toBe('dark');
+		expect(store.language).toBe('en');
+		expect(store.lastUpdated).toBe(NOW);
+	});
+
+	it('restores persisted ru language', () => {
+		const storage = makeMemoryStorage({
+			[STORAGE_KEY]: JSON.stringify({ theme: 'light', language: 'ru', lastUpdated: NOW })
+		});
+
+		const store = createSettingsStore(storage);
+
+		expect(store.theme).toBe('light');
+		expect(store.language).toBe('ru');
+		expect(store.lastUpdated).toBe(NOW);
+	});
+
+	it('falls back invalid language to en while preserving theme and lastUpdated', () => {
+		const storage = makeMemoryStorage({
+			[STORAGE_KEY]: JSON.stringify({ theme: 'light', language: 'fr', lastUpdated: NOW })
+		});
+
+		const store = createSettingsStore(storage);
+
+		expect(store.theme).toBe('light');
+		expect(store.language).toBe('en');
+		expect(store.lastUpdated).toBe(NOW);
 	});
 
 	it('touchLastUpdated records and persists the timestamp', () => {
@@ -25,12 +79,14 @@ describe('createSettingsStore', () => {
 		expect(store.lastUpdated).toBe(NOW);
 		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual({
 			theme: 'light',
+			language: 'en',
 			lastUpdated: NOW
 		});
 
 		const fresh = createSettingsStore(storage);
 		expect(fresh.lastUpdated).toBe(NOW);
 		expect(fresh.theme).toBe('light');
+		expect(fresh.language).toBe('en');
 	});
 
 	it('touchLastUpdated defaults to Date.now()', () => {

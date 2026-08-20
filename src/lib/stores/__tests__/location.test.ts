@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Location } from '../../types';
 import {
 	DEFAULT_LOCATION,
+	DEFAULT_LOCATIONS,
 	GEO_STATE_KEY,
 	STORAGE_KEY,
 	createLocationStore,
+	getDefaultLocation,
 	getLocationStore
 } from '../location.svelte';
 import { makeMemoryStorage } from './memoryStorage';
@@ -28,17 +30,33 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
+describe('DEFAULT_LOCATIONS and getDefaultLocation', () => {
+	it('provides localized default fallback location for en and ru', () => {
+		expect(DEFAULT_LOCATIONS.en.name).toBe('Moscow');
+		expect(DEFAULT_LOCATIONS.en.country).toBe('Russia');
+		expect(DEFAULT_LOCATIONS.ru.name).toBe('Москва');
+		expect(DEFAULT_LOCATIONS.ru.country).toBe('Россия');
+		expect(DEFAULT_LOCATIONS.en.id).toBe('55.7558,37.6173');
+		expect(DEFAULT_LOCATIONS.ru.id).toBe('55.7558,37.6173');
+
+		expect(getDefaultLocation('en')).toEqual(DEFAULT_LOCATIONS.en);
+		expect(getDefaultLocation('ru')).toEqual(DEFAULT_LOCATIONS.ru);
+		expect(DEFAULT_LOCATION).toEqual(DEFAULT_LOCATIONS.en);
+	});
+});
+
 describe('createLocationStore', () => {
-	it('defaults to Москва when storage is empty', () => {
+	it('defaults to Moscow when storage is empty', () => {
 		const store = createLocationStore(makeMemoryStorage());
 
 		expect(store.current).toEqual(DEFAULT_LOCATION);
+		expect(store.current.name).toBe('Moscow');
 		expect(store.current.id).toBe('55.7558,37.6173');
 		expect(store.current.timezone).toBe('Europe/Moscow');
 		expect(store.geoState).toBe('idle');
 	});
 
-	it('defaults to Москва with no storage at all', () => {
+	it('defaults to Moscow with no storage at all', () => {
 		const store = createLocationStore(null);
 
 		expect(store.current).toEqual(DEFAULT_LOCATION);
@@ -57,7 +75,7 @@ describe('createLocationStore', () => {
 		expect(fresh.current).toEqual(SPB);
 	});
 
-	it('self-heals corrupt location JSON back to Москва', () => {
+	it('self-heals corrupt location JSON back to default location', () => {
 		const storage = makeMemoryStorage({ [STORAGE_KEY]: '{not json' });
 
 		const store = createLocationStore(storage);
@@ -66,7 +84,7 @@ describe('createLocationStore', () => {
 		expect(storage.getItem(STORAGE_KEY)).toBeNull();
 	});
 
-	it('self-heals a location with a wrong shape back to Москва', () => {
+	it('self-heals a location with a wrong shape back to default location', () => {
 		const storage = makeMemoryStorage({
 			[STORAGE_KEY]: JSON.stringify({ name: 'Москва', latitude: 55.7558 })
 		});

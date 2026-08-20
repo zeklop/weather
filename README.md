@@ -29,7 +29,9 @@ Engineered mobile-first for **iOS Safari** (standalone PWA mode) and modern desk
 ## Phase 2 Roadmap
 
 - **Bilingual Interface (i18n):** English by default, Russian language option, language switcher in Settings, localized WMO descriptions, units, compass points, and localized geocoding queries ([`plans/weather-pwa-phase2.md`](plans/weather-pwa-phase2.md)).
-- **Dynamic Favicon & App Badging:** Live temperature rendering directly in the browser tab favicon (via Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android).
+- **Dynamic Favicon & App Badging:** Live temperature rendering directly in the browser tab favicon (via Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android, enabled by default in Settings).
+- **Favorites UX Overhaul:** Direct "Add City" search trigger in the empty favorites state and quick-add button in the favorites list.
+- **Settings Authorship & Version Footer:** Dedicated footer in Settings crediting Zeklop (with GitHub profile link) and displaying the build version date (`YYYY-MM-DD`).
 - **Platform-Specific PWA Prompts:** Native 1-click install banner on Android (`beforeinstallprompt`) and top banner with animated step-by-step installation instructions for iOS Safari.
 - **Smart Weather Change Alerts:** Multi-tier notifications (in-app, local notifications, periodic sync) for approaching precipitation, severe thunderstorms, frost alerts, and sudden temperature shifts.
 - **Dark Mode:** System / Light / Dark theme support with dedicated CSS custom properties.

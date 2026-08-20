@@ -1,4 +1,5 @@
 import { geoId } from '../api/geocoding';
+import { DEFAULT_LANGUAGE, type Language } from '../i18n';
 import type { Location } from '../types';
 
 export const STORAGE_KEY = 'weather:location';
@@ -6,16 +7,34 @@ export const GEO_STATE_KEY = 'weather:geoState';
 
 export type GeoState = 'idle' | 'denied' | 'unavailable' | 'error';
 
-export const DEFAULT_LOCATION: Location = {
-	id: geoId(55.7558, 37.6173),
-	name: 'Москва',
-	admin1: 'Москва',
-	country: 'Россия',
-	countryCode: 'RU',
-	latitude: 55.7558,
-	longitude: 37.6173,
-	timezone: 'Europe/Moscow'
+export const DEFAULT_LOCATIONS: Record<Language, Location> = {
+	en: {
+		id: geoId(55.7558, 37.6173),
+		name: 'Moscow',
+		admin1: 'Moscow',
+		country: 'Russia',
+		countryCode: 'RU',
+		latitude: 55.7558,
+		longitude: 37.6173,
+		timezone: 'Europe/Moscow'
+	},
+	ru: {
+		id: geoId(55.7558, 37.6173),
+		name: 'Москва',
+		admin1: 'Москва',
+		country: 'Россия',
+		countryCode: 'RU',
+		latitude: 55.7558,
+		longitude: 37.6173,
+		timezone: 'Europe/Moscow'
+	}
 };
+
+export function getDefaultLocation(lang: Language = DEFAULT_LANGUAGE): Location {
+	return DEFAULT_LOCATIONS[lang] ?? DEFAULT_LOCATIONS.en;
+}
+
+export const DEFAULT_LOCATION: Location = DEFAULT_LOCATIONS.en;
 
 // Geolocation gives coords only — no reverse geocoding in Phase 1, so the
 // name is generic until a city is picked via search or favorites.
@@ -120,8 +139,11 @@ function locationFromCoords(latitude: number, longitude: number): Location {
 	};
 }
 
-export function createLocationStore(storage: Storage | null = defaultStorage()): LocationStore {
-	let current = $state<Location>(readLocation(storage) ?? DEFAULT_LOCATION);
+export function createLocationStore(
+	storage: Storage | null = defaultStorage(),
+	fallbackLocation: Location = DEFAULT_LOCATION
+): LocationStore {
+	let current = $state<Location>(readLocation(storage) ?? fallbackLocation);
 	let geoState = $state<GeoState>(readGeoState(storage) ?? 'idle');
 	let geoPending = $state(false);
 

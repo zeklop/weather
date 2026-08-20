@@ -102,6 +102,27 @@
 	{/if}
 
 	<div class="card group">
+		<div class="row">
+			<span class="row-label">Язык / Language</span>
+			<div class="lang-selector" role="group" aria-label="Выбор языка">
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.language === 'en'}
+					type="button"
+					onclick={() => settings.setLanguage('en')}
+				>
+					English
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.language === 'ru'}
+					type="button"
+					onclick={() => settings.setLanguage('ru')}
+				>
+					Русский
+				</button>
+			</div>
+		</div>
 		<button
 			class="row row-btn"
 			type="button"
@@ -274,6 +295,38 @@
 		display: inline-flex;
 		align-items: center;
 		gap: var(--space-1);
+	}
+
+	/* ---------- language selector ---------- */
+	.lang-selector {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		background: var(--bg-page-top);
+		padding: 2px;
+		border-radius: var(--radius-control);
+		border: 1px solid var(--divider);
+	}
+
+	.lang-btn {
+		min-height: 32px;
+		padding: 0 var(--space-3);
+		border: none;
+		border-radius: calc(var(--radius-control) - 2px);
+		background: transparent;
+		color: var(--text-secondary);
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.lang-btn.active {
+		background: var(--accent);
+		color: #fff;
+		font-weight: 600;
 	}
 
 	.chevron {

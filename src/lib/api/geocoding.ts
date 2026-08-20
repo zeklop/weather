@@ -1,9 +1,9 @@
+import { DEFAULT_LANGUAGE, type Language } from '../i18n';
 import type { Location } from '../types';
 import { ForecastApiError } from './openMeteo';
 
 const API_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const TIMEOUT_MS = 8000;
-const LANGUAGE = 'ru';
 
 type JsonObject = Record<string, unknown>;
 
@@ -69,14 +69,18 @@ export function normalizeGeoResults(raw: unknown): Location[] {
 	return locations;
 }
 
-export async function searchLocations(query: string, limit = 8): Promise<Location[]> {
+export async function searchLocations(
+	query: string,
+	limit = 8,
+	lang: Language = DEFAULT_LANGUAGE
+): Promise<Location[]> {
 	const name = query.trim();
 	if (name === '') return [];
 
 	const params = new URLSearchParams({
 		name,
 		count: String(limit),
-		language: LANGUAGE,
+		language: lang,
 		format: 'json'
 	});
 

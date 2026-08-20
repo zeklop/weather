@@ -29,9 +29,11 @@
 	import { base } from '$app/paths';
 	import { searchLocations } from '$lib/api/geocoding';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import type { Location } from '$lib/types';
 
 	const location = getLocationStore();
+	const settings = getSettingsStore();
 
 	type Status = 'idle' | 'loading' | 'results' | 'empty' | 'error';
 
@@ -108,7 +110,7 @@
 		highlight = -1;
 		const timer = setTimeout(async () => {
 			try {
-				const found = await searchLocations(q, RESULT_LIMIT);
+				const found = await searchLocations(q, RESULT_LIMIT, settings.language);
 				if (id !== seq) return;
 				results = found;
 				status = found.length === 0 ? 'empty' : 'results';

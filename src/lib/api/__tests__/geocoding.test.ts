@@ -166,21 +166,34 @@ describe('searchLocations', () => {
 		vi.useRealTimers();
 	});
 
-	it('fetches the search URL with the contract params and returns normalized locations', async () => {
+	it('fetches the search URL with default language en and returns normalized locations', async () => {
 		const fetchMock = vi.fn(async (_url: string) => jsonResponse(RAW_WITH_RESULTS));
 		vi.stubGlobal('fetch', fetchMock);
 
-		const locations = await searchLocations('Москва');
+		const locations = await searchLocations('Moscow');
 
 		expect(locations).toEqual([MOSCOW_ID, MOSCOW_US_ID]);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
 		const url = new URL(fetchMock.mock.calls[0][0] as string);
 		expect(url.origin + url.pathname).toBe('https://geocoding-api.open-meteo.com/v1/search');
-		expect(url.searchParams.get('name')).toBe('Москва');
+		expect(url.searchParams.get('name')).toBe('Moscow');
 		expect(url.searchParams.get('count')).toBe('8');
-		expect(url.searchParams.get('language')).toBe('ru');
+		expect(url.searchParams.get('language')).toBe('en');
 		expect(url.searchParams.get('format')).toBe('json');
+	});
+
+	it('supports passing a custom language param like ru', async () => {
+		const fetchMock = vi.fn(async (_url: string) => jsonResponse(RAW_WITH_RESULTS));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await searchLocations('Москва', 5, 'ru');
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const url = new URL(fetchMock.mock.calls[0][0] as string);
+		expect(url.searchParams.get('name')).toBe('Москва');
+		expect(url.searchParams.get('count')).toBe('5');
+		expect(url.searchParams.get('language')).toBe('ru');
 	});
 
 	it('respects the limit argument via count', async () => {
