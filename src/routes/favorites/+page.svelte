@@ -188,6 +188,8 @@
 <style>
 	.list {
 		padding: var(--space-2) var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.fav-row {
@@ -299,7 +301,7 @@
 		margin: 0 auto var(--space-4);
 		border-radius: 50%;
 		background: rgba(59, 130, 246, 0.1);
-		color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.state-icon svg {

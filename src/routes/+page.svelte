@@ -231,6 +231,8 @@
 	.home {
 		display: grid;
 		gap: var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	/* ---------- skeleton ---------- */
@@ -387,6 +389,8 @@
 	/* ---------- hero ---------- */
 	.hero {
 		padding: var(--space-2) 0 0;
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.hero-main {
@@ -394,6 +398,11 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-3);
+		min-width: 0;
+	}
+
+	.hero-left {
+		min-width: 0;
 	}
 
 	.hero-temp {
@@ -428,6 +437,7 @@
 		color: var(--text-secondary);
 		font-size: 14px;
 		margin-top: var(--space-4);
+		min-width: 0;
 	}
 
 	/* ---------- near-term precipitation card ---------- */
@@ -451,7 +461,7 @@
 		justify-content: center;
 		min-height: 44px;
 		margin-top: var(--space-2);
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-size: 15px;
 		font-weight: 500;
 		text-decoration: none;
@@ -460,12 +470,16 @@
 	/* ---------- hourly rail ---------- */
 	.rail {
 		padding: var(--space-3) 0;
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.rail-scroll {
 		display: flex;
 		gap: var(--space-1);
 		overflow-x: auto;
+		max-width: 100%;
+		-webkit-overflow-scrolling: touch;
 		scroll-snap-type: x proximity;
 		padding-inline: var(--space-4);
 		scrollbar-width: none;
@@ -496,7 +510,7 @@
 	}
 
 	.rail-cell.current .cell-time {
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-weight: 600;
 	}
 
@@ -507,7 +521,7 @@
 
 	.cell-precip {
 		font-size: 12px;
-		color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	/* ---------- today card ---------- */
@@ -550,6 +564,7 @@
 		gap: var(--space-3);
 		min-height: 40px;
 		border-bottom: 1px solid var(--divider);
+		min-width: 0;
 	}
 
 	.day-row:last-of-type {
@@ -558,6 +573,10 @@
 
 	.day-label {
 		font-size: 15px;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.day-high {
@@ -580,7 +599,7 @@
 		justify-content: center;
 		min-height: 44px;
 		margin-top: var(--space-1);
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-size: 15px;
 		font-weight: 500;
 		text-decoration: none;

@@ -221,6 +221,8 @@
 		min-height: 100dvh;
 		display: flex;
 		flex-direction: column;
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.container {
@@ -228,6 +230,7 @@
 		max-width: 860px;
 		margin-inline: auto;
 		padding-inline: var(--space-4);
+		min-width: 0;
 	}
 
 	.app-header {
@@ -239,6 +242,7 @@
 		-webkit-backdrop-filter: blur(16px) saturate(1.4);
 		backdrop-filter: blur(16px) saturate(1.4);
 		border-bottom: 1px solid var(--divider);
+		max-width: 100%;
 	}
 
 	.header-row {
@@ -247,6 +251,7 @@
 		justify-content: space-between;
 		gap: var(--space-2);
 		min-height: 48px;
+		min-width: 0;
 	}
 
 	.app-title {
@@ -257,6 +262,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		min-width: 0;
 	}
 
 	:global(:root) {
@@ -290,7 +296,7 @@
 	}
 
 	.icon-btn.favorited {
-		color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.icon {
@@ -303,7 +309,8 @@
 		width: 100%;
 		max-width: 860px;
 		margin-inline: auto;
-		padding: var(--space-3) var(--space-4) calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-7));
+		padding: var(--space-3) var(--space-4) calc(var(--nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px);
+		min-width: 0;
 	}
 
 	.bottom-nav {
@@ -317,11 +324,13 @@
 		-webkit-backdrop-filter: blur(16px) saturate(1.4);
 		backdrop-filter: blur(16px) saturate(1.4);
 		border-top: 1px solid var(--divider);
+		max-width: 100%;
 	}
 
 	.nav-inner {
 		display: flex;
 		height: var(--nav-height);
+		min-width: 0;
 	}
 
 	.nav-item {
@@ -336,10 +345,11 @@
 		text-decoration: none;
 		font-size: 11px;
 		line-height: 1.2;
+		min-width: 0;
 	}
 
 	.nav-item.active {
-		color: #2563eb;
+		color: var(--accent-strong);
 		font-weight: 600;
 	}
 

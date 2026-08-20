@@ -159,10 +159,14 @@
 	.settings {
 		display: grid;
 		gap: var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.group {
 		padding: var(--space-2) var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.row {
@@ -172,6 +176,7 @@
 		gap: var(--space-3);
 		min-height: 48px;
 		border-bottom: 1px solid var(--divider);
+		min-width: 0;
 	}
 
 	.row:last-child {
@@ -201,6 +206,7 @@
 		justify-content: space-between;
 		gap: var(--space-3);
 		min-height: 48px;
+		min-width: 0;
 	}
 
 	.geo-btn {
@@ -209,7 +215,7 @@
 		border: none;
 		border-radius: var(--radius-control);
 		background: none;
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-size: 15px;
 		font-weight: 500;
 	}
@@ -270,7 +276,7 @@
 
 	/* ---------- about links ---------- */
 	.row-link {
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-size: 15px;
 		font-weight: 500;
 		text-decoration: none;

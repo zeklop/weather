@@ -33,6 +33,8 @@
 		display: grid;
 		place-items: center;
 		padding-top: var(--space-7);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.state {
@@ -40,6 +42,7 @@
 		max-width: 360px;
 		padding: var(--space-7) var(--space-5);
 		text-align: center;
+		min-width: 0;
 	}
 
 	.state-icon {
@@ -50,7 +53,7 @@
 		margin: 0 auto var(--space-4);
 		border-radius: 50%;
 		background: rgba(59, 130, 246, 0.1);
-		color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.state-icon svg {

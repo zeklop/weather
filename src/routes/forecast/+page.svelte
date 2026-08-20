@@ -169,6 +169,8 @@
 	.forecast {
 		display: grid;
 		gap: var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	/* ---------- skeleton ---------- */
@@ -309,6 +311,8 @@
 	/* ---------- hourly table ---------- */
 	.hourly {
 		padding: var(--space-2) var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.hour-row {
@@ -318,6 +322,7 @@
 		gap: var(--space-2);
 		min-height: 44px;
 		border-bottom: 1px solid var(--divider);
+		min-width: 0;
 	}
 
 	.hour-row:last-child {
@@ -336,7 +341,7 @@
 	}
 
 	.hour-row.current .hour-time {
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-weight: 600;
 	}
 
@@ -347,7 +352,7 @@
 
 	.hour-precip {
 		font-size: 13px;
-		color: var(--accent);
+		color: var(--accent-strong);
 		text-align: right;
 	}
 
@@ -363,6 +368,8 @@
 	/* ---------- daily table ---------- */
 	.daily {
 		padding: var(--space-2) var(--space-4);
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	.day-row {
@@ -372,6 +379,7 @@
 		gap: var(--space-3);
 		min-height: 44px;
 		border-bottom: 1px solid var(--divider);
+		min-width: 0;
 	}
 
 	.day-row:last-child {
@@ -380,10 +388,14 @@
 
 	.day-label {
 		font-size: 15px;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.day-label.today {
-		color: var(--accent);
+		color: var(--accent-strong);
 		font-weight: 600;
 	}
 
@@ -403,7 +415,7 @@
 
 	.day-precip {
 		font-size: 13px;
-		color: var(--accent);
+		color: var(--accent-strong);
 		text-align: right;
 		min-width: 36px;
 	}
