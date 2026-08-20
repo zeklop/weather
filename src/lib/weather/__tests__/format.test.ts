@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+	formatDateShort,
 	formatDayFull,
 	formatDayShort,
 	formatHour,
+	formatRailDateBadge,
+	formatStaleTime,
 	formatTimeShort,
 	isToday
 } from '../format';
@@ -60,5 +63,46 @@ describe('isToday', () => {
 
 	it('rejects a different date', () => {
 		expect(isToday('2026-08-21', '2026-08-20T15:00')).toBe(false);
+	});
+});
+
+describe('formatDateShort', () => {
+	it('formats date as day and short month in Russian', () => {
+		expect(formatDateShort('2026-08-20')).toMatch(/^20 авг/);
+		expect(formatDateShort('2026-01-05')).toMatch(/^5 янв/);
+	});
+});
+
+describe('formatStaleTime', () => {
+	it('returns only HH:MM when payload time is today in wall time', () => {
+		expect(formatStaleTime('2026-08-20T14:00', '2026-08-20T18:30')).toBe('14:00');
+	});
+
+	it('returns date and HH:MM when payload time is not today in wall time', () => {
+		const result = formatStaleTime('2026-08-20T14:00', '2026-08-21T09:00');
+		expect(result).toMatch(/^20 авг.*, 14:00$/);
+	});
+
+	it('returns date and HH:MM when nowWallTime is null', () => {
+		const result = formatStaleTime('2026-08-20T14:00', null);
+		expect(result).toMatch(/^20 авг.*, 14:00$/);
+	});
+});
+
+describe('formatRailDateBadge', () => {
+	it('returns "Завтра" for tomorrow', () => {
+		expect(formatRailDateBadge('2026-08-21', '2026-08-20T14:00')).toBe('Завтра');
+	});
+
+	it('returns "Сегодня" for today', () => {
+		expect(formatRailDateBadge('2026-08-20', '2026-08-20T14:00')).toBe('Сегодня');
+	});
+
+	it('returns short formatted day for 2+ days ahead', () => {
+		expect(formatRailDateBadge('2026-08-22', '2026-08-20T14:00')).toBe('сб, 22');
+	});
+
+	it('falls back to formatDayShort when nowWallTime is null', () => {
+		expect(formatRailDateBadge('2026-08-21', null)).toBe('пт, 21');
 	});
 });

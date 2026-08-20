@@ -4,7 +4,13 @@
 	import { getForecastStore } from '$lib/stores/context';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
-	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
+	import {
+		formatDayShort,
+		formatHour,
+		formatRailDateBadge,
+		formatStaleTime,
+		isToday
+	} from '$lib/weather/format';
 	import {
 		formatPrecipitationPhrase,
 		getHourStartIdx,
@@ -37,6 +43,7 @@
 		payload && nowIso ? getHourStartIdx(payload.hourly.map((h) => h.time), nowIso) : 0
 	);
 	const hourStartIdx = $derived(rawHourStartIdx >= 0 ? rawHourStartIdx : 0);
+	const isExpired = $derived(rawHourStartIdx === -1);
 
 	const railHours = $derived(payload ? payload.hourly.slice(hourStartIdx, hourStartIdx + 24) : []);
 	const isCurrentHour = $derived(
@@ -60,20 +67,22 @@
 	// probability/amount data at all.
 	const precipCard = $derived.by((): string | null => {
 		if (!payload || !nowIso) return null;
-		if (rawHourStartIdx === -1) return null;
+		if (isExpired) return null;
 		const win = payload.hourly.slice(hourStartIdx + 1, hourStartIdx + 3);
 		if (win.length === 0) return null;
 		const hasData = win.some((h) => h.precipitationProbability != null || h.precipitation > 0);
 		if (!hasData) return null;
 		if (payload.current.precipitation > 0) {
 			const visual = getWeatherVisual(payload.current.weatherCode);
-			return formatPrecipitationPhrase(visual.shortLabelRu, null, true);
+			const label = payload.current.weatherCode < 51 ? 'Дождь' : visual.shortLabelRu;
+			return formatPrecipitationPhrase(label, null, true);
 		}
 		const soon = win.find((h) => (h.precipitationProbability ?? 0) >= 50 || h.precipitation > 0);
 		if (!soon) return 'Без осадков';
 		const minutes = wallMinutesBetween(nowIso, soon.time);
 		const visual = getWeatherVisual(soon.weatherCode);
-		return formatPrecipitationPhrase(visual.shortLabelRu, minutes, false);
+		const label = soon.weatherCode < 51 ? 'Дождь' : visual.shortLabelRu;
+		return formatPrecipitationPhrase(label, minutes, false);
 	});
 
 	function iconName(visual: WeatherVisual, day: boolean): string {
@@ -136,11 +145,16 @@
 			</div>
 		{/if}
 
-		{#if status === 'error' || status === 'offline'}
+		{#if isExpired}
+			<div class="banner" role="status">
+				<span>Данные устарели. Нажмите кнопку обновления, чтобы получить актуальный прогноз.</span>
+				<button class="retry-btn" type="button" onclick={() => store.refresh()}>Обновить</button>
+			</div>
+		{:else if status === 'error' || status === 'offline'}
 			<div class="banner" role="status">
 				<span>
 					{status === 'error' ? 'Не удалось обновить прогноз.' : 'Нет соединения.'}
-					Показаны данные на {formatTimeShort(payload.current.time)}.
+					Показаны данные на {formatStaleTime(payload.current.time, nowIso)}.
 				</span>
 				<button class="retry-btn" type="button" onclick={() => store.refresh()}>Повторить</button>
 			</div>
@@ -157,6 +171,7 @@
 				</div>
 				<div class="hero-icon">
 					<WeatherIcon name={iconName(heroVisual, dayNightFor(payload.current.time))} size={84} />
+					<span class="sr-only">{heroVisual.labelRu}</span>
 				</div>
 			</div>
 			<div class="hero-secondary">
@@ -172,24 +187,33 @@
 			</div>
 		{/if}
 
-		<div class="card rail">
-			<div class="rail-scroll" role="group" aria-label="Прогноз по часам">
-				{#each railHours as h, i}
-					{@const current = isCurrentHour && i === 0}
-					{@const v = current ? heroVisual : getWeatherVisual(h.weatherCode)}
-					{@const prob = current ? currentProb : h.precipitationProbability}
-					{@const day = current ? dayNightFor(payload.current.time) : dayNightFor(h.time)}
-					<div class="rail-cell" class:current>
-						<span class="cell-time">{current ? 'Сейчас' : formatHour(h.time)}</span>
-						<WeatherIcon name={iconName(v, day)} size={30} />
-						<span class="cell-temp">{formatTemp(current ? payload.current.temperature : h.temperature)}</span>
-						{#if prob != null && prob >= 10}
-							<span class="cell-precip">{prob}%</span>
+		{#if !isExpired && railHours.length > 0}
+			<div class="card rail">
+				<div class="rail-scroll" role="group" aria-label="Прогноз по часам">
+					{#each railHours as h, i}
+						{@const current = isCurrentHour && i === 0}
+						{@const v = current ? heroVisual : getWeatherVisual(h.weatherCode)}
+						{@const prob = current ? currentProb : h.precipitationProbability}
+						{@const day = current ? dayNightFor(payload.current.time) : dayNightFor(h.time)}
+						{@const isNewDay = i > 0 && h.time.slice(0, 10) !== railHours[i - 1].time.slice(0, 10)}
+						{#if isNewDay}
+							<div class="rail-date-divider" role="separator" aria-label={formatRailDateBadge(h.time.slice(0, 10), nowIso)}>
+								<span class="date-divider-badge">{formatRailDateBadge(h.time.slice(0, 10), nowIso)}</span>
+							</div>
 						{/if}
-					</div>
-				{/each}
+						<div class="rail-cell" class:current>
+							<span class="cell-time">{current ? 'Сейчас' : formatHour(h.time)}</span>
+							<WeatherIcon name={iconName(v, day)} size={30} />
+							<span class="sr-only">{v.labelRu}</span>
+							<span class="cell-temp">{formatTemp(current ? payload.current.temperature : h.temperature)}</span>
+							{#if prob != null && prob >= 10}
+								<span class="cell-precip">{prob}%<span class="sr-only"> вероятность осадков</span></span>
+							{/if}
+						</div>
+					{/each}
+				</div>
 			</div>
-		</div>
+		{/if}
 
 		{#if todayDay}
 			{@const todayVisual = getWeatherVisual(todayDay.weatherCode)}
@@ -204,7 +228,10 @@
 							<div class="today-note">Без существенных осадков</div>
 						{/if}
 					</div>
-					<WeatherIcon name={todayVisual.iconDay} size={44} />
+					<div class="today-icon">
+						<WeatherIcon name={todayVisual.iconDay} size={44} />
+						<span class="sr-only">{todayVisual.labelRu}</span>
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -215,7 +242,15 @@
 					{@const dv = getWeatherVisual(d.weatherCode)}
 					<div class="day-row">
 						<span class="day-label">{formatDayShort(d.date)}</span>
-						<WeatherIcon name={dv.iconDay} size={26} />
+						<div class="day-icon">
+							<WeatherIcon name={dv.iconDay} size={26} />
+							<span class="sr-only">{dv.labelRu}</span>
+						</div>
+						<span class="day-precip">
+							{#if d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10}
+								{d.precipitationProbabilityMax}%<span class="sr-only"> вероятность осадков</span>
+							{/if}
+						</span>
 						<span class="day-high">{formatTemp(d.temperatureMax)}</span>
 						<span class="day-low">{formatTemp(d.temperatureMin)}</span>
 					</div>
@@ -476,6 +511,29 @@
 		display: none;
 	}
 
+	.rail-date-divider {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 var(--space-2);
+		margin: var(--space-1) 0;
+		border-left: 1px dashed var(--divider);
+		border-right: 1px dashed var(--divider);
+		background: rgba(0, 0, 0, 0.02);
+		border-radius: var(--radius-control);
+	}
+
+	.date-divider-badge {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--accent-strong);
+		white-space: nowrap;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: rgba(37, 99, 235, 0.08);
+	}
+
 	.rail-cell {
 		flex: 0 0 56px;
 		display: flex;
@@ -523,6 +581,12 @@
 		gap: var(--space-3);
 	}
 
+	.today-icon {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+	}
+
 	.today-title {
 		font-size: 17px;
 		font-weight: 600;
@@ -546,7 +610,7 @@
 
 	.day-row {
 		display: grid;
-		grid-template-columns: 1fr 28px auto auto;
+		grid-template-columns: 80px 32px 1fr auto auto;
 		align-items: center;
 		gap: var(--space-3);
 		min-height: 40px;
@@ -564,6 +628,17 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.day-icon {
+		display: grid;
+		place-items: center;
+	}
+
+	.day-precip {
+		font-size: 13px;
+		color: var(--accent-strong);
+		font-weight: 500;
 	}
 
 	.day-high {

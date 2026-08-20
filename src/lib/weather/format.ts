@@ -49,6 +49,35 @@ export function formatDayFull(isoDate: string): string {
 	return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const DATE_SHORT = new Intl.DateTimeFormat('ru-RU', {
+	day: 'numeric',
+	month: 'short',
+	timeZone: 'UTC'
+});
+
+export function formatDateShort(isoDate: string): string {
+	return DATE_SHORT.format(wallDate(isoDate)).replace(/\.$/, '');
+}
+
+export function formatStaleTime(isoDateTime: string, nowWallTime: string | null): string {
+	const timeStr = formatHour(isoDateTime);
+	if (nowWallTime && isToday(isoDateTime.slice(0, 10), nowWallTime)) {
+		return timeStr;
+	}
+	return `${formatDateShort(isoDateTime.slice(0, 10))}, ${timeStr}`;
+}
+
+export function formatRailDateBadge(isoDate: string, nowWallTime: string | null): string {
+	if (!nowWallTime) return formatDayShort(isoDate);
+	const nowDay = nowWallTime.slice(0, 10);
+	if (isoDate === nowDay) return 'Сегодня';
+	const nowWall = wallDate(nowDay);
+	const targetWall = wallDate(isoDate);
+	const diffDays = Math.round((targetWall.getTime() - nowWall.getTime()) / (24 * 3600 * 1000));
+	if (diffDays === 1) return 'Завтра';
+	return formatDayShort(isoDate);
+}
+
 export function isToday(isoDate: string, nowWallTime: string): boolean {
 	return isoDate === nowWallTime.slice(0, 10);
 }
