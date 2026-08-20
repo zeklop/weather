@@ -205,7 +205,6 @@
 								id={`search-opt-${i}`}
 								onclick={() => select(loc)}
 							>
-								<!-- T20: replace placeholder pin with a proper location icon. -->
 								<svg
 									class="pin"
 									viewBox="0 0 24 24"

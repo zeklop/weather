@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { getForecastStore } from '$lib/stores/forecast.svelte';
+	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
 	import { formatMmhg, formatTemp, formatWind, hpaToMmhg } from '$lib/weather/units';
@@ -190,7 +191,7 @@
 					<div class="hero-feels">Ощущается как {formatTemp(payload.current.apparentTemperature)}</div>
 				</div>
 				<div class="hero-icon">
-					{@render weatherIcon(iconName(heroVisual, dayNightFor(payload.current.time)), 84)}
+					<WeatherIcon name={iconName(heroVisual, dayNightFor(payload.current.time))} size={84} />
 				</div>
 			</div>
 			<div class="hero-secondary">
@@ -211,7 +212,7 @@
 			<div class="rail-scroll" role="group" aria-label="Прогноз по часам">
 				<div class="rail-cell">
 					<span class="cell-time">Сейчас</span>
-					{@render weatherIcon(iconName(heroVisual, dayNightFor(payload.current.time)), 30)}
+					<WeatherIcon name={iconName(heroVisual, dayNightFor(payload.current.time))} size={30} />
 					<span class="cell-temp">{formatTemp(payload.current.temperature)}</span>
 					{#if currentProb != null && currentProb >= 10}
 						<span class="cell-precip">{currentProb}%</span>
@@ -221,7 +222,7 @@
 					{@const v = getWeatherVisual(h.weatherCode)}
 					<div class="rail-cell" class:current={isCurrentHour && i === 0}>
 						<span class="cell-time">{formatHour(h.time)}</span>
-						{@render weatherIcon(iconName(v, dayNightFor(h.time)), 30)}
+						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={30} />
 						<span class="cell-temp">{formatTemp(h.temperature)}</span>
 						{#if h.precipitationProbability != null && h.precipitationProbability >= 10}
 							<span class="cell-precip">{h.precipitationProbability}%</span>
@@ -244,7 +245,7 @@
 							<div class="today-note">Без существенных осадков</div>
 						{/if}
 					</div>
-					{@render weatherIcon(todayVisual.iconDay, 44)}
+					<WeatherIcon name={todayVisual.iconDay} size={44} />
 				</div>
 			</div>
 		{/if}
@@ -255,7 +256,7 @@
 					{@const dv = getWeatherVisual(d.weatherCode)}
 					<div class="day-row">
 						<span class="day-label">{formatDayShort(d.date)}</span>
-						{@render weatherIcon(dv.iconDay, 26)}
+						<WeatherIcon name={dv.iconDay} size={26} />
 						<span class="day-high">{formatTemp(d.temperatureMax)}</span>
 						<span class="day-low">{formatTemp(d.temperatureMin)}</span>
 					</div>
@@ -265,203 +266,6 @@
 		{/if}
 	</div>
 {/if}
-
-{#snippet sunIcon()}
-	<circle cx="12" cy="12" r="4" />
-	<path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" />
-{/snippet}
-
-{#snippet moonIcon()}
-	<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
-{/snippet}
-
-{#snippet cloudIcon()}
-	<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-{/snippet}
-
-{#snippet sunCloudIcon()}
-	<circle cx="8.5" cy="9" r="2.6" />
-	<path d="M8.5 4.5v1M4.2 9h1M5.4 5.4l.7.7" />
-	<path d="M18.5 19H10a6 6 0 1 1 5.8-7.5h1.2a3.8 3.8 0 1 1 0 7.5Z" />
-{/snippet}
-
-{#snippet moonCloudIcon()}
-	<path d="M8.5 7.5a3.5 3.5 0 0 0 5.25 5.25A5.25 5.25 0 1 1 8.5 7.5z" />
-	<path d="M18.5 19H10a6 6 0 1 1 5.8-7.5h1.2a3.8 3.8 0 1 1 0 7.5Z" />
-{/snippet}
-
-{#snippet fogIcon()}
-	<path d="M17.5 15.5H9a6.5 6.5 0 1 1 6.2-8.4h2.3a3.8 3.8 0 1 1 0 7.6Z" />
-	<path d="M8 19h8M9.5 22h5" />
-{/snippet}
-
-{#snippet rainIcon(short: boolean)}
-	{@render cloudIcon()}
-	{#if short}
-		<path d="M9 16.5v1.5m3-1.5v1.5m3-1.5v1.5" />
-	{:else}
-		<path d="M8.5 16v2.5m3.5-2.5v2.5m3.5-2.5v2.5" />
-	{/if}
-{/snippet}
-
-{#snippet snowIcon()}
-	{@render cloudIcon()}
-	<path d="M9 16.5l1.5 1.5M10.5 16.5L9 18M15 16.5l1.5 1.5M16.5 16.5L15 18" />
-{/snippet}
-
-{#snippet thunderIcon()}
-	{@render cloudIcon()}
-	<path d="M13.2 14.5 10 18h2.6l-1 3.5 3.2-3.5h-2.6l1-3.5z" />
-{/snippet}
-
-{#snippet weatherIcon(name: string, size: number)}
-	<!-- T20: replace this placeholder snippet with WeatherIcon.svelte (Meteocons). -->
-	{#if name.includes('thunder')}
-		<svg
-			class="weather-icon"
-			style="color:#8b5cf6;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render thunderIcon()}
-		</svg>
-	{:else if name.includes('fog')}
-		<svg
-			class="weather-icon"
-			style="color:#94a3b8;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render fogIcon()}
-		</svg>
-	{:else if name.includes('snow')}
-		<svg
-			class="weather-icon"
-			style="color:#60a5fa;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render snowIcon()}
-		</svg>
-	{:else if name.includes('drizzle')}
-		<svg
-			class="weather-icon"
-			style="color:#3b82f6;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render rainIcon(true)}
-		</svg>
-	{:else if name.includes('rain') || name.includes('sleet')}
-		<svg
-			class="weather-icon"
-			style="color:#3b82f6;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render rainIcon(false)}
-		</svg>
-	{:else if name.includes('partly')}
-		{#if name.includes('night')}
-			<svg
-				class="weather-icon"
-				style="color:#94a3b8;width:{size}px;height:{size}px"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.8"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				{@render moonCloudIcon()}
-			</svg>
-		{:else}
-			<svg
-				class="weather-icon"
-				style="color:#94a3b8;width:{size}px;height:{size}px"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.8"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				{@render sunCloudIcon()}
-			</svg>
-		{/if}
-	{:else if name.includes('night')}
-		<svg
-			class="weather-icon"
-			style="color:#6366f1;width:{size}px;height:{size}px"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			{@render moonIcon()}
-		</svg>
-	{:else}
-		{#if name.includes('day')}
-			<svg
-				class="weather-icon"
-				style="color:#f59e0b;width:{size}px;height:{size}px"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.8"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				{@render sunIcon()}
-			</svg>
-		{:else}
-			<svg
-				class="weather-icon"
-				style="color:#94a3b8;width:{size}px;height:{size}px"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.8"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				{@render cloudIcon()}
-			</svg>
-		{/if}
-	{/if}
-{/snippet}
 
 <style>
 	.home {

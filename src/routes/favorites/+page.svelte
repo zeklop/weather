@@ -6,6 +6,9 @@
 	import { cacheKey, createForecastCache, statusOf } from '$lib/cache/forecastCache';
 	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
+	import { getWeatherVisual } from '$lib/weather/wmo';
+	import { isDay } from '$lib/weather/dayNight';
 	import { formatTimeShort } from '$lib/weather/format';
 	import { formatTemp } from '$lib/weather/units';
 	import type { CachedForecast, Location } from '$lib/types';
@@ -81,6 +84,13 @@
 
 	const list = $derived(favorites.list.map((loc) => ({ loc, row: rows.get(loc.id) })));
 	const busy = $derived(list.some(({ row }) => row !== undefined && row.entry === null && row.fetching));
+
+	function rowIconName(entry: CachedForecast): string {
+		const v = getWeatherVisual(entry.payload.current.weatherCode);
+		const d = entry.payload.daily.find((day) => day.date === entry.payload.current.time.slice(0, 10));
+		const day = isDay(entry.payload.current.time, d?.sunrise ?? null, d?.sunset ?? null).isDay;
+		return day ? v.iconDay : v.iconNight;
+	}
 </script>
 
 <h1 class="sr-only">Избранное</h1>
@@ -122,7 +132,10 @@
 			{@const sub = subLabel(loc)}
 			<div class="fav-row">
 				<button class="fav-main" type="button" onclick={() => select(loc)}>
-					{@render rowIcon()}
+					<WeatherIcon name={row?.entry ? rowIconName(row.entry) : 'cloudy'} size={26} />
+					{#if row?.entry}
+						<span class="sr-only">{getWeatherVisual(row.entry.payload.current.weatherCode).labelRu}</span>
+					{/if}
 					<span class="fav-info">
 						<span class="fav-name">{loc.name}</span>
 						{#if sub !== ''}
@@ -168,24 +181,6 @@
 	</div>
 {/if}
 
-{#snippet rowIcon()}
-	<!-- T20: replace this placeholder with WeatherIcon.svelte (Meteocons). -->
-	<svg
-		class="fav-icon"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		stroke-width="1.8"
-		stroke-linecap="round"
-		stroke-linejoin="round"
-		aria-hidden="true"
-	>
-		<circle cx="8.5" cy="9" r="2.6" />
-		<path d="M8.5 4.5v1M4.2 9h1M5.4 5.4l.7.7" />
-		<path d="M18.5 19H10a6 6 0 1 1 5.8-7.5h1.2a3.8 3.8 0 1 1 0 7.5Z" />
-	</svg>
-{/snippet}
-
 <style>
 	.list {
 		padding: var(--space-2) var(--space-4);
@@ -218,12 +213,6 @@
 
 	.fav-main:active {
 		background: var(--divider);
-	}
-
-	.fav-icon {
-		width: 26px;
-		height: 26px;
-		color: #94a3b8;
 	}
 
 	.fav-info {
