@@ -280,6 +280,60 @@ describe('createForecastCache', () => {
 		expect(freshCache.get(cacheKey(200, 200))).not.toBeNull();
 	});
 
+	it('budget floor: evicts multiple oldest entries in a single pass when multiple exceed budget', () => {
+		const key1 = cacheKey(10, 10);
+		const key2 = cacheKey(20, 20);
+		const key3 = cacheKey(30, 30);
+		const key4 = cacheKey(40, 40);
+
+		// Each entry ~350KB
+		cache.set(key1, makeHugeEntry(100, 2200));
+		cache.set(key2, makeHugeEntry(200, 2200));
+		cache.set(key3, makeHugeEntry(300, 2200));
+		cache.set(key4, makeHugeEntry(400, 2200));
+
+		const freshCache = createForecastCache(storage);
+		// 4 entries * ~350KB = ~1.4MB > 1MB, so key1 and key2 should be evicted
+		expect(freshCache.get(key1)).toBeNull();
+		expect(freshCache.get(key2)).toBeNull();
+		expect(freshCache.get(key3)).not.toBeNull();
+		expect(freshCache.get(key4)).not.toBeNull();
+	});
+
+	it('budget floor: clears storage when a single entry exceeds CACHE_BUDGET_BYTES', () => {
+		const key = cacheKey(10, 10);
+		// 7000 hours > 1MB
+		cache.set(key, makeHugeEntry(100, 7000));
+
+		const freshCache = createForecastCache(storage);
+		expect(freshCache.get(key)).toBeNull();
+		expect(storage.getItem(STORAGE_KEY)).toBeNull();
+	});
+
+	it('budget floor: serializes at most twice during multi-entry budget pruning', () => {
+		const key1 = cacheKey(10, 10);
+		const key2 = cacheKey(20, 20);
+		const key3 = cacheKey(30, 30);
+
+		cache.set(key1, makeHugeEntry(100, 2500));
+		cache.set(key2, makeHugeEntry(200, 2500));
+
+		const stringifySpy = vi.spyOn(JSON, 'stringify');
+		stringifySpy.mockClear();
+
+		// Inserting 3rd large entry triggers eviction of oldest entries
+		cache.set(key3, makeHugeEntry(300, 2500));
+
+		// Count envelope serializations (version + entries)
+		const envelopeSerializations = stringifySpy.mock.calls.filter((call) => {
+			const arg = call[0];
+			return typeof arg === 'object' && arg !== null && 'version' in arg && 'entries' in arg;
+		});
+
+		// Must not do a while-loop of full envelope serializations (at most 2 calls: initial + post-prune)
+		expect(envelopeSerializations.length).toBeLessThanOrEqual(2);
+	});
+
 	it('returns null and self-heals on corrupt JSON', () => {
 		storage = makeMemoryStorage({ [STORAGE_KEY]: '{not json' });
 		cache = createForecastCache(storage);

@@ -117,10 +117,51 @@ export function createForecastCache(storage: Storage = localStorage): ForecastCa
 	function writePersisted(): void {
 		if (persistentDisabled) return;
 
+		if (persisted.size === 0) {
+			try {
+				storage.removeItem(STORAGE_KEY);
+			} catch {
+				/* noop */
+			}
+			return;
+		}
+
+		let payload = serialize(persisted);
+
 		// Budget floor: prune oldest-by-fetchedAt until the payload fits our own
 		// budget, or there is nothing left to evict.
-		while (serialize(persisted).length > CACHE_BUDGET_BYTES && persisted.size > 0) {
-			persisted = pruneOldest(persisted);
+		if (payload.length > CACHE_BUDGET_BYTES) {
+			const sorted = [...persisted.entries()].sort((a, b) => a[1].fetchedAt - b[1].fetchedAt);
+			let estimatedSize = payload.length;
+
+			for (const [key, entry] of sorted) {
+				if (estimatedSize <= CACHE_BUDGET_BYTES) break;
+				persisted.delete(key);
+				if (persisted.size === 0) {
+					try {
+						storage.removeItem(STORAGE_KEY);
+					} catch {
+						/* noop */
+					}
+					return;
+				}
+				const entryLength = JSON.stringify(key).length + 1 + JSON.stringify(entry).length + 1;
+				estimatedSize -= entryLength;
+			}
+
+			payload = serialize(persisted);
+			while (payload.length > CACHE_BUDGET_BYTES && persisted.size > 0) {
+				persisted = pruneOldest(persisted);
+				if (persisted.size === 0) {
+					try {
+						storage.removeItem(STORAGE_KEY);
+					} catch {
+						/* noop */
+					}
+					return;
+				}
+				payload = serialize(persisted);
+			}
 		}
 
 		while (true) {
@@ -132,7 +173,6 @@ export function createForecastCache(storage: Storage = localStorage): ForecastCa
 				}
 				return;
 			}
-			const payload = serialize(persisted);
 			try {
 				storage.setItem(STORAGE_KEY, payload);
 				return;
@@ -147,8 +187,14 @@ export function createForecastCache(storage: Storage = localStorage): ForecastCa
 				if (persisted.size === 0) {
 					persistentDisabled = true;
 					warnOnce('forecast cache: persistent layer disabled');
+					try {
+						storage.removeItem(STORAGE_KEY);
+					} catch {
+						/* noop */
+					}
 					return;
 				}
+				payload = serialize(persisted);
 			}
 		}
 	}

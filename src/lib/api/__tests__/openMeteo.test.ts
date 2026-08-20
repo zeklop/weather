@@ -226,10 +226,22 @@ describe('getForecast', () => {
 		expect(url.searchParams.get('current')).toContain('temperature_2m');
 		expect(url.searchParams.get('current')).toContain('wind_gusts_10m');
 		expect(url.searchParams.get('current')).toContain('relative_humidity_2m');
-		expect(url.searchParams.get('hourly')).toContain('precipitation_probability');
-		expect(url.searchParams.get('hourly')).toContain('wind_gusts_10m');
-		expect(url.searchParams.get('daily')).toContain('temperature_2m_max');
-		expect(url.searchParams.get('daily')).toContain('wind_direction_10m_dominant');
+		expect(url.searchParams.get('hourly')).toBe(
+			'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m'
+		);
+		for (const field of [
+			'cloud_cover',
+			'visibility',
+			'pressure_msl',
+			'relative_humidity_2m',
+			'wind_gusts_10m'
+		]) {
+			expect(url.searchParams.get('hourly')).not.toContain(field);
+		}
+		expect(url.searchParams.get('daily')).toBe(
+			'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max'
+		);
+		expect(url.searchParams.get('daily')).not.toContain('wind_direction_10m_dominant');
 		for (const field of ['rain', 'showers', 'snowfall', 'cloud_cover', 'surface_pressure']) {
 			expect(url.searchParams.get('current')).not.toContain(field);
 		}
