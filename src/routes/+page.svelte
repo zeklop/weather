@@ -6,6 +6,7 @@
 	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import WeatherAlertCard from '$lib/components/WeatherAlertCard.svelte';
+	import PrecipitationChart from '$lib/components/PrecipitationChart.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import {
 		formatDayShort,
@@ -23,6 +24,7 @@
 	import { formatMmhg, formatTemp, formatWind, hpaToMmhg } from '$lib/weather/units';
 	import { windDirectionLabel } from '$lib/weather/direction';
 	import { isDay } from '$lib/weather/dayNight';
+	import { hasMeaningfulPrecipitation } from '$lib/weather/chart';
 	import type { DayForecast } from '$lib/types';
 
 	const store = getForecastStore();
@@ -57,6 +59,7 @@
 		!!(payload && nowIso && payload.hourly[hourStartIdx]?.time.slice(0, 13) === nowIso.slice(0, 13))
 	);
 	const currentProb = $derived(payload ? (payload.hourly[hourStartIdx]?.precipitationProbability ?? null) : null);
+	const hasPrecipData = $derived(hasMeaningfulPrecipitation(railHours));
 
 	const todayDay = $derived(payload && nowIso
 		? (payload.daily.find((d) => isToday(d.date, nowIso)) ?? payload.daily[0])
@@ -196,10 +199,13 @@
 		</div>
 
 		{#if precipCard}
-			<div class="card precip">
-				<div class="precip-title">{t('home.next2Hours', lang)}</div>
+			<a class="card precip" href={base + '/map/'}>
+				<div class="precip-header">
+					<div class="precip-title">{t('home.next2Hours', lang)}</div>
+					<div class="precip-map-link">{t('home.showOnMap', lang)}</div>
+				</div>
 				<div class="precip-text">{precipCard}</div>
-			</div>
+			</a>
 		{/if}
 
 		{#if !isExpired && railHours.length > 0}
@@ -228,6 +234,10 @@
 					{/each}
 				</div>
 			</div>
+		{/if}
+
+		{#if !isExpired && railHours.length > 0 && hasPrecipData}
+			<PrecipitationChart hours={railHours} {lang} />
 		{/if}
 
 		{#if todayDay}
@@ -519,11 +529,33 @@
 	/* ---------- near-term precipitation card ---------- */
 	.precip {
 		padding: var(--space-4);
+		text-decoration: none;
+		color: inherit;
+		display: block;
+		transition: opacity 0.15s ease, transform 0.15s ease;
+	}
+
+	.precip:active {
+		transform: scale(0.99);
+		opacity: 0.9;
+	}
+
+	.precip-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
 	}
 
 	.precip-title {
 		font-size: 15px;
 		font-weight: 600;
+	}
+
+	.precip-map-link {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--accent);
 	}
 
 	.precip-text {

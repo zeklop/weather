@@ -57,6 +57,11 @@ export interface Translations {
 		sunrise: string;
 		sunset: string;
 		forecast10Days: string;
+		precipitationChartTitle: string;
+		precipitationVolume: string;
+		precipitationProbability: string;
+		noPrecipitation24h: string;
+		showOnMap: string;
 	};
 	forecast: {
 		title: string;
@@ -132,6 +137,19 @@ export interface Translations {
 		comingSoonTitle: string;
 		comingSoonText: string;
 		toHome: string;
+		radar: string;
+		standard: string;
+		play: string;
+		pause: string;
+		recenter: string;
+		zoomIn: string;
+		zoomOut: string;
+		loadingRadar: string;
+		radarUnavailable: string;
+		past: string;
+		now: string;
+		forecast: string;
+		layers: string;
 	};
 	search: {
 		placeholder: string;
@@ -243,7 +261,12 @@ export const translations: Record<Language, Translations> = {
 			noSignificantPrecip: 'No significant precipitation',
 			sunrise: 'Sunrise: {time}',
 			sunset: 'Sunset: {time}',
-			forecast10Days: '10-day forecast →'
+			forecast10Days: '10-day forecast →',
+			precipitationChartTitle: '24-Hour Precipitation',
+			precipitationVolume: 'Amount',
+			precipitationProbability: 'Probability',
+			noPrecipitation24h: 'No precipitation expected in the next 24 hours',
+			showOnMap: 'Show on map →'
 		},
 		forecast: {
 			title: 'Forecast',
@@ -316,9 +339,22 @@ export const translations: Record<Language, Translations> = {
 		map: {
 			title: 'Map',
 			description: 'Interactive weather map',
-			comingSoonTitle: 'Map — coming in next version',
+			comingSoonTitle: 'Map coming in v2',
 			comingSoonText: 'Interactive weather and precipitation map will appear in version 2 of the application.',
-			toHome: 'To home page'
+			toHome: 'Back to Home',
+			radar: 'Radar',
+			standard: 'Standard',
+			play: 'Play',
+			pause: 'Pause',
+			recenter: 'My City',
+			zoomIn: 'Zoom in',
+			zoomOut: 'Zoom out',
+			loadingRadar: 'Loading radar...',
+			radarUnavailable: 'Radar data currently unavailable',
+			past: 'Past',
+			now: 'Now',
+			forecast: 'Forecast',
+			layers: 'Layers'
 		},
 		search: {
 			placeholder: 'City, region or country',
@@ -428,7 +464,12 @@ export const translations: Record<Language, Translations> = {
 			noSignificantPrecip: 'Без существенных осадков',
 			sunrise: 'Восход: {time}',
 			sunset: 'Закат: {time}',
-			forecast10Days: 'Прогноз на 10 дней →'
+			forecast10Days: 'Прогноз на 10 дней →',
+			precipitationChartTitle: 'Осадки на 24 часа',
+			precipitationVolume: 'Количество',
+			precipitationProbability: 'Вероятность',
+			noPrecipitation24h: 'Без осадков в ближайшие 24 часа',
+			showOnMap: 'Показать на карте →'
 		},
 		forecast: {
 			title: 'Прогноз',
@@ -500,10 +541,23 @@ export const translations: Record<Language, Translations> = {
 		},
 		map: {
 			title: 'Карта',
-			description: 'Интерактивная карта погоды',
+			description: 'Интерактивная карта погоды и осадков',
 			comingSoonTitle: 'Карта — в следующей версии',
 			comingSoonText: 'Интерактивная карта погоды и осадков появится во второй версии приложения.',
-			toHome: 'На главную'
+			toHome: 'На главную',
+			radar: 'Осадки',
+			standard: 'Схема',
+			play: 'Воспроизвести',
+			pause: 'Пауза',
+			recenter: 'Мой город',
+			zoomIn: 'Увеличить',
+			zoomOut: 'Уменьшить',
+			loadingRadar: 'Загрузка данных радара...',
+			radarUnavailable: 'Данные радара временно недоступны',
+			past: 'Прошедшие',
+			now: 'Сейчас',
+			forecast: 'Прогноз',
+			layers: 'Слои'
 		},
 		search: {
 			placeholder: 'Город, регион или страна',
