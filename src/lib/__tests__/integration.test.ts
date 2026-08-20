@@ -99,6 +99,8 @@ describe('Integration Test Suite', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.setSystemTime(NOW);
+		// Hermetic default: background reverse geocoding must not hit the network
+		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network disabled in tests')));
 	});
 
 	afterEach(() => {

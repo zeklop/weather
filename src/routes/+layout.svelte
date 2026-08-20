@@ -24,19 +24,13 @@
 	let { children } = $props();
 
 	let mounted = $state(false);
-	let updateSWFn = $state<((reloadPage?: boolean) => Promise<void>) | null>(null);
-	let showUpdatePrompt = $state(false);
 
 	onMount(async () => {
 		mounted = true;
 		if (pwaInfo) {
+			// registerType: 'autoUpdate' — new SW activates silently without user action
 			const { registerSW } = await import('virtual:pwa-register');
-			updateSWFn = registerSW({
-				immediate: true,
-				onNeedRefresh() {
-					showUpdatePrompt = true;
-				}
-			});
+			registerSW({ immediate: true });
 		}
 	});
 
@@ -200,15 +194,6 @@
 </svelte:head>
 
 <div class="shell">
-	{#if showUpdatePrompt}
-		<div class="update-toast" role="status">
-			<span class="update-toast-text">{t('pwa.updateAvailable', lang)}</span>
-			<button class="update-toast-btn" type="button" onclick={() => updateSWFn?.(true)}>
-				{t('pwa.updateBtn', lang)}
-			</button>
-		</div>
-	{/if}
-
 	<header class="app-header">
 		<div class="container">
 			<div class="header-row">
@@ -286,7 +271,7 @@
 
 	<PwaInstallBanner onopenmodal={openPwaInstallModal} />
 
-	<main class="app-main">
+	<main class="app-main" class:map-page={routeId === '/map'}>
 		{@render children()}
 	</main>
 
@@ -390,51 +375,6 @@
 		min-width: 0;
 	}
 
-	.update-toast {
-		position: fixed;
-		top: max(env(safe-area-inset-top, 0px), 12px);
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 100;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		width: calc(100% - 32px);
-		max-width: 480px;
-		padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
-		background: var(--bg-card);
-		border: 1px solid var(--divider);
-		border-radius: var(--radius-control);
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-		-webkit-backdrop-filter: blur(16px) saturate(1.4);
-		backdrop-filter: blur(16px) saturate(1.4);
-		font-size: 14px;
-		font-weight: 500;
-	}
-
-	.update-toast-text {
-		flex: 1;
-		min-width: 0;
-		color: var(--text-primary);
-	}
-
-	.update-toast-btn {
-		flex-shrink: 0;
-		min-height: 36px;
-		padding: 0 var(--space-3);
-		border: none;
-		border-radius: calc(var(--radius-control) - 4px);
-		background: var(--accent-strong);
-		color: #fff;
-		font-size: 13px;
-		font-weight: 600;
-	}
-
-	.update-toast-btn:active {
-		opacity: 0.85;
-	}
-
 	.container {
 		width: 100%;
 		max-width: 860px;
@@ -531,6 +471,14 @@
 		margin-inline: auto;
 		padding: var(--space-3) var(--space-4) calc(var(--nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px);
 		min-width: 0;
+	}
+
+	/* Map route: fill the space between header and bottom nav exactly,
+	   so the radar player never hides behind the nav (notch/home-indicator phones). */
+	.app-main.map-page {
+		display: flex;
+		flex-direction: column;
+		padding-bottom: calc(var(--nav-height, 64px) + env(safe-area-inset-bottom, 0px));
 	}
 
 	.bottom-nav {

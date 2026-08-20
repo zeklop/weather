@@ -9,6 +9,11 @@ export interface RadarTileOptions {
 	snow?: boolean; // 1 or 0
 }
 
+// RainViewer serves radar tiles only for zoom levels 0–7; higher zooms return
+// a "Zoom Level Not Supported" placeholder image. 512 px tiles at z0–7 give
+// one extra level of detail when overzoomed by the map.
+export const RADAR_MAX_ZOOM = 7;
+
 /**
  * Builds standard RainViewer raster tile URL template for MapLibre / Leaflet.
  */
@@ -17,7 +22,7 @@ export function getRadarTileUrl(
 	path: string,
 	options: RadarTileOptions = {}
 ): string {
-	const size = options.size ?? 256;
+	const size = options.size ?? 512;
 	const color = options.colorScheme ?? 2;
 	const smooth = options.smooth === false ? 0 : 1;
 	const snow = options.snow === false ? 0 : 1;

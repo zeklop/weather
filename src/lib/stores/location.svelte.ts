@@ -1,4 +1,5 @@
 import { geoId } from '../api/geocoding';
+import { reverseGeocode } from '../api/reverseGeocode';
 import { DEFAULT_LANGUAGE, type Language } from '../i18n';
 import type { Location } from '../types';
 
@@ -36,8 +37,8 @@ export function getDefaultLocation(lang: Language = DEFAULT_LANGUAGE): Location 
 
 export const DEFAULT_LOCATION: Location = DEFAULT_LOCATIONS.en;
 
-// Geolocation gives coords only — no reverse geocoding in Phase 1, so the
-// name is generic until a city is picked via search or favorites.
+// Geolocation gives coords only; the generic name is shown until best-effort
+// reverse geocoding resolves a city name (or forever, if it fails).
 const GEOLOCATION_NAME = 'Моё местоположение';
 
 export type LocationStore = {
@@ -45,7 +46,7 @@ export type LocationStore = {
 	readonly geoState: GeoState;
 	readonly geoPending: boolean;
 	setLocation(location: Location): void;
-	requestGeolocation(): void;
+	requestGeolocation(lang?: Language): void;
 	syncPermission(): Promise<void>;
 };
 
@@ -166,7 +167,7 @@ export function createLocationStore(
 		persist(GEO_STATE_KEY, next);
 	}
 
-	function requestGeolocation(): void {
+	function requestGeolocation(lang: Language = DEFAULT_LANGUAGE): void {
 		if (geoPending) return;
 		if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
 			setGeoState('unavailable');
@@ -177,7 +178,12 @@ export function createLocationStore(
 			(position) => {
 				geoPending = false;
 				setGeoState('idle');
-				setLocation(locationFromCoords(position.coords.latitude, position.coords.longitude));
+				const located = locationFromCoords(
+					position.coords.latitude,
+					position.coords.longitude
+				);
+				setLocation(located);
+				void refineName(located, lang);
 			},
 			(error) => {
 				geoPending = false;
@@ -186,6 +192,15 @@ export function createLocationStore(
 			},
 			{ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
 		);
+	}
+
+	// Replace the generic geolocation label with a resolved city name once
+	// reverse geocoding answers; skipped if the user moved on meanwhile.
+	async function refineName(located: Location, lang: Language): Promise<void> {
+		const resolved = await reverseGeocode(located.latitude, located.longitude, lang);
+		if (!resolved) return;
+		if (current.id !== located.id) return;
+		setLocation({ ...located, ...resolved });
 	}
 
 	async function syncPermission(): Promise<void> {

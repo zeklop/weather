@@ -127,7 +127,16 @@ Since the app is 100% static, no Node.js runtime is required on the server. A pr
 2. Tap the **Share** button (box with an upward arrow in the bottom toolbar).
 3. Scroll down and select **«Add to Home Screen»**.
 4. Tap **«Add»** in the top right corner.
-5. Launch the app from your Home Screen for a native standalone fullscreen experience with offline support.
+5. Launch the app from your Home Screen — the icon is named **«Weather»** — for a native standalone fullscreen experience with offline support. On iOS 16.4+ the icon also shows a live temperature badge (enable in Settings).
+
+---
+
+## Installing PWA on Android (Chrome)
+
+1. Open **`https://zeklop.github.io/weather/`** in Chrome on Android.
+2. Tap the menu button (**⋮**) and choose **“Add to Home screen”** / **“Install app”** — or tap the install banner that appears at the top of the app.
+3. Confirm the installation.
+4. Launch the app from your Home Screen — the icon is named **«Weather»** — for a native standalone fullscreen experience with offline support and a live temperature badge on the icon (badge rendering also depends on your launcher).
 
 ---
 
@@ -137,5 +146,6 @@ Since the app is 100% static, no Node.js runtime is required on the server. A pr
 - **Weather icons:** [Meteocons](https://github.com/basmilius/meteocons) by Bas Milius — MIT License.
 - **Interactive maps:** [MapLibre GL JS](https://maplibre.org/) — BSD 3-Clause; basemap tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [CARTO](https://carto.com/).
 - **Radar precipitation data:** [RainViewer](https://www.rainviewer.com/).
+- **Reverse geocoding (GPS → city name):** [BigDataCloud](https://www.bigdatacloud.com/) free client-side API.
 
 Detailed license information is available in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

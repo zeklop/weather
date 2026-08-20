@@ -201,7 +201,7 @@
 					type="button"
 					disabled={location.geoPending || location.geoState === 'unavailable'}
 					aria-busy={location.geoPending}
-					onclick={() => location.requestGeolocation()}
+					onclick={() => location.requestGeolocation(lang)}
 				>
 					{#if location.geoPending}
 						<span class="spinner geo-spinner" aria-hidden="true"></span>
@@ -221,7 +221,7 @@
 							class="retry-btn"
 							type="button"
 							disabled={location.geoPending}
-							onclick={() => location.requestGeolocation()}
+							onclick={() => location.requestGeolocation(lang)}
 						>
 							{t('home.retry', lang)}
 						</button>

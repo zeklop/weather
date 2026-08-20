@@ -1,4 +1,5 @@
 import type { BasemapTheme } from './types';
+import { RADAR_MAX_ZOOM } from './rainviewer';
 
 export const CARTO_LIGHT_TILES = [
 	'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
@@ -112,9 +113,12 @@ export function updateRadarLayer(
 		map.addSource(RADAR_SOURCE_ID, {
 			type: 'raster',
 			tiles: [tileUrl],
-			tileSize: 256,
+			// 512 px tiles; RainViewer data ends at RADAR_MAX_ZOOM — beyond it
+			// MapLibre overzooms the top-level tiles instead of requesting
+			// placeholder images.
+			tileSize: 512,
 			minzoom: 0,
-			maxzoom: 19
+			maxzoom: RADAR_MAX_ZOOM
 		});
 
 		map.addLayer({

@@ -175,8 +175,6 @@ export interface Translations {
 		toHome: string;
 	};
 	pwa: {
-		updateAvailable: string;
-		updateBtn: string;
 		installTitle: string;
 		installBtn: string;
 		bannerAndroidText: string;
@@ -377,8 +375,6 @@ export const translations: Record<Language, Translations> = {
 			toHome: 'To home page'
 		},
 		pwa: {
-			updateAvailable: 'New version available',
-			updateBtn: 'Update',
 			installTitle: 'Install Weather App',
 			installBtn: 'Install',
 			bannerAndroidText: 'Install Weather for quick access and offline mode',
@@ -577,8 +573,6 @@ export const translations: Record<Language, Translations> = {
 			toHome: 'На главную'
 		},
 		pwa: {
-			updateAvailable: 'Доступна новая версия приложения',
-			updateBtn: 'Обновить',
 			installTitle: 'Установить приложение Погода',
 			installBtn: 'Установить',
 			bannerAndroidText: 'Установите приложение Погода для быстрого доступа и оффлайн-режима',

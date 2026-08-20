@@ -481,7 +481,7 @@
 	.map-view {
 		position: relative;
 		width: 100%;
-		height: calc(100vh - 120px);
+		flex: 1;
 		min-height: 480px;
 		max-height: 860px;
 		border-radius: var(--radius-card);

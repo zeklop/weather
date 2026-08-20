@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
 			SvelteKitPWA({
 				base: urlBase,
 				scope: urlBase,
-				registerType: 'prompt',
+				registerType: 'autoUpdate',
 				injectRegister: null,
 
 				// Mirror +layout.ts trailingSlash='always' so prerendered page URLs get a trailing '/'

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Location } from '../../types';
 import {
 	DEFAULT_LOCATION,
@@ -25,6 +25,11 @@ const SPB: Location = {
 function makeGeolocation(getCurrentPosition: unknown): void {
 	vi.stubGlobal('navigator', { geolocation: { getCurrentPosition } });
 }
+
+// Keep tests hermetic: reverse geocoding must never hit the real network.
+beforeEach(() => {
+	vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network disabled in tests')));
+});
 
 afterEach(() => {
 	vi.unstubAllGlobals();
@@ -139,6 +144,77 @@ describe('createLocationStore', () => {
 		expect(store.current.timezone).not.toBe('');
 		expect(store.geoState).toBe('idle');
 		expect(store.geoPending).toBe(false);
+	});
+
+	it('resolves the city name via best-effort reverse geocoding after GPS success', async () => {
+		makeGeolocation((success: (position: unknown) => void) =>
+			success({ coords: { latitude: 59.9386, longitude: 30.3141 } })
+		);
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				city: 'Saint Petersburg',
+				principalSubdivision: 'Saint Petersburg',
+				countryName: 'Russia',
+				countryCode: 'RU'
+			})
+		});
+		vi.stubGlobal('fetch', fetchMock);
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation('en');
+
+		// Generic label shown immediately, refined once reverse geocoding answers
+		expect(store.current.name).toBe('Моё местоположение');
+		await vi.waitFor(() => expect(store.current.name).toBe('Saint Petersburg'));
+		expect(store.current.admin1).toBe('Saint Petersburg');
+		expect(store.current.country).toBe('Russia');
+		expect(store.current.countryCode).toBe('RU');
+		expect(fetchMock.mock.calls[0]?.[0]).toContain('localityLanguage=en');
+	});
+
+	it('keeps the generic geolocation name when reverse geocoding fails', async () => {
+		makeGeolocation((success: (position: unknown) => void) =>
+			success({ coords: { latitude: 59.9386, longitude: 30.3141 } })
+		);
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation('ru');
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(store.current.name).toBe('Моё местоположение');
+	});
+
+	it('does not overwrite a city the user selected while reverse geocoding was in flight', async () => {
+		let successCb: (position: unknown) => void = () => {};
+		makeGeolocation((success: (position: unknown) => void) => {
+			successCb = success;
+		});
+		let resolveGeocode: (value: unknown) => void = () => {};
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockImplementation(
+				() =>
+					new Promise((resolve) => {
+						resolveGeocode = resolve;
+					})
+			)
+		);
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation('en');
+		successCb({ coords: { latitude: 59.9386, longitude: 30.3141 } });
+		// User picks a city before the reverse geocode answers
+		store.setLocation(SPB);
+		resolveGeocode({
+			ok: true,
+			json: async () => ({ city: 'Saint Petersburg' })
+		});
+		// Flush the resolve -> json -> refine microtask chain
+		for (let i = 0; i < 6; i++) await Promise.resolve();
+
+		expect(store.current).toEqual(SPB);
 	});
 
 	it('mitigates GPS jitter by producing identical IDs for nearby coordinates', () => {

@@ -173,7 +173,7 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
 
 1. **Delivered scope:** bilingual i18n (English default, Russian switch), System/Light/Dark themes, dynamic temperature favicon + app badging, platform-specific PWA install banners (Android `beforeinstallprompt`, iOS illustrated instructions modal), weather alerts engine (in-app cards + Web Notifications, quiet hours, 3 h rate limiting, persistent dismissal), interactive radar map (`/map/` with MapLibre GL JS + RainViewer frames), 24 h precipitation chart, expanded metrics card (UV index, humidity, dew point, air quality), and Settings author/version footer.
 
-2. **New external endpoints:** `air-quality-api.open-meteo.com` (best-effort AQI, failure renders «—»), `api.rainviewer.com` + `tilecache.rainviewer.com` (radar frames and tiles, 8 s timeout, failures degrade to the basemap), and basemap tiles from `tile.openstreetmap.org` / `basemaps.cartocdn.com`. All are allow-listed in the CSP (see below) and mirrored in `Caddyfile`.
+2. **New external endpoints:** `air-quality-api.open-meteo.com` (best-effort AQI, failure renders «—»), `api.rainviewer.com` + `tilecache.rainviewer.com` (radar frames and tiles, 8 s timeout, failures degrade to the basemap), basemap tiles from `tile.openstreetmap.org` / `basemaps.cartocdn.com`, and `api.bigdatacloud.net` (best-effort reverse geocoding of GPS coordinates into a city name, 4 s timeout, failure keeps the generic «My location» label). All are allow-listed in the CSP (see below) and mirrored in `Caddyfile`.
 
 3. **Deferred from Phase 2 spec:** Periodic Background Sync / Web Push delivery contract (requires server-side push infra, e.g. a Cloudflare Worker); the alerts engine runs on app visits instead. The `/map/` coming-soon placeholder copy was removed with the real map.
 
@@ -185,6 +185,6 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - Identify the last good commit: `git log --oneline main`.
    - Point `main` at it: `git revert <bad-commit>` (preferred, keeps history) or `git reset --hard <good-commit> && git push --force-with-lease` (only when the bad commit is the tip).
    - Push to `main`; the `Deploy to GitHub Pages` workflow rebuilds and republishes automatically (or trigger it via `Actions → workflow_dispatch`).
-   - Verify `https://zeklop.github.io/weather/` after deploy; force a Service Worker update via the in-app "Update" toast (`registerType: 'prompt'`).
+   - Verify `https://zeklop.github.io/weather/` after deploy; with `registerType: 'autoUpdate'` the new Service Worker activates automatically on the next app visit (no manual confirmation required).
 
 6. **Post-review hardening (pre-deploy pass):** notification icon/badge paths now respect `paths.base`; RainViewer fetch has an 8 s timeout; the map page guards against late `maplibre-gl` import after unmount and starts the radar animation on the newest past frame; Open-Meteo forecast fetch retries once on 429/5xx; alert dismissals persist across reloads (`weather:alerts:dismissed`, capped at 50 ids); install banner dismissal key renamed to `weather:installBannerDismissedUntil` per spec.

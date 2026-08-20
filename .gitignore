@@ -28,3 +28,6 @@ docs/superpowers/
 
 # Generated icon comparison artifacts
 static/icons-comparison.*
+
+# Agent tooling cache
+.qoder/

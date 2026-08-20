@@ -12,11 +12,11 @@ describe('rainviewer map layer utilities', () => {
 	});
 
 	describe('getRadarTileUrl', () => {
-		it('constructs standard RainViewer raster tile URL template', () => {
+		it('constructs standard RainViewer raster tile URL template (default 512px tiles)', () => {
 			const host = 'https://tilecache.rainviewer.com';
 			const path = '/v2/radar/1787248200';
 			const url = getRadarTileUrl(host, path);
-			expect(url).toBe('https://tilecache.rainviewer.com/v2/radar/1787248200/256/{z}/{x}/{y}/2/1_1.png');
+			expect(url).toBe('https://tilecache.rainviewer.com/v2/radar/1787248200/512/{z}/{x}/{y}/2/1_1.png');
 		});
 
 		it('supports 512px tile size and color options', () => {
