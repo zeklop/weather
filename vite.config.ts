@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
 	const urlBase = `${kitBase}/`;
 
 	return {
+		define: {
+			__BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10))
+		},
 		plugins: [
 			sveltekit({
 				compilerOptions: {

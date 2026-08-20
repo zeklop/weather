@@ -264,6 +264,69 @@ describe('createLocationStore', () => {
 
 		expect(getCurrentPosition).toHaveBeenCalledTimes(2);
 	});
+
+	describe('syncPermission', () => {
+		it('resets denied state to idle when permission is granted', async () => {
+			const query = vi.fn().mockResolvedValue({ state: 'granted' });
+			vi.stubGlobal('navigator', {
+				permissions: { query }
+			});
+			const storage = makeMemoryStorage({ [GEO_STATE_KEY]: 'denied' });
+			const store = createLocationStore(storage);
+			expect(store.geoState).toBe('denied');
+
+			await store.syncPermission();
+
+			expect(query).toHaveBeenCalledWith({ name: 'geolocation' });
+			expect(store.geoState).toBe('idle');
+			expect(storage.getItem(GEO_STATE_KEY)).toBe('idle');
+		});
+
+		it('resets denied state to idle when permission is prompt', async () => {
+			const query = vi.fn().mockResolvedValue({ state: 'prompt' });
+			vi.stubGlobal('navigator', {
+				permissions: { query }
+			});
+			const storage = makeMemoryStorage({ [GEO_STATE_KEY]: 'denied' });
+			const store = createLocationStore(storage);
+
+			await store.syncPermission();
+
+			expect(store.geoState).toBe('idle');
+		});
+
+		it('sets geoState to denied when permission is denied', async () => {
+			const query = vi.fn().mockResolvedValue({ state: 'denied' });
+			vi.stubGlobal('navigator', {
+				permissions: { query }
+			});
+			const storage = makeMemoryStorage();
+			const store = createLocationStore(storage);
+			expect(store.geoState).toBe('idle');
+
+			await store.syncPermission();
+
+			expect(store.geoState).toBe('denied');
+			expect(storage.getItem(GEO_STATE_KEY)).toBe('denied');
+		});
+
+		it('handles missing permissions API gracefully', async () => {
+			vi.stubGlobal('navigator', {});
+			const store = createLocationStore(makeMemoryStorage());
+
+			await expect(store.syncPermission()).resolves.toBeUndefined();
+		});
+
+		it('handles permission query rejection gracefully', async () => {
+			const query = vi.fn().mockRejectedValue(new Error('Permission query error'));
+			vi.stubGlobal('navigator', {
+				permissions: { query }
+			});
+			const store = createLocationStore(makeMemoryStorage());
+
+			await expect(store.syncPermission()).resolves.toBeUndefined();
+		});
+	});
 });
 
 describe('getLocationStore', () => {

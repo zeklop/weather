@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { openSearch } from '$lib/components/SearchSheet.svelte';
 	import { getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
@@ -36,6 +37,7 @@
 
 	onMount(() => {
 		mounted = true;
+		void location.syncPermission();
 		// The hint only ever renders inside Settings, so «unless opened from
 		// Settings» is satisfied by construction; the persisted flag enforces
 		// «no more than once».
@@ -74,10 +76,12 @@
 	const geoNote = $derived(
 		mounted
 			? location.geoState === 'denied'
-				? 'Доступ запрещён. Если вы включили доступ в настройках браузера, нажмите кнопку ещё раз.'
+				? 'Доступ к геолокации запрещён в браузере. Разрешите доступ в настройках и повторите попытку.'
 				: location.geoState === 'unavailable'
 					? 'Геолокация недоступна на этом устройстве'
-					: null
+					: location.geoState === 'error'
+						? 'Не удалось определить местоположение (превышено время ожидания).'
+						: null
 			: null
 	);
 </script>
@@ -98,28 +102,63 @@
 	{/if}
 
 	<div class="card group">
-		<div class="row">
-			<span class="row-label">Тема</span>
-			<span class="row-value">Светлая</span>
-		</div>
-		<div class="row">
+		<button
+			class="row row-btn"
+			type="button"
+			onclick={openSearch}
+			aria-label="Изменить город, текущий: {cityName}"
+		>
 			<span class="row-label">Город</span>
-			<span class="row-value">{cityName}</span>
-		</div>
+			<span class="row-value row-value-action">
+				{cityName}
+				<svg
+					class="chevron"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</span>
+		</button>
 		<div class="row geo-row">
 			<div class="geo-line">
 				<span class="row-label">Геолокация</span>
 				<button
 					class="geo-btn"
 					type="button"
-					disabled={location.geoState === 'unavailable'}
+					disabled={location.geoPending || location.geoState === 'unavailable'}
+					aria-busy={location.geoPending}
 					onclick={() => location.requestGeolocation()}
 				>
-					Определить автоматически
+					{#if location.geoPending}
+						<span class="spinner geo-spinner" aria-hidden="true"></span>
+						<span>Определяем…</span>
+					{:else if location.geoState === 'error' || location.geoState === 'denied'}
+						Повторить попытку
+					{:else}
+						Определить автоматически
+					{/if}
 				</button>
 			</div>
 			{#if geoNote}
-				<div class="row-note">{geoNote}</div>
+				<div class="row-note" role="status">
+					<span>{geoNote}</span>
+					{#if location.geoState === 'denied' || location.geoState === 'error'}
+						<button
+							class="retry-btn"
+							type="button"
+							disabled={location.geoPending}
+							onclick={() => location.requestGeolocation()}
+						>
+							Повторить
+						</button>
+					{/if}
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -127,10 +166,22 @@
 	<div class="card group">
 		<div class="row">
 			<span class="row-label">Последнее обновление</span>
-			<span class="row-value">{lastUpdatedText}</span>
+			{#if mounted && settings.lastUpdated !== null}
+				<time class="row-value" datetime={new Date(settings.lastUpdated).toISOString()}>
+					{lastUpdatedText}
+				</time>
+			{:else}
+				<span class="row-value">—</span>
+			{/if}
 		</div>
 		<div class="row">
-			<button class="refresh-btn" type="button" disabled={refreshing} onclick={refresh}>
+			<button
+				class="refresh-btn"
+				type="button"
+				disabled={refreshing}
+				aria-busy={refreshing}
+				onclick={refresh}
+			>
 				{#if refreshing}
 					<span class="spinner" aria-hidden="true"></span>
 				{/if}
@@ -156,6 +207,10 @@
 			>
 				Meteocons
 			</a>
+		</div>
+		<div class="row">
+			<span class="row-label">Версия</span>
+			<span class="row-value">{__BUILD_DATE__}</span>
 		</div>
 	</div>
 </div>
@@ -198,6 +253,36 @@
 		text-align: right;
 	}
 
+	.row-btn {
+		width: 100%;
+		border: none;
+		border-bottom: 1px solid var(--divider);
+		background: none;
+		padding: 0;
+		color: inherit;
+		font-family: inherit;
+		cursor: pointer;
+		text-align: left;
+		border-radius: 0;
+	}
+
+	.row-btn:active {
+		background: var(--divider);
+	}
+
+	.row-value-action {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.chevron {
+		width: 16px;
+		height: 16px;
+		color: var(--text-secondary);
+		flex-shrink: 0;
+	}
+
 	/* ---------- geolocation row ---------- */
 	.geo-row {
 		flex-direction: column;
@@ -223,6 +308,11 @@
 		color: var(--accent-strong);
 		font-size: 15px;
 		font-weight: 500;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		cursor: pointer;
 	}
 
 	.geo-btn:active {
@@ -232,12 +322,44 @@
 	.geo-btn:disabled {
 		color: var(--text-secondary);
 		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.geo-spinner {
+		border-color: rgba(0, 122, 255, 0.25);
+		border-top-color: var(--accent-strong);
 	}
 
 	.row-note {
 		font-size: 13px;
 		color: var(--text-secondary);
 		padding-bottom: var(--space-2);
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--space-1);
+	}
+
+	.retry-btn {
+		display: inline-block;
+		margin-left: var(--space-1);
+		padding: 2px var(--space-2);
+		border: 1px solid var(--accent);
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--accent-strong);
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.retry-btn:active {
+		background: var(--divider);
+	}
+
+	.retry-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	/* ---------- refresh ---------- */

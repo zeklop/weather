@@ -27,6 +27,7 @@ export type LocationStore = {
 	readonly geoPending: boolean;
 	setLocation(location: Location): void;
 	requestGeolocation(): void;
+	syncPermission(): Promise<void>;
 };
 
 function defaultStorage(): Storage | null {
@@ -165,6 +166,26 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 		);
 	}
 
+	async function syncPermission(): Promise<void> {
+		if (typeof navigator === 'undefined' || !navigator.permissions?.query) return;
+		try {
+			const status = await navigator.permissions.query({ name: 'geolocation' });
+			const update = (): void => {
+				if (status.state === 'granted' || status.state === 'prompt') {
+					if (geoState === 'denied') {
+						setGeoState('idle');
+					}
+				} else if (status.state === 'denied') {
+					setGeoState('denied');
+				}
+			};
+			update();
+			status.onchange = update;
+		} catch {
+			/* permissions query not supported or failed */
+		}
+	}
+
 	return {
 		get current() {
 			return current;
@@ -176,7 +197,8 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 			return geoPending;
 		},
 		setLocation,
-		requestGeolocation
+		requestGeolocation,
+		syncPermission
 	};
 }
 

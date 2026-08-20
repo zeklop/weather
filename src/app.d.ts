@@ -2,9 +2,8 @@
 /// <reference types="vite-plugin-pwa/svelte" />
 /// <reference types="vite-plugin-pwa/vanillajs" />
 
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
 declare global {
+	const __BUILD_DATE__: string;
 	namespace App {
 		// interface Error {}
 		// interface Locals {}
