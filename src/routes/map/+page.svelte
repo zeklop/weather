@@ -2,6 +2,11 @@
 	import { base } from '$app/paths';
 </script>
 
+<svelte:head>
+	<title>Карта | Погода</title>
+	<meta name="description" content="Интерактивная карта погоды" />
+</svelte:head>
+
 <h1 class="sr-only">Карта</h1>
 
 <div class="map">

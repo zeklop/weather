@@ -97,6 +97,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Избранное | Погода</title>
+	<meta name="description" content="Сохранённые города и быстрый доступ к прогнозу" />
+</svelte:head>
+
 <h1 class="sr-only">Избранное</h1>
 
 {#if !mounted}

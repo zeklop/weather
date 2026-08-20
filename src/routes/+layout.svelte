@@ -13,11 +13,19 @@
 
 	let { children } = $props();
 
+	let mounted = $state(false);
+	let updateSWFn = $state<((reloadPage?: boolean) => Promise<void>) | null>(null);
+	let showUpdatePrompt = $state(false);
+
 	onMount(async () => {
+		mounted = true;
 		if (pwaInfo) {
 			const { registerSW } = await import('virtual:pwa-register');
-			registerSW({
-				immediate: true
+			updateSWFn = registerSW({
+				immediate: true,
+				onNeedRefresh() {
+					showUpdatePrompt = true;
+				}
 			});
 		}
 	});
@@ -73,16 +81,27 @@
 </script>
 
 <svelte:head>
+	<title>Погода — {mounted ? location.current.name : '...'}</title>
+	<meta name="description" content="Легкое погодное PWA-приложение" />
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="{base}/icons/app/icon-180.png" />
 	<link rel="manifest" href="{base}/manifest.webmanifest" />
 </svelte:head>
 
 <div class="shell">
+	{#if showUpdatePrompt}
+		<div class="update-toast" role="status">
+			<span class="update-toast-text">Доступна новая версия приложения</span>
+			<button class="update-toast-btn" type="button" onclick={() => updateSWFn?.(true)}>
+				Обновить
+			</button>
+		</div>
+	{/if}
+
 	<header class="app-header">
 		<div class="container">
 			<div class="header-row">
-				<div class="app-title">{location.current.name}</div>
+				<div class="app-title">{mounted ? location.current.name : '…'}</div>
 				<div class="header-actions">
 					<button class="icon-btn" type="button" aria-label="Найти город" onclick={openSearch}>
 						<svg
@@ -223,6 +242,51 @@
 		flex-direction: column;
 		max-width: 100%;
 		min-width: 0;
+	}
+
+	.update-toast {
+		position: fixed;
+		top: max(env(safe-area-inset-top, 0px), 12px);
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		width: calc(100% - 32px);
+		max-width: 480px;
+		padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+		background: var(--bg-card);
+		border: 1px solid var(--divider);
+		border-radius: var(--radius-control);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+		-webkit-backdrop-filter: blur(16px) saturate(1.4);
+		backdrop-filter: blur(16px) saturate(1.4);
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.update-toast-text {
+		flex: 1;
+		min-width: 0;
+		color: var(--text-primary);
+	}
+
+	.update-toast-btn {
+		flex-shrink: 0;
+		min-height: 36px;
+		padding: 0 var(--space-3);
+		border: none;
+		border-radius: calc(var(--radius-control) - 4px);
+		background: var(--accent-strong);
+		color: #fff;
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.update-toast-btn:active {
+		opacity: 0.85;
 	}
 
 	.container {

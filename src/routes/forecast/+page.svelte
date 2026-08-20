@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getForecastStore } from '$lib/stores/context';
+	import { getLocationStore } from '$lib/stores/location.svelte';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
@@ -9,6 +10,7 @@
 	import { isDay } from '$lib/weather/dayNight';
 	import type { DayForecast, HourForecast } from '$lib/types';
 
+	const location = getLocationStore();
 	const store = getForecastStore();
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
@@ -69,6 +71,11 @@
 		return d.precipitationSum > 0 ? 'rain' : null;
 	}
 </script>
+
+<svelte:head>
+	<title>Прогноз — {location.current.name} | Погода</title>
+	<meta name="description" content="Подробный почасовой и 10-дневный прогноз погоды" />
+</svelte:head>
 
 {#if !payload && (status === 'idle' || status === 'loading')}
 	<div class="forecast" aria-busy="true">

@@ -82,6 +82,11 @@
 	);
 </script>
 
+<svelte:head>
+	<title>Настройки | Погода</title>
+	<meta name="description" content="Настройки приложения Погода" />
+</svelte:head>
+
 <h1 class="sr-only">Настройки</h1>
 
 <div class="settings">

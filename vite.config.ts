@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
 						filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 				},
 
-				adapter: adapter(),
+				adapter: adapter({ fallback: '404.html' }),
 
 				// kit.paths.base is expressible directly in the vite plugin options:
 				// split_config in @sveltejs/kit/src/core/config routes kit-namespace
