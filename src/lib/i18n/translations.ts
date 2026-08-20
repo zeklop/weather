@@ -7,6 +7,7 @@ export const SUPPORTED_LANGUAGES: readonly Language[] = ['en', 'ru'] as const;
 export interface Translations {
 	app: {
 		name: string;
+		title: string;
 		description: string;
 	};
 	nav: {
@@ -32,6 +33,7 @@ export interface Translations {
 		offlineTitle: string;
 		offlineText: string;
 		retry: string;
+		update: string;
 		staleBanner: string;
 		staleShown: string;
 		staleFailedShown: string;
@@ -50,6 +52,7 @@ export interface Translations {
 		tomorrow: string;
 		daytime: string;
 		nighttime: string;
+		dayAndNight: string;
 		noSignificantPrecip: string;
 		sunrise: string;
 		sunset: string;
@@ -57,6 +60,7 @@ export interface Translations {
 	};
 	forecast: {
 		title: string;
+		description: string;
 		hourlyTitle: string;
 		dailyTitle: string;
 		time: string;
@@ -68,14 +72,18 @@ export interface Translations {
 		minMax: string;
 		nightMin: string;
 		dayMax: string;
+		precipProbabilityTitle: string;
+		noPrecipitation: string;
 	};
 	favorites: {
 		title: string;
+		description: string;
 		loading: string;
 		emptyTitle: string;
 		emptyText: string;
 		emptyHint: string;
 		addCity: string;
+		addCityAction: string;
 		localTime: string;
 		noNetwork: string;
 		failedToLoad: string;
@@ -83,7 +91,9 @@ export interface Translations {
 	};
 	settings: {
 		title: string;
+		description: string;
 		language: string;
+		languageSelectAria: string;
 		city: string;
 		changeCityAria: string;
 		geolocation: string;
@@ -103,6 +113,13 @@ export interface Translations {
 		installAppHint: string;
 		author: string;
 		badgeLabel: string;
+	};
+	map: {
+		title: string;
+		description: string;
+		comingSoonTitle: string;
+		comingSoonText: string;
+		toHome: string;
 	};
 	search: {
 		placeholder: string;
@@ -155,6 +172,7 @@ export const translations: Record<Language, Translations> = {
 	en: {
 		app: {
 			name: 'Weather',
+			title: 'Weather',
 			description: 'Lightweight weather PWA'
 		},
 		nav: {
@@ -180,6 +198,7 @@ export const translations: Record<Language, Translations> = {
 			offlineTitle: 'No connection',
 			offlineText: 'Check your internet connection and try again.',
 			retry: 'Retry',
+			update: 'Update',
 			staleBanner: 'Data is outdated. Refresh to get the latest forecast.',
 			staleShown: 'Showing data for {time}.',
 			staleFailedShown: 'Failed to update forecast. Showing data for {time}.',
@@ -198,6 +217,7 @@ export const translations: Record<Language, Translations> = {
 			tomorrow: 'Tomorrow',
 			daytime: 'Day {temp}',
 			nighttime: 'Night {temp}',
+			dayAndNight: 'Day {day} · Night {night}',
 			noSignificantPrecip: 'No significant precipitation',
 			sunrise: 'Sunrise: {time}',
 			sunset: 'Sunset: {time}',
@@ -205,6 +225,7 @@ export const translations: Record<Language, Translations> = {
 		},
 		forecast: {
 			title: 'Forecast',
+			description: 'Detailed hourly and 10-day weather forecast',
 			hourlyTitle: 'Hourly forecast',
 			dailyTitle: '10-day forecast',
 			time: 'Time',
@@ -215,15 +236,19 @@ export const translations: Record<Language, Translations> = {
 			day: 'Day',
 			minMax: 'Min / Max',
 			nightMin: 'Night min',
-			dayMax: 'Day max'
+			dayMax: 'Day max',
+			precipProbabilityTitle: 'Precipitation probability: {prob}',
+			noPrecipitation: 'No precipitation'
 		},
 		favorites: {
 			title: 'Favorites',
+			description: 'Saved locations and quick access to forecast',
 			loading: 'Loading favorites',
 			emptyTitle: 'No saved locations',
 			emptyText: 'Add locations for quick access to weather forecasts.',
 			emptyHint: 'No saved locations yet. Tap below to find and add a city',
 			addCity: 'Add city',
+			addCityAction: '+ Add city',
 			localTime: 'local {time}',
 			noNetwork: 'No network',
 			failedToLoad: 'Failed to load',
@@ -231,7 +256,9 @@ export const translations: Record<Language, Translations> = {
 		},
 		settings: {
 			title: 'Settings',
+			description: 'Weather app settings',
 			language: 'Language',
+			languageSelectAria: 'Select language',
 			city: 'City',
 			changeCityAria: 'Change city, current: {city}',
 			geolocation: 'Geolocation',
@@ -251,6 +278,13 @@ export const translations: Record<Language, Translations> = {
 			installAppHint: 'To add to Home Screen: Share → Add to Home Screen',
 			author: 'Created by Zeklop',
 			badgeLabel: 'Show temperature on app icon'
+		},
+		map: {
+			title: 'Map',
+			description: 'Interactive weather map',
+			comingSoonTitle: 'Map — coming in next version',
+			comingSoonText: 'Interactive weather and precipitation map will appear in version 2 of the application.',
+			toHome: 'To home page'
 		},
 		search: {
 			placeholder: 'City, region or country',
@@ -301,6 +335,7 @@ export const translations: Record<Language, Translations> = {
 	ru: {
 		app: {
 			name: 'Погода',
+			title: 'Погода',
 			description: 'Легкое погодное PWA-приложение'
 		},
 		nav: {
@@ -326,6 +361,7 @@ export const translations: Record<Language, Translations> = {
 			offlineTitle: 'Нет соединения',
 			offlineText: 'Проверьте подключение к интернету и попробуйте ещё раз.',
 			retry: 'Повторить',
+			update: 'Обновить',
 			staleBanner: 'Данные устарели. Нажмите кнопку обновления, чтобы получить актуальный прогноз.',
 			staleShown: 'Показаны данные на {time}.',
 			staleFailedShown: 'Не удалось обновить прогноз. Показаны данные на {time}.',
@@ -344,6 +380,7 @@ export const translations: Record<Language, Translations> = {
 			tomorrow: 'Завтра',
 			daytime: 'Днём {temp}',
 			nighttime: 'Ночью {temp}',
+			dayAndNight: 'Днём {day} · Ночью {night}',
 			noSignificantPrecip: 'Без существенных осадков',
 			sunrise: 'Восход: {time}',
 			sunset: 'Закат: {time}',
@@ -351,6 +388,7 @@ export const translations: Record<Language, Translations> = {
 		},
 		forecast: {
 			title: 'Прогноз',
+			description: 'Подробный почасовой и 10-дневный прогноз погоды',
 			hourlyTitle: 'Почасовой прогноз',
 			dailyTitle: 'Прогноз на 10 дней',
 			time: 'Время',
@@ -361,15 +399,19 @@ export const translations: Record<Language, Translations> = {
 			day: 'День',
 			minMax: 'Мин / Макс',
 			nightMin: 'Ночной минимум',
-			dayMax: 'Дневной максимум'
+			dayMax: 'Дневной максимум',
+			precipProbabilityTitle: 'Вероятность осадков: {prob}',
+			noPrecipitation: 'Без осадков'
 		},
 		favorites: {
 			title: 'Избранное',
+			description: 'Сохранённые города и быстрый доступ к прогнозу',
 			loading: 'Загрузка избранного',
 			emptyTitle: 'Нет избранных городов',
 			emptyText: 'Добавьте города для быстрого доступа к прогнозу погоды.',
 			emptyHint: 'У вас пока нет сохранённых городов. Нажмите кнопку ниже, чтобы найти и добавить город',
 			addCity: 'Добавить город',
+			addCityAction: '+ Добавить город',
 			localTime: 'местное {time}',
 			noNetwork: 'Нет сети',
 			failedToLoad: 'Не удалось загрузить',
@@ -377,7 +419,9 @@ export const translations: Record<Language, Translations> = {
 		},
 		settings: {
 			title: 'Настройки',
+			description: 'Настройки приложения Погода',
 			language: 'Язык',
+			languageSelectAria: 'Выбор языка',
 			city: 'Город',
 			changeCityAria: 'Изменить город, текущий: {city}',
 			geolocation: 'Геолокация',
@@ -397,6 +441,13 @@ export const translations: Record<Language, Translations> = {
 			installAppHint: 'Чтобы добавить на экран «Домой»: Поделиться → На экран «Домой»',
 			author: 'Автор: Zeklop',
 			badgeLabel: 'Температура на иконке приложения'
+		},
+		map: {
+			title: 'Карта',
+			description: 'Интерактивная карта погоды',
+			comingSoonTitle: 'Карта — в следующей версии',
+			comingSoonText: 'Интерактивная карта погоды и осадков появится во второй версии приложения.',
+			toHome: 'На главную'
 		},
 		search: {
 			placeholder: 'Город, регион или страна',

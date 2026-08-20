@@ -7,8 +7,10 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { getFavoritesStore, isUnnamedLocation } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { createForecastStore } from '$lib/stores/forecast.svelte';
 	import { setForecastStore } from '$lib/stores/context';
+	import { t } from '$lib/i18n';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 
 	let { children } = $props();
@@ -32,6 +34,8 @@
 
 	const location = getLocationStore();
 	const favorites = getFavoritesStore();
+	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 	const forecastStore = createForecastStore({ locationStore: location });
 	setForecastStore(forecastStore);
 
@@ -66,14 +70,14 @@
 
 	const routeId = $derived(page.route.id);
 
-	const navItems = [
-		{ href: '/', route: '/', label: 'Главная', icon: 'home' },
-		{ href: '/forecast/', route: '/forecast', label: 'Прогноз', icon: 'forecast' },
-		{ href: '/favorites/', route: '/favorites', label: 'Избранное', icon: 'star' },
-		{ href: '/settings/', route: '/settings', label: 'Настройки', icon: 'settings' }
-	];
+	const navItems = $derived([
+		{ href: '/', route: '/', label: t('nav.home', lang), icon: 'home' },
+		{ href: '/forecast/', route: '/forecast', label: t('nav.forecast', lang), icon: 'forecast' },
+		{ href: '/favorites/', route: '/favorites', label: t('nav.favorites', lang), icon: 'star' },
+		{ href: '/settings/', route: '/settings', label: t('nav.settings', lang), icon: 'settings' }
+	]);
 
-	function isActive(item: (typeof navItems)[number]): boolean {
+	function isActive(item: { href: string; route: string; label: string; icon: string }): boolean {
 		return routeId === item.route;
 	}
 
@@ -84,19 +88,19 @@
 	);
 	const starLabel = $derived(
 		isUnnamed
-			? 'Недоступно для безымянного местоположения'
+			? t('header.unnamedLocationStar', lang)
 			: isFavorite
-				? 'Убрать из избранного'
-				: 'Добавить в избранное'
+				? t('header.removeFromFavorites', lang)
+				: t('header.addToFavorites', lang)
 	);
 	const starTitle = $derived(
-		isUnnamed ? 'Нельзя добавить текущее местоположение без названия в избранное' : undefined
+		isUnnamed ? t('header.unnamedLocationTitle', lang) : undefined
 	);
 </script>
 
 <svelte:head>
-	<title>Погода — {mounted ? location.current.name : '...'}</title>
-	<meta name="description" content="Легкое погодное PWA-приложение" />
+	<title>{t('app.title', lang)} — {mounted ? location.current.name : '...'}</title>
+	<meta name="description" content={t('app.description', lang)} />
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="{base}/icons/app/icon-180.png" />
 	<link rel="manifest" href="{base}/manifest.webmanifest" />
@@ -105,9 +109,9 @@
 <div class="shell">
 	{#if showUpdatePrompt}
 		<div class="update-toast" role="status">
-			<span class="update-toast-text">Доступна новая версия приложения</span>
+			<span class="update-toast-text">{t('pwa.updateAvailable', lang)}</span>
 			<button class="update-toast-btn" type="button" onclick={() => updateSWFn?.(true)}>
-				Обновить
+				{t('pwa.updateBtn', lang)}
 			</button>
 		</div>
 	{/if}
@@ -120,7 +124,7 @@
 					<button
 						class="icon-btn"
 						type="button"
-						aria-label="Обновить прогноз"
+						aria-label={t('header.refresh', lang)}
 						aria-busy={isRefreshing}
 						onclick={() => forecastStore.refresh()}
 					>
@@ -141,7 +145,7 @@
 							<path d="M21 21v-5h-5" />
 						</svg>
 					</button>
-					<button class="icon-btn" type="button" aria-label="Найти город" onclick={openSearch}>
+					<button class="icon-btn" type="button" aria-label={t('header.search', lang)} onclick={openSearch}>
 						<svg
 							class="icon"
 							viewBox="0 0 24 24"
@@ -194,7 +198,7 @@
 	<SearchSheet />
 </div>
 
-<nav class="bottom-nav" aria-label="Основная навигация">
+<nav class="bottom-nav" aria-label={t('nav.ariaLabel', lang)}>
 	<div class="container nav-inner">
 		{#each navItems as item}
 			<a

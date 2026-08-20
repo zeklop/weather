@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import {
@@ -19,6 +21,8 @@
 
 	const location = getLocationStore();
 	const store = getForecastStore();
+	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
 	const refreshing = $derived(store.refreshing);
@@ -73,8 +77,8 @@
 </script>
 
 <svelte:head>
-	<title>Прогноз — {location.current.name} | Погода</title>
-	<meta name="description" content="Подробный почасовой и 10-дневный прогноз погоды" />
+	<title>{t('forecast.title', lang)} — {location.current.name} | {t('app.title', lang)}</title>
+	<meta name="description" content={t('forecast.description', lang)} />
 </svelte:head>
 
 {#if !payload && (status === 'idle' || status === 'loading')}
@@ -97,16 +101,16 @@
 				</div>
 			{/each}
 		</div>
-		<span class="sr-only">Загрузка прогноза</span>
+		<span class="sr-only">{t('home.loading', lang)}</span>
 	</div>
 {:else if !payload && (status === 'error' || status === 'offline')}
 	<div class="forecast">
 		<div class="card state">
-			<div class="state-title">{status === 'error' ? 'Не удалось обновить прогноз' : 'Нет соединения'}</div>
+			<div class="state-title">{status === 'error' ? t('home.errorTitle', lang) : t('home.offlineTitle', lang)}</div>
 			{#if status === 'offline'}
-				<div class="state-text">Проверьте подключение к интернету и попробуйте ещё раз.</div>
+				<div class="state-text">{t('home.offlineText', lang)}</div>
 			{/if}
-			<button class="retry-btn" type="button" onclick={() => store.refresh()}>Повторить</button>
+			<button class="retry-btn" type="button" onclick={() => store.refresh()}>{t('home.retry', lang)}</button>
 		</div>
 	</div>
 {:else if payload}
@@ -114,102 +118,103 @@
 		{#if refreshing}
 			<div class="refresh-note">
 				<span class="spinner" aria-hidden="true"></span>
-				Обновляем…
+				{t('home.refreshing', lang)}
 			</div>
 		{/if}
 
 		{#if status === 'error' || status === 'offline'}
 			<div class="banner" role="status">
 				<span>
-					{status === 'error' ? 'Не удалось обновить прогноз.' : 'Нет соединения.'}
-					Показаны данные на {formatTimeShort(payload.current.time)}.
+					{status === 'error'
+						? t('home.staleFailedShown', lang, { time: formatTimeShort(payload.current.time) })
+						: t('home.staleOfflineShown', lang, { time: formatTimeShort(payload.current.time) })}
 				</span>
-				<button class="retry-btn" type="button" onclick={() => store.refresh()}>Повторить</button>
+				<button class="retry-btn" type="button" onclick={() => store.refresh()}>{t('home.retry', lang)}</button>
 			</div>
 		{/if}
 
-		<h1 class="sr-only">Прогноз</h1>
+		<h1 class="sr-only">{t('forecast.title', lang)}</h1>
 
-		<h2 class="section-title">Почасовой прогноз</h2>
+		<h2 class="section-title">{t('forecast.hourlyTitle', lang)}</h2>
 		<div class="card hourly">
 			<div class="hour-header" aria-hidden="true">
-				<span class="col-time">Время</span>
-				<span class="col-icon">Погода</span>
-				<span class="col-temp">Темп</span>
-				<span class="col-precip">Осадки</span>
-				<span class="col-wind">Ветер</span>
+				<span class="col-time">{t('forecast.time', lang)}</span>
+				<span class="col-icon">{t('forecast.weather', lang)}</span>
+				<span class="col-temp">{t('forecast.temp', lang)}</span>
+				<span class="col-precip">{t('forecast.precip', lang)}</span>
+				<span class="col-wind">{t('forecast.wind', lang)}</span>
 			</div>
 			{#each hourRows as h, i}
-				{@const v = getWeatherVisual(h.weatherCode)}
+				{@const v = getWeatherVisual(h.weatherCode, lang)}
 				{@const p = hourPrecip(h)}
 				{@const showDayHeader = i === 0 || h.time.slice(0, 10) !== hourRows[i - 1]?.time.slice(0, 10)}
 				{#if showDayHeader}
 					<div class="day-divider" role="heading" aria-level="3">
-						<span>{formatDayHeader(h.time.slice(0, 10), nowIso)}</span>
+						<span>{formatDayHeader(h.time.slice(0, 10), nowIso, lang)}</span>
 					</div>
 				{/if}
 				<div class="hour-row" class:current={isCurrentHour && i === 0}>
-					<span class="hour-time">{isCurrentHour && i === 0 ? 'Сейчас' : formatHour(h.time)}</span>
+					<span class="hour-time">{isCurrentHour && i === 0 ? t('home.now', lang) : formatHour(h.time)}</span>
 					<div class="hour-icon">
 						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={24} />
-						<span class="sr-only">{v.shortLabelRu}</span>
+						<span class="sr-only">{v.shortLabel}</span>
 					</div>
 					<span class="hour-temp">{formatTemp(h.temperature)}</span>
-					<span class="hour-precip" class:empty={p === null} title={p ? `Вероятность осадков: ${p}` : 'Без осадков'}>
+					<span class="hour-precip" class:empty={p === null} title={p ? t('forecast.precipProbabilityTitle', lang, { prob: p }) : t('forecast.noPrecipitation', lang)}>
 						{#if p}
-							{p}<span class="sr-only"> вероятность осадков</span>
+							{p}<span class="sr-only"> {t('home.precipProbability', lang)}</span>
 						{:else}
-							<span class="sr-only">Без осадков</span>
+							<span class="sr-only">{t('forecast.noPrecipitation', lang)}</span>
 							<span aria-hidden="true">–</span>
 						{/if}
 					</span>
-					<span class="hour-wind">{formatWind(h.windSpeed)}</span>
+					<span class="hour-wind">{formatWind(h.windSpeed, lang)}</span>
 				</div>
 			{/each}
 		</div>
 
-		<h2 class="section-title">Прогноз на 10 дней</h2>
+		<h2 class="section-title">{t('forecast.dailyTitle', lang)}</h2>
 		<div class="card daily">
 			<div class="daily-header" aria-hidden="true">
-				<span class="col-day">День</span>
-				<span class="col-icon">Погода</span>
-				<span class="col-precip">Осадки</span>
-				<span class="col-temps">Мин / Макс</span>
+				<span class="col-day">{t('forecast.day', lang)}</span>
+				<span class="col-icon">{t('forecast.weather', lang)}</span>
+				<span class="col-precip">{t('forecast.precip', lang)}</span>
+				<span class="col-temps">{t('forecast.minMax', lang)}</span>
 			</div>
 			{#each dailyRows as d}
-				{@const dv = getWeatherVisual(d.weatherCode)}
+				{@const dv = getWeatherVisual(d.weatherCode, lang)}
 				{@const today = !!nowIso && isToday(d.date, nowIso)}
 				{@const hasProb = d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10}
 				{@const hasMm = d.precipitationSum > 0}
 				<div class="day-row">
-					<span class="day-label" class:today title={today ? 'Сегодня' : formatDayAndDate(d.date)}>
-						{today ? `Сегодня, ${formatDateShort(d.date)}` : formatDayAndDate(d.date)}
+					<span class="day-label" class:today title={today ? t('home.today', lang) : formatDayAndDate(d.date, lang)}>
+						{today ? `${t('home.today', lang)}, ${formatDateShort(d.date, lang)}` : formatDayAndDate(d.date, lang)}
 					</span>
 					<div class="day-icon">
 						<WeatherIcon name={iconName(dv, dayIsDay(d))} size={26} />
-						<span class="sr-only">{dv.shortLabelRu}</span>
+						<span class="sr-only">{dv.shortLabel}</span>
 					</div>
 					<div class="day-precip">
 						{#if hasProb || hasMm}
 							<div class="day-precip-box">
 								{#if hasProb}
-									<span class="precip-prob">{d.precipitationProbabilityMax}%<span class="sr-only"> вероятность осадков</span></span>
+									<span class="precip-prob">{d.precipitationProbabilityMax}%<span class="sr-only"> {t('home.precipProbability', lang)}</span></span>
 								{/if}
 								{#if hasMm}
-									<span class="precip-mm">{formatPrecipMm(d.precipitationSum)}</span>
+									<span class="precip-mm">{formatPrecipMm(d.precipitationSum, lang)}</span>
 								{/if}
 							</div>
 						{:else}
-							<span class="day-precip-empty" title="Без осадков">
-								<span class="sr-only">Без осадков</span>
+							<span class="day-precip-empty" title={t('forecast.noPrecipitation', lang)}>
+								<span class="sr-only">{t('forecast.noPrecipitation', lang)}</span>
 								<span aria-hidden="true">–</span>
 							</span>
 						{/if}
 					</div>
 					<div class="day-temps">
-						<span class="day-low" title="Ночной минимум">{formatTemp(d.temperatureMin)}</span>
+						<span class="day-low" title={t('forecast.nightMin', lang)}>{formatTemp(d.temperatureMin)}</span>
 						<span class="day-sep" aria-hidden="true">/</span>
-						<span class="day-high" title="Дневной максимум">{formatTemp(d.temperatureMax)}</span>
+						<span class="day-high" title={t('forecast.dayMax', lang)}>{formatTemp(d.temperatureMax)}</span>
 					</div>
 				</div>
 			{/each}

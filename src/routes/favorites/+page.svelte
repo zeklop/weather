@@ -9,6 +9,7 @@
 	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual } from '$lib/weather/wmo';
 	import { isDay } from '$lib/weather/dayNight';
@@ -19,6 +20,7 @@
 	const favorites = getFavoritesStore();
 	const location = getLocationStore();
 	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 
 	// A fresh cache instance over the shared localStorage layer — the same key
 	// the forecast store uses, so favorites share (and warm) its entries.
@@ -181,11 +183,11 @@
 </script>
 
 <svelte:head>
-	<title>Избранное | Погода</title>
-	<meta name="description" content="Сохранённые города и быстрый доступ к прогнозу" />
+	<title>{t('favorites.title', lang)} | {t('app.title', lang)}</title>
+	<meta name="description" content={t('favorites.description', lang)} />
 </svelte:head>
 
-<h1 class="sr-only">Избранное</h1>
+<h1 class="sr-only">{t('favorites.title', lang)}</h1>
 
 {#if !mounted}
 	<div class="card list" aria-busy="true">
@@ -196,7 +198,7 @@
 				<div class="sk sk-line w30"></div>
 			</div>
 		{/each}
-		<span class="sr-only">Загрузка избранного</span>
+		<span class="sr-only">{t('favorites.loading', lang)}</span>
 	</div>
 {:else if list.length === 0}
 	<div class="card state">
@@ -214,21 +216,21 @@
 				/>
 			</svg>
 		</div>
-		<div class="state-title">Нет избранных городов</div>
-		<div class="state-text">Добавьте города для быстрого доступа к прогнозу погоды.</div>
-		<button class="primary-btn" type="button" onclick={openSearch}>Добавить город</button>
+		<div class="state-title">{t('favorites.emptyTitle', lang)}</div>
+		<div class="state-text">{t('favorites.emptyText', lang)}</div>
+		<button class="primary-btn" type="button" onclick={openSearch}>{t('favorites.addCity', lang)}</button>
 	</div>
 {:else}
 	<div class="card list" aria-busy={busy}>
 		{#each list as { loc, row }}
 			{@const sub = subLabel(loc)}
-			{@const visual = row?.entry ? getWeatherVisual(row.entry.payload.current.weatherCode) : null}
+			{@const visual = row?.entry ? getWeatherVisual(row.entry.payload.current.weatherCode, lang) : null}
 			<div class="fav-row">
 				<button class="fav-main" type="button" onclick={() => select(loc)}>
 					<div class="fav-icon">
 						<WeatherIcon name={row?.entry ? rowIconName(row.entry) : 'cloudy'} size={28} />
 						{#if visual}
-							<span class="sr-only">{visual.labelRu}</span>
+							<span class="sr-only">{visual.label}</span>
 						{/if}
 					</div>
 					<span class="fav-info">
@@ -237,17 +239,17 @@
 							<span class="fav-sub">{sub}</span>
 						{/if}
 						{#if visual}
-							<span class="fav-condition">{visual.labelRu}</span>
+							<span class="fav-condition">{visual.label}</span>
 						{/if}
 					</span>
 					<span class="fav-side">
 						{#if row?.entry}
 							<span class="fav-temp">{formatTemp(row.entry.payload.current.temperature)}</span>
-							<span class="fav-time">{formatFavoriteLocalTime(row.entry.payload.current.time)}</span>
+							<span class="fav-time">{formatFavoriteLocalTime(row.entry.payload.current.time, lang)}</span>
 						{:else if row?.offline}
-							<span class="fav-error">Нет сети</span>
+							<span class="fav-error">{t('favorites.noNetwork', lang)}</span>
 						{:else if row?.failed}
-							<span class="fav-error">Не удалось загрузить</span>
+							<span class="fav-error">{t('favorites.failedToLoad', lang)}</span>
 						{:else}
 							<span class="sk sk-temp"></span>
 						{/if}
@@ -256,7 +258,7 @@
 				<button
 					class="fav-remove"
 					type="button"
-					aria-label={`Удалить ${loc.name} из избранного`}
+					aria-label={t('favorites.removeFavorite', lang, { name: loc.name })}
 					onclick={() => remove(loc.id)}
 				>
 					<svg
@@ -295,7 +297,7 @@
 				<line x1="12" y1="5" x2="12" y2="19" />
 				<line x1="5" y1="12" x2="19" y2="12" />
 			</svg>
-			<span>Добавить город</span>
+			<span>{t('favorites.addCity', lang)}</span>
 		</button>
 	</div>
 {/if}

@@ -30,10 +30,12 @@
 	import { searchLocations } from '$lib/api/geocoding';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t, type Language } from '$lib/i18n';
 	import type { Location } from '$lib/types';
 
 	const location = getLocationStore();
 	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 
 	type Status = 'idle' | 'loading' | 'results' | 'empty' | 'error';
 
@@ -74,21 +76,24 @@
 		return parts.join(', ');
 	}
 
-	function getAnnouncement(s: Status, count: number): string {
-		if (s === 'loading') return 'Загрузка...';
-		if (s === 'empty') return 'Ничего не найдено. Проверьте написание города или укажите регион/страну';
-		if (s === 'error') return 'Не удалось выполнить поиск. Проверьте соединение.';
+	function getAnnouncement(s: Status, count: number, l: Language = 'en'): string {
+		if (s === 'loading') return l === 'ru' ? 'Загрузка...' : 'Loading...';
+		if (s === 'empty') return `${t('search.empty', l)}. ${t('search.emptySub', l)}`;
+		if (s === 'error') return t('search.error', l);
 		if (s === 'results') {
-			if (count % 10 === 1 && count % 100 !== 11) return `Найден ${count} город`;
-			if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-				return `Найдено ${count} города`;
+			if (l === 'ru') {
+				if (count % 10 === 1 && count % 100 !== 11) return `Найден ${count} город`;
+				if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
+					return `Найдено ${count} города`;
+				}
+				return `Найдено ${count} городов`;
 			}
-			return `Найдено ${count} городов`;
+			return `Found ${count} ${count === 1 ? 'city' : 'cities'}`;
 		}
 		return '';
 	}
 
-	let announcement = $derived(getAnnouncement(status, results.length));
+	let announcement = $derived(getAnnouncement(status, results.length, lang));
 
 	// Debounced search: starts from 2 typed characters, cancels the previous
 	// run on every keystroke via effect cleanup + the seq guard.
@@ -211,7 +216,7 @@
 			class="sheet"
 			role="dialog"
 			aria-modal="true"
-			aria-label="Поиск города"
+			aria-label={t('search.dialogAria', lang)}
 			tabindex="-1"
 			onkeydown={onKeydown}
 			bind:this={sheetEl}
@@ -234,8 +239,8 @@
 						aria-expanded={status === 'results'}
 						aria-controls="search-results-list"
 						aria-activedescendant={highlight >= 0 && status === 'results' && results.length > 0 ? `search-result-${highlight}` : undefined}
-						placeholder="Город, регион или страна"
-						aria-label="Название города"
+						placeholder={t('search.placeholder', lang)}
+						aria-label={t('search.ariaLabel', lang)}
 						bind:value={query}
 						bind:this={inputEl}
 					/>
@@ -243,7 +248,7 @@
 						<button
 							class="clear-btn"
 							type="button"
-							aria-label="Очистить поле"
+							aria-label={t('search.clear', lang)}
 							onclick={clearQuery}
 						>
 							<svg
@@ -263,7 +268,7 @@
 						</button>
 					{/if}
 				</div>
-				<button class="close-btn" type="button" aria-label="Закрыть поиск" onclick={closeSearch}>
+				<button class="close-btn" type="button" aria-label={t('search.close', lang)} onclick={closeSearch}>
 					<svg
 						class="icon"
 						viewBox="0 0 24 24"
@@ -281,29 +286,29 @@
 			</div>
 			<div class="sheet-body">
 				{#if status === 'idle'}
-					<div class="hint">Введите минимум 2 символа</div>
+					<div class="hint">{t('search.minChars', lang)}</div>
 				{:else if status === 'loading'}
-					<div class="list" role="status" aria-label="Поиск" aria-busy="true">
+					<div class="list" role="status" aria-label={t('search.dialogAria', lang)} aria-busy="true">
 						{#each [1, 2, 3] as _}
 							<div class="sk-row">
 								<div class="sk sk-block"></div>
 								<div class="sk sk-line w50"></div>
 							</div>
 						{/each}
-						<span class="sr-only">Ищем города</span>
+						<span class="sr-only">{t('search.searchingSr', lang)}</span>
 					</div>
 				{:else if status === 'error'}
 					<div class="state">
-						<div class="state-text">Не удалось выполнить поиск. Проверьте соединение.</div>
-						<button class="retry-btn" type="button" onclick={retry}>Повторить</button>
+						<div class="state-text">{t('search.error', lang)}</div>
+						<button class="retry-btn" type="button" onclick={retry}>{t('home.retry', lang)}</button>
 					</div>
 				{:else if status === 'empty'}
 					<div class="state">
-						<div class="state-text">Ничего не найдено</div>
-						<div class="state-sub">Проверьте написание города или укажите регион/страну</div>
+						<div class="state-text">{t('search.empty', lang)}</div>
+						<div class="state-sub">{t('search.emptySub', lang)}</div>
 					</div>
 				{:else}
-					<div class="list" id="search-results-list" role="listbox" aria-label="Результаты поиска">
+					<div class="list" id="search-results-list" role="listbox" aria-label={t('search.results', lang)}>
 						{#each results as loc, i}
 							<button
 								type="button"

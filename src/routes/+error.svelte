@@ -1,27 +1,32 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
+	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
+
+	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 </script>
 
 <svelte:head>
-	<title>{page.status} | Погода</title>
-	<meta name="description" content="Страница ошибки" />
+	<title>{page.status} | {t('app.title', lang)}</title>
+	<meta name="description" content={page.status === 404 ? t('errorPage.notFoundTitle', lang) : t('errorPage.genericTitle', lang)} />
 </svelte:head>
 
 <div class="error-page">
 	<div class="card state">
 		<div class="state-code">{page.status}</div>
 		<h1 class="state-title">
-			{page.status === 404 ? 'Страница не найдена' : 'Произошла ошибка'}
+			{page.status === 404 ? t('errorPage.notFoundTitle', lang) : t('errorPage.genericTitle', lang)}
 		</h1>
 		<div class="state-text">
 			{page.error?.message && page.error.message !== 'Not Found'
 				? page.error.message
 				: page.status === 404
-					? 'Запрошенная страница не существует или была перемещена.'
-					: 'Что-то пошло не так. Попробуйте вернуться на главную.'}
+					? t('errorPage.notFoundText', lang)
+					: t('errorPage.genericText', lang)}
 		</div>
-		<a class="primary-btn" href="{base}/">На главную</a>
+		<a class="primary-btn" href="{base}/">{t('errorPage.toHome', lang)}</a>
 	</div>
 </div>
 

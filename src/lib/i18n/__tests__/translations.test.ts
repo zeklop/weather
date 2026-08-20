@@ -65,6 +65,7 @@ describe('translations dictionary parity', () => {
 			'forecast',
 			'favorites',
 			'settings',
+			'map',
 			'search',
 			'errorPage',
 			'pwa',
@@ -81,17 +82,21 @@ describe('translations dictionary parity', () => {
 
 describe('t() translation helper', () => {
 	it('translates simple dot-notated keys in en by default', () => {
+		expect(t('app.title')).toBe('Weather');
 		expect(t('nav.home')).toBe('Home');
 		expect(t('nav.forecast')).toBe('Forecast');
 		expect(t('nav.favorites')).toBe('Favorites');
 		expect(t('nav.settings')).toBe('Settings');
+		expect(t('map.title')).toBe('Map');
 	});
 
 	it('translates simple dot-notated keys in ru when specified', () => {
+		expect(t('app.title', 'ru')).toBe('Погода');
 		expect(t('nav.home', 'ru')).toBe('Главная');
 		expect(t('nav.forecast', 'ru')).toBe('Прогноз');
 		expect(t('nav.favorites', 'ru')).toBe('Избранное');
 		expect(t('nav.settings', 'ru')).toBe('Настройки');
+		expect(t('map.title', 'ru')).toBe('Карта');
 	});
 
 	it('interpolates template parameters', () => {

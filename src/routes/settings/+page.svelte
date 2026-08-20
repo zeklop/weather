@@ -4,12 +4,14 @@
 	import { getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
 
 	const INSTALL_HINT_KEY = 'weather:installHintSeen';
 
 	const forecast = getForecastStore();
 	const location = getLocationStore();
 	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 
 	const refreshing = $derived(forecast.refreshing);
 
@@ -58,16 +60,18 @@
 
 	// Device-event timestamp (epoch ms), not an Open-Meteo wall-time string:
 	// `new Date()` is correct here; the format.ts helpers are for wall-time only.
-	const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat('ru-RU', {
-		day: 'numeric',
-		month: 'short',
-		hour: '2-digit',
-		minute: '2-digit'
-	});
+	const lastUpdatedFormat = $derived(
+		new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		})
+	);
 
 	const lastUpdatedText = $derived(
 		mounted && settings.lastUpdated !== null
-			? LAST_UPDATED_FORMAT.format(new Date(settings.lastUpdated))
+			? lastUpdatedFormat.format(new Date(settings.lastUpdated))
 			: '—'
 	);
 
@@ -76,35 +80,35 @@
 	const geoNote = $derived(
 		mounted
 			? location.geoState === 'denied'
-				? 'Доступ к геолокации запрещён в браузере. Разрешите доступ в настройках и повторите попытку.'
+				? t('settings.geoDenied', lang)
 				: location.geoState === 'unavailable'
-					? 'Геолокация недоступна на этом устройстве'
+					? t('settings.geoUnavailable', lang)
 					: location.geoState === 'error'
-						? 'Не удалось определить местоположение (превышено время ожидания).'
+						? t('settings.geoTimeout', lang)
 						: null
 			: null
 	);
 </script>
 
 <svelte:head>
-	<title>Настройки | Погода</title>
-	<meta name="description" content="Настройки приложения Погода" />
+	<title>{t('settings.title', lang)} | {t('app.title', lang)}</title>
+	<meta name="description" content={t('settings.description', lang)} />
 </svelte:head>
 
-<h1 class="sr-only">Настройки</h1>
+<h1 class="sr-only">{t('settings.title', lang)}</h1>
 
 <div class="settings">
 	{#if showInstallHint}
 		<div class="card hint">
-			<div class="hint-title">Установить приложение</div>
-			<div class="hint-text">Чтобы добавить на экран «Домой»: Поделиться → На экран «Домой»</div>
+			<div class="hint-title">{t('settings.installApp', lang)}</div>
+			<div class="hint-text">{t('settings.installAppHint', lang)}</div>
 		</div>
 	{/if}
 
 	<div class="card group">
 		<div class="row">
-			<span class="row-label">Язык / Language</span>
-			<div class="lang-selector" role="group" aria-label="Выбор языка">
+			<span class="row-label">{t('settings.language', lang)}</span>
+			<div class="lang-selector" role="group" aria-label={t('settings.languageSelectAria', lang)}>
 				<button
 					class="lang-btn"
 					class:active={mounted && settings.language === 'en'}
@@ -127,9 +131,9 @@
 			class="row row-btn"
 			type="button"
 			onclick={openSearch}
-			aria-label="Изменить город, текущий: {cityName}"
+			aria-label={t('settings.changeCityAria', lang, { city: cityName })}
 		>
-			<span class="row-label">Город</span>
+			<span class="row-label">{t('settings.city', lang)}</span>
 			<span class="row-value row-value-action">
 				{cityName}
 				<svg
@@ -148,7 +152,7 @@
 		</button>
 		<div class="row geo-row">
 			<div class="geo-line">
-				<span class="row-label">Геолокация</span>
+				<span class="row-label">{t('settings.geolocation', lang)}</span>
 				<button
 					class="geo-btn"
 					type="button"
@@ -158,11 +162,11 @@
 				>
 					{#if location.geoPending}
 						<span class="spinner geo-spinner" aria-hidden="true"></span>
-						<span>Определяем…</span>
+						<span>{t('settings.geoLocating', lang)}</span>
 					{:else if location.geoState === 'error' || location.geoState === 'denied'}
-						Повторить попытку
+						{t('settings.geoRetry', lang)}
 					{:else}
-						Определить автоматически
+						{t('settings.geoAuto', lang)}
 					{/if}
 				</button>
 			</div>
@@ -176,7 +180,7 @@
 							disabled={location.geoPending}
 							onclick={() => location.requestGeolocation()}
 						>
-							Повторить
+							{t('home.retry', lang)}
 						</button>
 					{/if}
 				</div>
@@ -186,7 +190,7 @@
 
 	<div class="card group">
 		<div class="row">
-			<span class="row-label">Последнее обновление</span>
+			<span class="row-label">{t('settings.lastUpdated', lang)}</span>
 			{#if mounted && settings.lastUpdated !== null}
 				<time class="row-value" datetime={new Date(settings.lastUpdated).toISOString()}>
 					{lastUpdatedText}
@@ -206,20 +210,20 @@
 				{#if refreshing}
 					<span class="spinner" aria-hidden="true"></span>
 				{/if}
-				{refreshing ? 'Обновляем…' : 'Обновить'}
+				{refreshing ? t('settings.updating', lang) : t('settings.update', lang)}
 			</button>
 		</div>
 	</div>
 
 	<div class="card group">
 		<div class="row">
-			<span class="row-label">Данные</span>
+			<span class="row-label">{t('settings.dataSource', lang)}</span>
 			<a class="row-link" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
 				Open-Meteo
 			</a>
 		</div>
 		<div class="row">
-			<span class="row-label">Иконки погоды</span>
+			<span class="row-label">{t('settings.weatherIcons', lang)}</span>
 			<a
 				class="row-link"
 				href="https://github.com/basmilius/meteocons"
@@ -230,10 +234,21 @@
 			</a>
 		</div>
 		<div class="row">
-			<span class="row-label">Версия</span>
-			<span class="row-value">{__BUILD_DATE__}</span>
+			<span class="row-label">{t('settings.version', lang)}</span>
+			<span class="row-value">v{__BUILD_DATE__}</span>
 		</div>
 	</div>
+
+	<footer class="settings-footer">
+		<p class="footer-author">
+			{#if lang === 'ru'}
+				Автор: <a class="footer-link" href="https://github.com/zeklop" target="_blank" rel="noopener noreferrer">Zeklop</a>
+			{:else}
+				Created by <a class="footer-link" href="https://github.com/zeklop" target="_blank" rel="noopener noreferrer">Zeklop</a>
+			{/if}
+		</p>
+		<p class="footer-version">v{__BUILD_DATE__}</p>
+	</footer>
 </div>
 
 <style>
@@ -481,5 +496,37 @@
 		font-size: 14px;
 		color: var(--text-secondary);
 		margin-top: 2px;
+	}
+
+	/* ---------- settings footer ---------- */
+	.settings-footer {
+		text-align: center;
+		padding: var(--space-4) var(--space-2) var(--space-6);
+		font-size: 13px;
+		color: var(--text-secondary);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+	}
+
+	.footer-author {
+		margin: 0;
+	}
+
+	.footer-link {
+		color: var(--accent-strong);
+		font-weight: 500;
+		text-decoration: none;
+	}
+
+	.footer-link:hover {
+		text-decoration: underline;
+	}
+
+	.footer-version {
+		margin: 0;
+		font-size: 12px;
+		opacity: 0.8;
 	}
 </style>

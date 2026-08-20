@@ -1,13 +1,18 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
+
+	const settings = getSettingsStore();
+	const lang = $derived(settings.language);
 </script>
 
 <svelte:head>
-	<title>Карта | Погода</title>
-	<meta name="description" content="Интерактивная карта погоды" />
+	<title>{t('map.title', lang)} | {t('app.title', lang)}</title>
+	<meta name="description" content={t('map.description', lang)} />
 </svelte:head>
 
-<h1 class="sr-only">Карта</h1>
+<h1 class="sr-only">{t('map.title', lang)}</h1>
 
 <div class="map">
 	<div class="card state">
@@ -27,9 +32,9 @@
 				<path d="M9 3.236v15" />
 			</svg>
 		</div>
-		<div class="state-title">Карта — в следующей версии</div>
-		<div class="state-text">Интерактивная карта погоды и осадков появится во второй версии приложения.</div>
-		<a class="primary-btn" href={base + '/'}>На главную</a>
+		<div class="state-title">{t('map.comingSoonTitle', lang)}</div>
+		<div class="state-text">{t('map.comingSoonText', lang)}</div>
+		<a class="primary-btn" href={base + '/'}>{t('map.toHome', lang)}</a>
 	</div>
 </div>
 
