@@ -40,13 +40,18 @@
 		function onPageshow(): void {
 			forecastStore.load(location.current);
 		}
+		function onOnline(): void {
+			forecastStore.load(location.current);
+		}
 
 		document.addEventListener('visibilitychange', onVisibilityChange);
 		window.addEventListener('pageshow', onPageshow);
+		window.addEventListener('online', onOnline);
 
 		return () => {
 			document.removeEventListener('visibilitychange', onVisibilityChange);
 			window.removeEventListener('pageshow', onPageshow);
+			window.removeEventListener('online', onOnline);
 			forecastStore.destroy();
 		};
 	});

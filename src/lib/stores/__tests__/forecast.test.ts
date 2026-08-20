@@ -456,6 +456,160 @@ describe('createForecastStore — SWR', () => {
 		expect(fetcher).toHaveBeenCalledTimes(1);
 	});
 
+	it('attempts network fetch on force refresh even when onLine is false', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const storage = makeMemoryStorage();
+		const cachedPayload = makePayload(5);
+		seedCache(storage, MOSCOW, cachedPayload, NOW - 60_000);
+		const freshPayload = makePayload(15);
+		const pending: Array<{ resolve: (payload: ForecastPayload) => void; reject: (err: unknown) => void }> = [];
+		const fetcher = vi.fn(
+			() =>
+				new Promise<ForecastPayload>((resolve, reject) => {
+					pending.push({ resolve, reject });
+				})
+		);
+
+		const store = createForecastStore({
+			storage,
+			fetcher,
+			locationStore: makeLocationStore(),
+			settingsStore: makeSettings(),
+			onLine: () => false
+		});
+		store.load();
+		await settle();
+
+		expect(store.status).toBe('offline');
+		expect(store.payload).toEqual(cachedPayload);
+		expect(fetcher).not.toHaveBeenCalled();
+
+		// User clicks "Retry" / "Повторить"
+		store.refresh();
+		expect(store.refreshing).toBe(true);
+		expect(fetcher).toHaveBeenCalledTimes(1);
+
+		// Network fails again
+		pending[0].reject({ kind: 'network' });
+		await settle();
+
+		expect(store.status).toBe('offline');
+		expect(store.refreshing).toBe(false);
+		expect(store.payload).toEqual(cachedPayload);
+		expect(store.error).toBeNull();
+
+		// User retries and network succeeds (e.g. connectivity restored)
+		store.refresh();
+		expect(store.refreshing).toBe(true);
+		expect(fetcher).toHaveBeenCalledTimes(2);
+
+		pending[1].resolve(freshPayload);
+		await settle();
+
+		expect(store.status).toBe('fresh');
+		expect(store.refreshing).toBe(false);
+		expect(store.payload).toEqual({ ...freshPayload, fetchedAt: NOW });
+	});
+
+	it('attempts network fetch on force refresh when offline without cache', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const freshPayload = makePayload(18);
+		const pending: Array<{ resolve: (payload: ForecastPayload) => void; reject: (err: unknown) => void }> = [];
+		const fetcher = vi.fn(
+			() =>
+				new Promise<ForecastPayload>((resolve, reject) => {
+					pending.push({ resolve, reject });
+				})
+		);
+
+		const store = createForecastStore({
+			storage: makeMemoryStorage(),
+			fetcher,
+			locationStore: makeLocationStore(),
+			settingsStore: makeSettings(),
+			onLine: () => false
+		});
+		store.load();
+		await settle();
+
+		expect(store.status).toBe('offline');
+		expect(store.payload).toBeNull();
+		expect(fetcher).not.toHaveBeenCalled();
+
+		// User clicks retry
+		store.refresh();
+		expect(store.status).toBe('loading');
+		expect(store.refreshing).toBe(true);
+		expect(fetcher).toHaveBeenCalledTimes(1);
+
+		pending[0].resolve(freshPayload);
+		await settle();
+
+		expect(store.status).toBe('fresh');
+		expect(store.refreshing).toBe(false);
+		expect(store.payload).toEqual({ ...freshPayload, fetchedAt: NOW });
+	});
+
+	it('revalidates forecast on window online event and removes listener on destroy', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const storage = makeMemoryStorage();
+		let isOnline = false;
+		const payload = makePayload(20);
+		const fetcher = vi.fn().mockResolvedValue(payload);
+
+		const listeners = new Map<string, Set<() => void>>();
+		const mockWindow = {
+			addEventListener: vi.fn((event: string, handler: () => void) => {
+				if (!listeners.has(event)) listeners.set(event, new Set());
+				listeners.get(event)!.add(handler);
+			}),
+			removeEventListener: vi.fn((event: string, handler: () => void) => {
+				listeners.get(event)?.delete(handler);
+			}),
+			dispatchEvent: vi.fn((event: { type: string }) => {
+				listeners.get(event.type)?.forEach((fn) => fn());
+				return true;
+			})
+		};
+		vi.stubGlobal('window', mockWindow);
+
+		const store = createForecastStore({
+			storage,
+			fetcher,
+			locationStore: makeLocationStore(),
+			settingsStore: makeSettings(),
+			onLine: () => isOnline
+		});
+
+		expect(mockWindow.addEventListener).toHaveBeenCalledWith('online', expect.any(Function));
+
+		store.load();
+		await settle();
+		expect(store.status).toBe('offline');
+		expect(fetcher).not.toHaveBeenCalled();
+
+		// Internet restored
+		isOnline = true;
+		mockWindow.dispatchEvent({ type: 'online' });
+		await settle();
+
+		expect(fetcher).toHaveBeenCalledTimes(1);
+		expect(store.status).toBe('fresh');
+		expect(store.payload).toEqual({ ...payload, fetchedAt: NOW });
+
+		// Clean up
+		store.destroy();
+		expect(mockWindow.removeEventListener).toHaveBeenCalledWith('online', expect.any(Function));
+
+		// Event after destroy does not trigger another fetch
+		mockWindow.dispatchEvent({ type: 'online' });
+		await settle();
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
 	it('wires default dependencies without network when offline', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(NOW);

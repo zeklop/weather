@@ -4,7 +4,7 @@ import type { Location } from '../types';
 export const STORAGE_KEY = 'weather:location';
 export const GEO_STATE_KEY = 'weather:geoState';
 
-export type GeoState = 'idle' | 'denied' | 'unavailable';
+export type GeoState = 'idle' | 'denied' | 'unavailable' | 'error';
 
 export const DEFAULT_LOCATION: Location = {
 	id: geoId(55.7558, 37.6173),
@@ -24,6 +24,7 @@ const GEOLOCATION_NAME = 'Моё местоположение';
 export type LocationStore = {
 	readonly current: Location;
 	readonly geoState: GeoState;
+	readonly geoPending: boolean;
 	setLocation(location: Location): void;
 	requestGeolocation(): void;
 };
@@ -48,7 +49,7 @@ function isLocation(value: unknown): value is Location {
 }
 
 function isGeoState(value: unknown): value is GeoState {
-	return value === 'idle' || value === 'denied' || value === 'unavailable';
+	return value === 'idle' || value === 'denied' || value === 'unavailable' || value === 'error';
 }
 
 function removeItem(storage: Storage, key: string): void {
@@ -107,8 +108,8 @@ function deviceTimezone(): string {
 }
 
 function locationFromCoords(latitude: number, longitude: number): Location {
-	const lat = Number(latitude.toFixed(4));
-	const lon = Number(longitude.toFixed(4));
+	const lat = Number(latitude.toFixed(2));
+	const lon = Number(longitude.toFixed(2));
 	return {
 		id: geoId(lat, lon),
 		name: GEOLOCATION_NAME,
@@ -121,7 +122,7 @@ function locationFromCoords(latitude: number, longitude: number): Location {
 export function createLocationStore(storage: Storage | null = defaultStorage()): LocationStore {
 	let current = $state<Location>(readLocation(storage) ?? DEFAULT_LOCATION);
 	let geoState = $state<GeoState>(readGeoState(storage) ?? 'idle');
-	let pending = false;
+	let geoPending = $state(false);
 
 	function persist(key: string, value: string): void {
 		if (storage === null) return;
@@ -143,23 +144,24 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 	}
 
 	function requestGeolocation(): void {
-		if (pending) return;
+		if (geoPending) return;
 		if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
 			setGeoState('unavailable');
 			return;
 		}
-		pending = true;
+		geoPending = true;
 		navigator.geolocation.getCurrentPosition(
 			(position) => {
-				pending = false;
+				geoPending = false;
 				setGeoState('idle');
 				setLocation(locationFromCoords(position.coords.latitude, position.coords.longitude));
 			},
 			(error) => {
-				pending = false;
+				geoPending = false;
 				// 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-				setGeoState(error.code === 1 ? 'denied' : 'unavailable');
-			}
+				setGeoState(error.code === 1 ? 'denied' : error.code === 2 ? 'unavailable' : 'error');
+			},
+			{ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
 		);
 	}
 
@@ -169,6 +171,9 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 		},
 		get geoState() {
 			return geoState;
+		},
+		get geoPending() {
+			return geoPending;
 		},
 		setLocation,
 		requestGeolocation

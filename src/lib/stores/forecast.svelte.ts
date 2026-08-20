@@ -87,7 +87,7 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 				if (id !== epoch) return;
 				// navigator.onLine lies for dead VPN / wifi-without-internet:
 				// a network-kind failure means offline too (plan §offline).
-				if (isNetworkFailure(err)) {
+				if (isNetworkFailure(err) || !onLine()) {
 					const entry = cache.get(key);
 					if (entry !== null) applyEntry(entry);
 					status = 'offline';
@@ -117,7 +117,7 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 			fetchedAt = null;
 		}
 
-		if (!onLine()) {
+		if (!force && !onLine()) {
 			if (entry !== null) applyEntry(entry);
 			status = 'offline';
 			return;
@@ -129,7 +129,7 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 			return;
 		}
 
-		if (cachedStatus === 'stale') {
+		if (cachedStatus === 'stale' && !force) {
 			applyEntry(entry!);
 			status = 'stale';
 			startFetch(location, key);
@@ -149,8 +149,18 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		load(payloadLocation ?? locationStore.current, true);
 	}
 
+	function onOnline(): void {
+		load(payloadLocation ?? locationStore.current);
+	}
+
+	if (typeof window !== 'undefined') {
+		window.addEventListener('online', onOnline);
+	}
+
 	function destroy(): void {
-		// Clean-up hook for consumers/lifecycle wrappers
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('online', onOnline);
+		}
 	}
 
 	return {

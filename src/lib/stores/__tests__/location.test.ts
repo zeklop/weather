@@ -105,7 +105,7 @@ describe('createLocationStore', () => {
 		expect(storage.getItem(GEO_STATE_KEY)).toBe('unavailable');
 	});
 
-	it('switches to the geolocated coordinates on success', () => {
+	it('switches to the geolocated coordinates rounded to 2 decimals on success', () => {
 		makeGeolocation((success: (position: unknown) => void) =>
 			success({ coords: { latitude: 59.9386, longitude: 30.3141 } })
 		);
@@ -113,16 +113,37 @@ describe('createLocationStore', () => {
 
 		store.requestGeolocation();
 
-		expect(store.current.id).toBe('59.9386,30.3141');
-		expect(store.current.latitude).toBe(59.9386);
-		expect(store.current.longitude).toBe(30.3141);
+		expect(store.current.id).toBe('59.9400,30.3100');
+		expect(store.current.latitude).toBe(59.94);
+		expect(store.current.longitude).toBe(30.31);
 		expect(store.current.name).toBe('Моё местоположение');
 		expect(typeof store.current.timezone).toBe('string');
 		expect(store.current.timezone).not.toBe('');
 		expect(store.geoState).toBe('idle');
+		expect(store.geoPending).toBe(false);
 	});
 
-	it('persists the geolocated location', () => {
+	it('mitigates GPS jitter by producing identical IDs for nearby coordinates', () => {
+		let successCb: (position: unknown) => void = () => {};
+		makeGeolocation((success: (position: unknown) => void) => {
+			successCb = success;
+		});
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation();
+		successCb({ coords: { latitude: 55.7558, longitude: 37.6173 } });
+		const firstId = store.current.id;
+
+		store.requestGeolocation();
+		// GPS jitter: ~200m difference still rounds to 55.76, 37.62
+		successCb({ coords: { latitude: 55.7571, longitude: 37.6189 } });
+		const secondId = store.current.id;
+
+		expect(firstId).toBe('55.7600,37.6200');
+		expect(secondId).toBe(firstId);
+	});
+
+	it('persists the geolocated location with 2-decimal rounding', () => {
 		makeGeolocation((success: (position: unknown) => void) =>
 			success({ coords: { latitude: 59.9386, longitude: 30.3141 } })
 		);
@@ -132,10 +153,42 @@ describe('createLocationStore', () => {
 		store.requestGeolocation();
 
 		const fresh = createLocationStore(storage);
-		expect(fresh.current.id).toBe('59.9386,30.3141');
+		expect(fresh.current.id).toBe('59.9400,30.3100');
+		expect(fresh.current.latitude).toBe(59.94);
+		expect(fresh.current.longitude).toBe(30.31);
 	});
 
-	it('flags denied on permission error and sets geoState to denied', () => {
+	it('passes timeout and accuracy options to getCurrentPosition', () => {
+		const getCurrentPosition = vi.fn();
+		makeGeolocation(getCurrentPosition);
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation();
+
+		expect(getCurrentPosition).toHaveBeenCalledWith(
+			expect.any(Function),
+			expect.any(Function),
+			{ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+		);
+	});
+
+	it('tracks geoPending during request lifecycle', () => {
+		let successCb: (position: unknown) => void = () => {};
+		const getCurrentPosition = vi.fn((success: (position: unknown) => void) => {
+			successCb = success;
+		});
+		makeGeolocation(getCurrentPosition);
+		const store = createLocationStore(makeMemoryStorage());
+
+		expect(store.geoPending).toBe(false);
+		store.requestGeolocation();
+		expect(store.geoPending).toBe(true);
+
+		successCb({ coords: { latitude: 55.75, longitude: 37.62 } });
+		expect(store.geoPending).toBe(false);
+	});
+
+	it('flags denied on permission error and resets geoPending', () => {
 		const getCurrentPosition = vi.fn((_success: unknown, error: (e: unknown) => void) =>
 			error({ code: 1 })
 		);
@@ -145,10 +198,11 @@ describe('createLocationStore', () => {
 
 		store.requestGeolocation();
 		expect(store.geoState).toBe('denied');
+		expect(store.geoPending).toBe(false);
 		expect(storage.getItem(GEO_STATE_KEY)).toBe('denied');
 	});
 
-	it('flags unavailable on position error code 2', () => {
+	it('flags unavailable on position error code 2 and resets geoPending', () => {
 		const getCurrentPosition = vi.fn((_success: unknown, error: (e: unknown) => void) =>
 			error({ code: 2 })
 		);
@@ -158,6 +212,20 @@ describe('createLocationStore', () => {
 		store.requestGeolocation();
 
 		expect(store.geoState).toBe('unavailable');
+		expect(store.geoPending).toBe(false);
+	});
+
+	it('flags error on timeout code 3 and resets geoPending', () => {
+		const getCurrentPosition = vi.fn((_success: unknown, error: (e: unknown) => void) =>
+			error({ code: 3 })
+		);
+		makeGeolocation(getCurrentPosition);
+		const store = createLocationStore(makeMemoryStorage());
+
+		store.requestGeolocation();
+
+		expect(store.geoState).toBe('error');
+		expect(store.geoPending).toBe(false);
 	});
 
 	it('allows user to retry geolocation request after prior denial', () => {
@@ -174,7 +242,7 @@ describe('createLocationStore', () => {
 		store.requestGeolocation();
 
 		expect(getCurrentPosition).toHaveBeenCalledTimes(1);
-		expect(store.current.id).toBe('59.9386,30.3141');
+		expect(store.current.id).toBe('59.9400,30.3100');
 		expect(store.geoState).toBe('idle');
 	});
 
