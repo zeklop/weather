@@ -3,11 +3,22 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { pwaInfo } from 'virtual:pwa-info';
 	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 
 	let { children } = $props();
+
+	onMount(async () => {
+		if (pwaInfo) {
+			const { registerSW } = await import('virtual:pwa-register');
+			registerSW({
+				immediate: true
+			});
+		}
+	});
 
 	const location = getLocationStore();
 	const favorites = getFavoritesStore();
@@ -30,6 +41,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="apple-touch-icon" href="{base}/icons/app/icon-180.png" />
+	<link rel="manifest" href="{base}/manifest.webmanifest" />
 </svelte:head>
 
 <div class="shell">

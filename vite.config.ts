@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
 	// Build-time base path contract: '' (root) or '/weather' (GitHub Pages subpath), no trailing slash.
 	// loadEnv reads .env / .env.{mode} files AND shell env (prefix '' → any var); shell env wins.
 	const kitBase = (loadEnv(mode, process.cwd(), '')['PUBLIC_BASE_PATH'] ?? '') as '' | `/${string}`;
+	// Derived pair per design doc: KIT_BASE → kit.paths.base; URL_BASE = KIT_BASE + '/' → all manifest/SW URLs.
+	const urlBase = `${kitBase}/`;
 
 	return {
 		plugins: [
@@ -27,10 +29,86 @@ export default defineConfig(({ mode }) => {
 				}
 			}),
 
-			// Minimal PWA setup — manifest and SW strategies land in T22.
+			// Manifest + service worker, single source (@vite-pwa/sveltekit). SW filename stays sw.js
+			// (vite-plugin-pwa default; spec §4.4's service-worker.js is a documented deviation).
 			SvelteKitPWA({
+				base: urlBase,
+				scope: urlBase,
 				registerType: 'prompt',
-				injectRegister: 'auto'
+				injectRegister: 'auto',
+
+				// Mirror +layout.ts trailingSlash='always' so prerendered page URLs get a trailing '/'
+				// in the precache manifest (offline navigation matches /forecast/ etc.).
+				kit: {
+					base: urlBase,
+					trailingSlash: 'always'
+				},
+
+				manifest: {
+					name: 'Погода',
+					short_name: 'Погода',
+					description: 'Погода и прогноз до 10 дней',
+					lang: 'ru',
+					display: 'standalone',
+					orientation: 'portrait-primary',
+					background_color: '#F5F7FA',
+					theme_color: '#F5F7FA',
+					// Base-safe per design doc: URL_BASE = PUBLIC_BASE_PATH + '/'.
+					start_url: urlBase,
+					scope: urlBase,
+					icons: [
+						{ src: `${urlBase}icons/app/icon-192.png`, sizes: '192x192', type: 'image/png' },
+						{ src: `${urlBase}icons/app/icon-512.png`, sizes: '512x512', type: 'image/png' },
+						{
+							src: `${urlBase}icons/app/icon-maskable-512.png`,
+							sizes: '512x512',
+							type: 'image/png',
+							purpose: 'maskable'
+						},
+						{ src: `${urlBase}icons/app/icon-180.png`, sizes: '180x180', type: 'image/png' }
+					]
+				},
+
+				workbox: {
+					cleanupOutdatedCaches: true,
+					// Exact precached home URL (vite.base is normalized to end with '/', matching the
+					// home precache entry); offline navigation to unknown URLs serves the app shell.
+					navigateFallback: urlBase,
+					runtimeCaching: [
+						{
+							// Open-Meteo API: network first with a 3s budget, only successful
+							// responses cached, bounded size and age.
+							urlPattern: /^https:\/\/api\.open-meteo\.com\/.*/i,
+							handler: 'NetworkFirst',
+							options: {
+								networkTimeoutSeconds: 3,
+								cacheName: 'open-meteo-api',
+								expiration: {
+									maxEntries: 30,
+									maxAgeSeconds: 6 * 60 * 60
+								},
+								cacheableResponse: {
+									statuses: [0, 200]
+								}
+							}
+						},
+						{
+							// Same-origin static assets (precache already covers build assets;
+							// this covers the rest — icons, fonts, etc.): cache first, bounded, 30 days.
+							urlPattern: ({ url }) =>
+								url.origin === self.location.origin &&
+								/\.(?:js|css|svg|png|webp|woff2?)$/i.test(url.pathname),
+							handler: 'CacheFirst',
+							options: {
+								cacheName: 'static-assets',
+								expiration: {
+									maxEntries: 60,
+									maxAgeSeconds: 30 * 24 * 60 * 60
+								}
+							}
+						}
+					]
+				}
 			})
 		]
 	};
