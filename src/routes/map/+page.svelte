@@ -563,10 +563,12 @@
 		color: var(--accent);
 	}
 
-	.map-container {
-		width: 100%;
-		height: 100%;
-		position: relative;
+	/* Absolute fill instead of height:100% — the parent's height comes from
+	   flex layout, which mobile engines treat as indefinite for percentages.
+	   Higher specificity than maplibre's `.maplibregl-map { position: relative }`. */
+	.map-view .map-container {
+		position: absolute;
+		inset: 0;
 	}
 
 	.map-loading-overlay {

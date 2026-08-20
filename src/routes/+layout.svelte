@@ -193,7 +193,7 @@
 	<link rel="manifest" href="{base}/manifest.webmanifest" />
 </svelte:head>
 
-<div class="shell">
+<div class="shell" class:map-shell={routeId === '/map'}>
 	<header class="app-header">
 		<div class="container">
 			<div class="header-row">
@@ -473,11 +473,18 @@
 		min-width: 0;
 	}
 
-	/* Map route: fill the space between header and bottom nav exactly,
-	   so the radar player never hides behind the nav (notch/home-indicator phones). */
+	/* Map route: lock the shell to the viewport so the flex chain below it
+	   (main → map card) gets definite heights on mobile browsers, and the
+	   radar player never hides behind the bottom nav (notch/home-indicator phones). */
+	.shell.map-shell {
+		height: 100vh;
+		height: 100dvh;
+	}
+
 	.app-main.map-page {
 		display: flex;
 		flex-direction: column;
+		min-height: 0;
 		padding-bottom: calc(var(--nav-height, 64px) + env(safe-area-inset-bottom, 0px));
 	}
 
