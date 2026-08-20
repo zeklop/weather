@@ -169,7 +169,6 @@
 			<div class="card precip">
 				<div class="precip-title">В ближайшие 2 часа</div>
 				<div class="precip-text">{precipCard}</div>
-				<a class="precip-cta" href={base + '/map/'}>Показать на карте</a>
 			</div>
 		{/if}
 
@@ -453,18 +452,6 @@
 	.precip-text {
 		font-size: 15px;
 		margin-top: 2px;
-	}
-
-	.precip-cta {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 44px;
-		margin-top: var(--space-2);
-		color: var(--accent-strong);
-		font-size: 15px;
-		font-weight: 500;
-		text-decoration: none;
 	}
 
 	/* ---------- hourly rail ---------- */
