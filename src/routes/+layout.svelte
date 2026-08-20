@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 
 	let { children } = $props();
 
@@ -37,7 +38,7 @@
 			<div class="header-row">
 				<div class="app-title">{location.current.name}</div>
 				<div class="header-actions">
-					<button class="icon-btn" type="button" aria-label="Найти город" disabled>
+					<button class="icon-btn" type="button" aria-label="Найти город" onclick={openSearch}>
 						<svg
 							class="icon"
 							viewBox="0 0 24 24"
@@ -83,6 +84,8 @@
 	<main class="app-main">
 		{@render children()}
 	</main>
+
+	<SearchSheet />
 </div>
 
 <nav class="bottom-nav" aria-label="Основная навигация">
