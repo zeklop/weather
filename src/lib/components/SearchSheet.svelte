@@ -3,13 +3,24 @@
 	// openSearch(); the sheet renders itself while open. One place owns the
 	// search UI state, no store file needed.
 	let open = $state(false);
+	let previousActiveElement: HTMLElement | null = null;
 
 	export function openSearch(): void {
+		if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+			previousActiveElement = document.activeElement;
+		}
 		open = true;
 	}
 
 	export function closeSearch(): void {
 		open = false;
+		if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
+			const el = previousActiveElement;
+			previousActiveElement = null;
+			queueMicrotask(() => {
+				el.focus();
+			});
+		}
 	}
 </script>
 
@@ -33,6 +44,7 @@
 	let results = $state<Location[]>([]);
 	let highlight = $state(-1);
 	let inputEl: HTMLInputElement | undefined = $state();
+	let sheetEl: HTMLDivElement | undefined = $state();
 
 	// retry re-runs the effect below for the same query (error state).
 	let attempt = $state(0);
@@ -48,12 +60,33 @@
 		goto(base + '/');
 	}
 
+	function clearQuery(): void {
+		query = '';
+		inputEl?.focus();
+	}
+
 	function subLabel(loc: Location): string {
 		const parts = [...new Set([loc.admin1, loc.country])].filter(
 			(value): value is string => value != null && value !== '' && value !== loc.name
 		);
 		return parts.join(', ');
 	}
+
+	function getAnnouncement(s: Status, count: number): string {
+		if (s === 'loading') return 'Загрузка...';
+		if (s === 'empty') return 'Ничего не найдено. Проверьте написание города или укажите регион/страну';
+		if (s === 'error') return 'Не удалось выполнить поиск. Проверьте соединение.';
+		if (s === 'results') {
+			if (count % 10 === 1 && count % 100 !== 11) return `Найден ${count} город`;
+			if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
+				return `Найдено ${count} города`;
+			}
+			return `Найдено ${count} городов`;
+		}
+		return '';
+	}
+
+	let announcement = $derived(getAnnouncement(status, results.length));
 
 	// Debounced search: starts from 2 typed characters, cancels the previous
 	// run on every keystroke via effect cleanup + the seq guard.
@@ -96,7 +129,9 @@
 		status = 'idle';
 		results = [];
 		highlight = -1;
-		inputEl?.focus();
+		queueMicrotask(() => {
+			inputEl?.focus();
+		});
 	});
 
 	// Lock body scroll while the sheet is open.
@@ -111,9 +146,41 @@
 
 	function onKeydown(event: KeyboardEvent): void {
 		if (event.key === 'Escape') {
+			event.preventDefault();
 			closeSearch();
 			return;
 		}
+
+		if (event.key === 'Tab') {
+			if (!sheetEl) return;
+			const focusable = Array.from(
+				sheetEl.querySelectorAll<HTMLElement>(
+					'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
+				)
+			).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+			if (focusable.length === 0) {
+				event.preventDefault();
+				return;
+			}
+
+			const first = focusable[0];
+			const last = focusable[focusable.length - 1];
+
+			if (event.shiftKey) {
+				if (document.activeElement === first || !sheetEl.contains(document.activeElement)) {
+					event.preventDefault();
+					last?.focus();
+				}
+			} else {
+				if (document.activeElement === last) {
+					event.preventDefault();
+					first?.focus();
+				}
+			}
+			return;
+		}
+
 		if (status !== 'results' || results.length === 0) return;
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
@@ -124,7 +191,9 @@
 		} else if (event.key === 'Enter') {
 			event.preventDefault();
 			const idx = highlight >= 0 ? highlight : 0;
-			select(results[idx]);
+			if (results[idx]) {
+				select(results[idx]);
+			}
 		}
 	}
 
@@ -143,19 +212,55 @@
 			aria-label="Поиск города"
 			tabindex="-1"
 			onkeydown={onKeydown}
+			bind:this={sheetEl}
 		>
+			<div class="sr-only" aria-live="polite" aria-atomic="true">
+				{announcement}
+			</div>
 			<div class="sheet-header">
-				<input
-					class="search-input"
-					type="search"
-					placeholder="Город, регион или страна"
-					aria-label="Название города"
-					autocomplete="off"
-					aria-controls="search-results"
-					aria-activedescendant={highlight >= 0 ? `search-opt-${highlight}` : undefined}
-					bind:value={query}
-					bind:this={inputEl}
-				/>
+				<div class="input-wrapper">
+					<input
+						class="search-input"
+						type="search"
+						enterkeyhint="search"
+						autocapitalize="words"
+						autocorrect="off"
+						spellcheck="false"
+						autocomplete="off"
+						role="combobox"
+						aria-autocomplete="list"
+						aria-expanded={status === 'results'}
+						aria-controls="search-results-list"
+						aria-activedescendant={highlight >= 0 && status === 'results' && results.length > 0 ? `search-result-${highlight}` : undefined}
+						placeholder="Город, регион или страна"
+						aria-label="Название города"
+						bind:value={query}
+						bind:this={inputEl}
+					/>
+					{#if query.length > 0}
+						<button
+							class="clear-btn"
+							type="button"
+							aria-label="Очистить поле"
+							onclick={clearQuery}
+						>
+							<svg
+								class="clear-icon"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<circle cx="12" cy="12" r="10" />
+								<path d="m15 9-6 6" />
+								<path d="m9 9 6 6" />
+							</svg>
+						</button>
+					{/if}
+				</div>
 				<button class="close-btn" type="button" aria-label="Закрыть поиск" onclick={closeSearch}>
 					<svg
 						class="icon"
@@ -172,7 +277,7 @@
 					</svg>
 				</button>
 			</div>
-			<div class="sheet-body" id="search-results">
+			<div class="sheet-body">
 				{#if status === 'idle'}
 					<div class="hint">Введите минимум 2 символа</div>
 				{:else if status === 'loading'}
@@ -193,9 +298,10 @@
 				{:else if status === 'empty'}
 					<div class="state">
 						<div class="state-text">Ничего не найдено</div>
+						<div class="state-sub">Проверьте написание города или укажите регион/страну</div>
 					</div>
 				{:else}
-					<div class="list" role="listbox" aria-label="Результаты поиска">
+					<div class="list" id="search-results-list" role="listbox" aria-label="Результаты поиска">
 						{#each results as loc, i}
 							<button
 								type="button"
@@ -204,7 +310,7 @@
 								role="option"
 								tabindex="-1"
 								aria-selected={highlight === i}
-								id={`search-opt-${i}`}
+								id={`search-result-${i}`}
 								onclick={() => select(loc)}
 							>
 								<svg
@@ -272,20 +378,61 @@
 		padding: var(--space-4) var(--space-4) var(--space-2);
 	}
 
+	.input-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+	}
+
 	.search-input {
+		width: 100%;
 		flex: 1;
 		min-width: 0;
 		min-height: 44px;
 		padding: 0 var(--space-4);
+		padding-right: 40px;
 		border: 1px solid var(--divider);
 		border-radius: var(--radius-control);
 		background: var(--bg-page-top);
 		font-size: 16px;
 	}
 
+	.search-input::-webkit-search-decoration,
+	.search-input::-webkit-search-cancel-button,
+	.search-input::-webkit-search-results-button,
+	.search-input::-webkit-search-results-decoration {
+		display: none;
+		-webkit-appearance: none;
+	}
+
 	.search-input:focus {
 		outline: 2px solid var(--accent-strong);
 		outline-offset: -1px;
+	}
+
+	.clear-btn {
+		position: absolute;
+		right: var(--space-2);
+		width: 32px;
+		height: 32px;
+		display: grid;
+		place-items: center;
+		border: none;
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--text-secondary);
+		cursor: pointer;
+	}
+
+	.clear-btn:active {
+		background: var(--divider);
+	}
+
+	.clear-icon {
+		width: 18px;
+		height: 18px;
 	}
 
 	.close-btn {
@@ -386,6 +533,12 @@
 	.state-text {
 		color: var(--text-secondary);
 		font-size: 15px;
+	}
+
+	.state-sub {
+		margin-top: var(--space-2);
+		color: var(--text-secondary);
+		font-size: 13px;
 	}
 
 	.retry-btn {

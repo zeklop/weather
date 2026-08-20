@@ -35,6 +35,7 @@ export function normalizeGeoResults(raw: unknown): Location[] {
 	if (!Array.isArray(results)) throw malformed('results is not an array');
 
 	const locations: Location[] = [];
+	const seen = new Set<string>();
 	for (const entry of results) {
 		// Skip a single invalid entry rather than killing the whole search:
 		// forecast requires timezone, so entries without it are unusable anyway.
@@ -48,14 +49,20 @@ export function normalizeGeoResults(raw: unknown): Location[] {
 		const admin1 = typeof entry['admin1'] === 'string' ? entry['admin1'] : undefined;
 		const country = typeof entry['country'] === 'string' ? entry['country'] : undefined;
 
+		const lat = entry['latitude'];
+		const lon = entry['longitude'];
+		const dedupeKey = `${entry['name']}:${admin1 ?? ''}:${country ?? ''}:${lat.toFixed(2)}:${lon.toFixed(2)}`;
+		if (seen.has(dedupeKey)) continue;
+		seen.add(dedupeKey);
+
 		locations.push({
-			id: geoId(entry['latitude'], entry['longitude']),
+			id: geoId(lat, lon),
 			name: entry['name'],
 			admin1,
 			country,
 			countryCode,
-			latitude: entry['latitude'],
-			longitude: entry['longitude'],
+			latitude: lat,
+			longitude: lon,
 			timezone: entry['timezone']
 		});
 	}

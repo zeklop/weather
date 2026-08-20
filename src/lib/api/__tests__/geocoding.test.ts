@@ -94,6 +94,70 @@ describe('normalizeGeoResults', () => {
 			expect(() => normalizeGeoResults(root)).toThrow(/malformed geocoding response/);
 		}
 	});
+
+	it('deduplicates results with the same name, admin1, country, and coords rounded to 2 decimals while preserving order', () => {
+		const KAZAN_1 = {
+			name: 'Казань',
+			latitude: 58.1234,
+			longitude: 49.5678,
+			admin1: 'Кировская область',
+			country: 'Россия',
+			timezone: 'Europe/Kirov'
+		};
+		const KAZAN_2_DUPLICATE = {
+			name: 'Казань',
+			latitude: 58.1249,
+			longitude: 49.5681,
+			admin1: 'Кировская область',
+			country: 'Россия',
+			timezone: 'Europe/Kirov'
+		};
+		const KAZAN_3_DUPLICATE_2 = {
+			name: 'Казань',
+			latitude: 58.1201,
+			longitude: 49.5702,
+			admin1: 'Кировская область',
+			country: 'Россия',
+			timezone: 'Europe/Kirov'
+		};
+		const KAZAN_4_TATARSTAN = {
+			name: 'Казань',
+			latitude: 55.7887,
+			longitude: 49.1221,
+			admin1: 'Татарстан',
+			country: 'Россия',
+			timezone: 'Europe/Moscow'
+		};
+		const NO_ADMIN_1 = {
+			name: 'Остров',
+			latitude: 10.001,
+			longitude: 20.002,
+			timezone: 'UTC'
+		};
+		const NO_ADMIN_2_DUPLICATE = {
+			name: 'Остров',
+			latitude: 10.004,
+			longitude: 20.003,
+			timezone: 'UTC'
+		};
+
+		const result = normalizeGeoResults({
+			results: [
+				KAZAN_1,
+				KAZAN_2_DUPLICATE,
+				KAZAN_3_DUPLICATE_2,
+				KAZAN_4_TATARSTAN,
+				NO_ADMIN_1,
+				NO_ADMIN_2_DUPLICATE
+			]
+		});
+
+		expect(result).toHaveLength(3);
+		expect(result[0].admin1).toBe('Кировская область');
+		expect(result[0].id).toBe(geoId(KAZAN_1.latitude, KAZAN_1.longitude));
+		expect(result[1].admin1).toBe('Татарстан');
+		expect(result[2].name).toBe('Остров');
+	});
 });
 
 describe('searchLocations', () => {
