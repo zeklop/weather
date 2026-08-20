@@ -25,24 +25,27 @@ Phase 1 per spec §44:
 | Topic | Decision | Rationale |
 |---|---|---|
 | Styling | Handcrafted CSS, CSS variables, no Tailwind | Bespoke Yandex-like design, minimal bundle, full control |
-| Dark mode | Deferred to Phase 2 | Spec §36 allows; v1 ships light theme + System/Light toggle stored |
-| Persistent cache | `localStorage` (versioned JSON) instead of IndexedDB | Per-city payload ~20–60 KB, well under 5 MB quota; IndexedDB is the documented Phase 2 upgrade path |
+| Dark mode | Deferred to Phase 2; v1 ships light theme only (no System/Light toggle that would look identical) | Spec §36 allows; settings structure ready for Phase 2 |
+| Persistent cache | `localStorage` (versioned JSON) with hard bounds: max entries, ~1 MB budget, LRU eviction, corrupt-JSON recovery, `QuotaExceededError` → eviction → runtime-only mode | IndexedDB remains documented Phase 2 upgrade path; per-city payload estimate is not a limit |
+| State approach | Svelte 5 runes in `src/lib/stores/*.svelte.ts` (browser-only, listener cleanup). No plain `.ts` stores | Single consistent state model, no hybrid |
+| Manifest/SW owner | `@vite-pwa/sveltekit` as single source (manifest + SW); no separate hand-written `static/manifest.webmanifest` | Avoids duplicate/root-path URL drift; one base path everywhere |
 | `/day/[date]` route | Not built; days expand inline on `/forecast` | Spec §14 explicitly permits |
-| Details, chart, map | Deferred to Phase 2 | Not in Phase 1 per §44 |
-| App icons | Original SVG → PNG via devDependency script (192/512/maskable/180 apple-touch) | No proprietary Yandex assets; no hand-made binary PNGs |
-| Base path | `PUBLIC_BASE_PATH`, default `/weather`, empty for custom domain | Repo is `weather`, username `zeklop` → `https://zeklop.github.io/weather/` |
-| Time handling | Location timezone from Open-Meteo via `Intl.DateTimeFormat` | Spec §23; never phone-local tz |
+| `/map` route | Static prerendered placeholder, no MapLibre, honest «Карта — в следующей версии» message, working navigation | §45 requires graceful `/map`, tab and CTA must never 404; MapLibre still excluded from Home bundle |
+| Details, chart, map implementation | Deferred to Phase 2 | Not in Phase 1 per §44; §46 screenshots for Details/Map documented as an explicit exception in IMPLEMENTATION_NOTES.md |
+| App icons | Original SVG → PNG via devDependency generator (192/512/maskable+apple-touch 180); maskable has its own safe-zone composition; committed PNGs as fallback + CI size check | No proprietary Yandex assets; reproducible, verifiable |
+| Base path | `PUBLIC_BASE_PATH` = `'' \| '/weather'` (no trailing slash), single source into `kit.paths.base` + manifest `start_url`/`scope` + SW; CI builds `/weather`, separate smoke for root mode | Repo is `weather`, username `zeklop` → `https://zeklop.github.io/weather/` |
+| Time handling | `response.timezone` stored in payload; wall-time parsed without `new Date()` shift; all labels via `Intl.DateTimeFormat` with location tz; tests for foreign tz + DST | Spec §23; never phone-local tz |
 | Units | Fixed Russian defaults (°C, м/с, mmHg); formatting isolated in `units.ts` for later configurability | Spec §19/§6 |
 
 ## Data flow
 
 UI components → `src/lib/api/{openMeteo,geocoding}.ts` (sole `fetch()` callers) → normalized models → Svelte 5 runes stores → components. No `fetch()` in components.
 
-Cache key: `forecast:{latRounded4}:{lonRounded4}`. SWR: fresh <15 min, stale-but-usable <6 h, offline fallback any age with visible timestamp.
+Cache key: `forecast:{latRounded4}:{lonRounded4}`. SWR: fresh <15 min, stale-but-usable <6 h, offline fallback any age with visible timestamp. Runtime `Map` capped; localStorage bounded (max entries, budget, LRU), handles corrupt JSON and quota errors.
 
 ## Service worker
 
-`vite-plugin-pwa`. NetworkFirst for `api.open-meteo.com` (timeout ~3 s → cache fallback), CacheFirst for static assets. Versioned caches, obsolete cache cleanup. Scope covers `/weather/`.
+`@vite-pwa/sveltekit` (manifest + SW single source). NetworkFirst for `api.open-meteo.com` (`networkTimeoutSeconds: 3`, cache only successful responses, `maxEntries`/expiry), CacheFirst for static assets. Versioned caches, obsolete cache cleanup. Scope covers `/weather/` (base-path aware). App-level API failures (timeouts, malformed, geocoding) handled outside SW via `AbortController` in the api layer.
 
 ## Deploy
 
