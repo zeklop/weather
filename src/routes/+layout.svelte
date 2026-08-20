@@ -12,6 +12,8 @@
 	import { setForecastStore } from '$lib/stores/context';
 	import { t } from '$lib/i18n';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
+	import PwaInstallBanner from '$lib/components/PwaInstallBanner.svelte';
+	import PwaInstallModal, { openPwaInstallModal } from '$lib/components/PwaInstallModal.svelte';
 
 	let { children } = $props();
 
@@ -191,11 +193,14 @@
 		</div>
 	</header>
 
+	<PwaInstallBanner onopenmodal={openPwaInstallModal} />
+
 	<main class="app-main">
 		{@render children()}
 	</main>
 
 	<SearchSheet />
+	<PwaInstallModal />
 </div>
 
 <nav class="bottom-nav" aria-label={t('nav.ariaLabel', lang)}>

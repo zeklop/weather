@@ -149,6 +149,15 @@ export interface Translations {
 		installText: string;
 		installBtn: string;
 		howToInstall: string;
+		bannerAndroidText: string;
+		bannerIosText: string;
+		bannerIosAction: string;
+		bannerDismiss: string;
+		modalTitle: string;
+		modalStep1: string;
+		modalStep2: string;
+		modalStep3: string;
+		modalClose: string;
 	};
 	units: {
 		ms: string;
@@ -313,7 +322,16 @@ export const translations: Record<Language, Translations> = {
 			installTitle: 'Install Weather App',
 			installText: 'Install for fast access and offline support',
 			installBtn: 'Install',
-			howToInstall: 'How to install'
+			howToInstall: 'How to install',
+			bannerAndroidText: 'Install Weather for quick access and offline mode',
+			bannerIosText: 'Add Weather to your Home Screen for the best experience',
+			bannerIosAction: 'How to install',
+			bannerDismiss: 'Dismiss',
+			modalTitle: 'How to install',
+			modalStep1: 'Tap the Share button in Safari',
+			modalStep2: 'Scroll and select "Add to Home Screen"',
+			modalStep3: 'Tap "Add" in the top-right corner',
+			modalClose: 'Got it'
 		},
 		units: {
 			ms: 'm/s',
@@ -476,7 +494,16 @@ export const translations: Record<Language, Translations> = {
 			installTitle: 'Установить приложение Погода',
 			installText: 'Установите для быстрого доступа и оффлайн-режима',
 			installBtn: 'Установить',
-			howToInstall: 'Как установить'
+			howToInstall: 'Инструкция',
+			bannerAndroidText: 'Установите приложение Погода для быстрого доступа и оффлайн-режима',
+			bannerIosText: 'Установите на экран «Домой» для удобной работы',
+			bannerIosAction: 'Инструкция',
+			bannerDismiss: 'Закрыть',
+			modalTitle: 'Инструкция по установке',
+			modalStep1: 'Нажмите кнопку «Поделиться» в Safari',
+			modalStep2: 'Прокрутите меню и выберите «На экран "Домой"»',
+			modalStep3: 'Нажмите «Добавить» в правом верхнем углу',
+			modalClose: 'Понятно'
 		},
 		units: {
 			ms: 'м/с',
