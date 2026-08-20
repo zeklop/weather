@@ -88,6 +88,10 @@ describe('t() translation helper', () => {
 		expect(t('nav.favorites')).toBe('Favorites');
 		expect(t('nav.settings')).toBe('Settings');
 		expect(t('map.title')).toBe('Map');
+		expect(t('settings.theme')).toBe('Theme');
+		expect(t('settings.themeSystem')).toBe('System');
+		expect(t('settings.themeLight')).toBe('Light');
+		expect(t('settings.themeDark')).toBe('Dark');
 	});
 
 	it('translates simple dot-notated keys in ru when specified', () => {
@@ -97,6 +101,10 @@ describe('t() translation helper', () => {
 		expect(t('nav.favorites', 'ru')).toBe('Избранное');
 		expect(t('nav.settings', 'ru')).toBe('Настройки');
 		expect(t('map.title', 'ru')).toBe('Карта');
+		expect(t('settings.theme', 'ru')).toBe('Тема');
+		expect(t('settings.themeSystem', 'ru')).toBe('Системная');
+		expect(t('settings.themeLight', 'ru')).toBe('Светлая');
+		expect(t('settings.themeDark', 'ru')).toBe('Тёмная');
 	});
 
 	it('interpolates template parameters', () => {

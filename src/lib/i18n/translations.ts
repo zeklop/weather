@@ -92,6 +92,11 @@ export interface Translations {
 	settings: {
 		title: string;
 		description: string;
+		theme: string;
+		themeSelectAria: string;
+		themeSystem: string;
+		themeLight: string;
+		themeDark: string;
 		language: string;
 		languageSelectAria: string;
 		city: string;
@@ -274,6 +279,11 @@ export const translations: Record<Language, Translations> = {
 		settings: {
 			title: 'Settings',
 			description: 'Weather app settings',
+			theme: 'Theme',
+			themeSelectAria: 'Select theme',
+			themeSystem: 'System',
+			themeLight: 'Light',
+			themeDark: 'Dark',
 			language: 'Language',
 			languageSelectAria: 'Select language',
 			city: 'City',
@@ -454,6 +464,11 @@ export const translations: Record<Language, Translations> = {
 		settings: {
 			title: 'Настройки',
 			description: 'Настройки приложения Погода',
+			theme: 'Тема',
+			themeSelectAria: 'Выбор темы',
+			themeSystem: 'Системная',
+			themeLight: 'Светлая',
+			themeDark: 'Тёмная',
 			language: 'Язык',
 			languageSelectAria: 'Выбор языка',
 			city: 'Город',

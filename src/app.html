@@ -10,7 +10,17 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="Погода" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-		<meta name="theme-color" content="#F5F7FA" />
+		<meta name="theme-color" content="#F3F5F8" />
+		<script>
+			try {
+				var raw = localStorage.getItem('weather:settings');
+				var theme = raw ? JSON.parse(raw).theme : 'system';
+				var isDark =
+					theme === 'dark' ||
+					(theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

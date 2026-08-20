@@ -429,6 +429,12 @@
 		font-size: 14px;
 	}
 
+	:global([data-theme='dark']) .banner {
+		background: rgba(249, 115, 22, 0.15);
+		border-color: rgba(249, 115, 22, 0.35);
+		color: #fdba74;
+	}
+
 	.retry-btn {
 		flex-shrink: 0;
 		min-height: 44px;
@@ -558,6 +564,10 @@
 		border-right: 1px dashed var(--divider);
 		background: rgba(0, 0, 0, 0.02);
 		border-radius: var(--radius-control);
+	}
+
+	:global([data-theme='dark']) .rail-date-divider {
+		background: rgba(255, 255, 255, 0.04);
 	}
 
 	.date-divider-badge {

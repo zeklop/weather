@@ -342,6 +342,12 @@
 		font-size: 14px;
 	}
 
+	:global([data-theme='dark']) .banner {
+		background: rgba(249, 115, 22, 0.15);
+		border-color: rgba(249, 115, 22, 0.35);
+		color: #fdba74;
+	}
+
 	.retry-btn {
 		flex-shrink: 0;
 		min-height: 44px;

@@ -121,6 +121,35 @@
 
 	<div class="card group">
 		<div class="row">
+			<span class="row-label">{t('settings.theme', lang)}</span>
+			<div class="theme-selector" role="group" aria-label={t('settings.themeSelectAria', lang)}>
+				<button
+					class="theme-btn"
+					class:active={mounted && settings.theme === 'system'}
+					type="button"
+					onclick={() => settings.setTheme('system')}
+				>
+					{t('settings.themeSystem', lang)}
+				</button>
+				<button
+					class="theme-btn"
+					class:active={mounted && settings.theme === 'light'}
+					type="button"
+					onclick={() => settings.setTheme('light')}
+				>
+					{t('settings.themeLight', lang)}
+				</button>
+				<button
+					class="theme-btn"
+					class:active={mounted && settings.theme === 'dark'}
+					type="button"
+					onclick={() => settings.setTheme('dark')}
+				>
+					{t('settings.themeDark', lang)}
+				</button>
+			</div>
+		</div>
+		<div class="row">
 			<span class="row-label">{t('settings.language', lang)}</span>
 			<div class="lang-selector" role="group" aria-label={t('settings.languageSelectAria', lang)}>
 				<button
@@ -410,7 +439,8 @@
 		gap: var(--space-1);
 	}
 
-	/* ---------- language selector ---------- */
+	/* ---------- theme & language selector ---------- */
+	.theme-selector,
 	.lang-selector {
 		display: inline-flex;
 		align-items: center;
@@ -421,6 +451,7 @@
 		border: 1px solid var(--divider);
 	}
 
+	.theme-btn,
 	.lang-btn {
 		min-height: 32px;
 		padding: 0 var(--space-3);
@@ -436,6 +467,7 @@
 			color 0.15s ease;
 	}
 
+	.theme-btn.active,
 	.lang-btn.active {
 		background: var(--accent);
 		color: #fff;
@@ -583,6 +615,11 @@
 		padding: var(--space-4);
 		background: #eff6ff;
 		border-color: #bfdbfe;
+	}
+
+	:global([data-theme='dark']) .hint {
+		background: rgba(59, 130, 246, 0.12);
+		border-color: rgba(59, 130, 246, 0.3);
 	}
 
 	.hint-title {

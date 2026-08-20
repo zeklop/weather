@@ -2,8 +2,7 @@ import { DEFAULT_LANGUAGE, type Language } from '../i18n';
 
 export const STORAGE_KEY = 'weather:settings';
 
-// Phase 2 adds the dark theme; v1 ships 'light' only (no System/Light toggle).
-export type Theme = 'light' | 'dark';
+export type Theme = 'system' | 'light' | 'dark';
 
 export type SettingsStore = {
 	readonly theme: Theme;
@@ -14,6 +13,7 @@ export type SettingsStore = {
 	readonly severeAlerts: boolean;
 	readonly freezeAlerts: boolean;
 	readonly quietHoursEnabled: boolean;
+	setTheme(theme: Theme): void;
 	setLanguage(lang: Language): void;
 	touchLastUpdated(now?: number): void;
 	setAlertsEnabled(enabled: boolean): void;
@@ -35,7 +35,7 @@ type SettingsData = {
 };
 
 const DEFAULT_SETTINGS: SettingsData = {
-	theme: 'light',
+	theme: 'system',
 	language: DEFAULT_LANGUAGE,
 	lastUpdated: null,
 	alertsEnabled: false,
@@ -50,7 +50,7 @@ function defaultStorage(): Storage | null {
 }
 
 function isTheme(value: unknown): value is Theme {
-	return value === 'light' || value === 'dark';
+	return value === 'system' || value === 'light' || value === 'dark';
 }
 
 function isLanguage(value: unknown): value is Language {
@@ -169,6 +169,11 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		}
 	}
 
+	function setTheme(nextTheme: Theme): void {
+		theme = nextTheme;
+		persist();
+	}
+
 	function setLanguage(lang: Language): void {
 		language = lang;
 		persist();
@@ -229,6 +234,7 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get quietHoursEnabled() {
 			return quietHoursEnabled;
 		},
+		setTheme,
 		setLanguage,
 		touchLastUpdated,
 		setAlertsEnabled,

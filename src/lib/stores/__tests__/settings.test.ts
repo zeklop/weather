@@ -9,10 +9,10 @@ afterEach(() => {
 });
 
 describe('createSettingsStore', () => {
-	it('defaults to light theme, en language, and no last update', () => {
+	it('defaults to system theme, en language, and no last update', () => {
 		const store = createSettingsStore(makeMemoryStorage());
 
-		expect(store.theme).toBe('light');
+		expect(store.theme).toBe('system');
 		expect(store.language).toBe('en');
 		expect(store.lastUpdated).toBeNull();
 		expect(store.alertsEnabled).toBe(false);
@@ -20,6 +20,32 @@ describe('createSettingsStore', () => {
 		expect(store.severeAlerts).toBe(true);
 		expect(store.freezeAlerts).toBe(true);
 		expect(store.quietHoursEnabled).toBe(true);
+	});
+
+	it('setTheme updates the theme and persists it', () => {
+		const storage = makeMemoryStorage();
+		const store = createSettingsStore(storage);
+
+		store.setTheme('dark');
+		expect(store.theme).toBe('dark');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
+			theme: 'dark'
+		});
+
+		store.setTheme('light');
+		expect(store.theme).toBe('light');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
+			theme: 'light'
+		});
+
+		store.setTheme('system');
+		expect(store.theme).toBe('system');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
+			theme: 'system'
+		});
+
+		const fresh = createSettingsStore(storage);
+		expect(fresh.theme).toBe('system');
 	});
 
 	it('persists and updates alert toggles', () => {
@@ -53,7 +79,7 @@ describe('createSettingsStore', () => {
 
 		expect(store.language).toBe('ru');
 		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
-			theme: 'light',
+			theme: 'system',
 			language: 'ru',
 			lastUpdated: null,
 			alertsEnabled: false,
@@ -111,7 +137,7 @@ describe('createSettingsStore', () => {
 
 		expect(store.lastUpdated).toBe(NOW);
 		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
-			theme: 'light',
+			theme: 'system',
 			language: 'en',
 			lastUpdated: NOW,
 			alertsEnabled: false,
@@ -123,7 +149,7 @@ describe('createSettingsStore', () => {
 
 		const fresh = createSettingsStore(storage);
 		expect(fresh.lastUpdated).toBe(NOW);
-		expect(fresh.theme).toBe('light');
+		expect(fresh.theme).toBe('system');
 		expect(fresh.language).toBe('en');
 	});
 
@@ -153,7 +179,7 @@ describe('createSettingsStore', () => {
 
 		const store = createSettingsStore(storage);
 
-		expect(store.theme).toBe('light');
+		expect(store.theme).toBe('system');
 		expect(store.lastUpdated).toBeNull();
 		expect(storage.getItem(STORAGE_KEY)).toBeNull();
 	});
@@ -165,7 +191,7 @@ describe('createSettingsStore', () => {
 
 		const store = createSettingsStore(storage);
 
-		expect(store.theme).toBe('light');
+		expect(store.theme).toBe('system');
 		expect(storage.getItem(STORAGE_KEY)).toBeNull();
 	});
 
@@ -176,7 +202,7 @@ describe('createSettingsStore', () => {
 
 		const store = createSettingsStore(storage);
 
-		expect(store.theme).toBe('light');
+		expect(store.theme).toBe('system');
 		expect(store.lastUpdated).toBeNull();
 		expect(storage.getItem(STORAGE_KEY)).toBeNull();
 	});
@@ -187,6 +213,6 @@ describe('createSettingsStore', () => {
 		store.touchLastUpdated(NOW);
 
 		expect(store.lastUpdated).toBe(NOW);
-		expect(store.theme).toBe('light');
+		expect(store.theme).toBe('system');
 	});
 });

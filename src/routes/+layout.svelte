@@ -83,6 +83,37 @@
 		};
 	});
 
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+
+		const currentTheme = settings.theme;
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+		function applyTheme(): void {
+			const resolvedTheme =
+				currentTheme === 'system'
+					? mediaQuery.matches
+						? 'dark'
+						: 'light'
+					: currentTheme;
+
+			document.documentElement.setAttribute('data-theme', resolvedTheme);
+			const metaTheme = document.querySelector('meta[name="theme-color"]');
+			if (metaTheme) {
+				metaTheme.setAttribute('content', resolvedTheme === 'dark' ? '#0B0F19' : '#F3F5F8');
+			}
+		}
+
+		applyTheme();
+
+		if (currentTheme === 'system') {
+			mediaQuery.addEventListener('change', applyTheme);
+			return () => {
+				mediaQuery.removeEventListener('change', applyTheme);
+			};
+		}
+	});
+
 	const routeId = $derived(page.route.id);
 
 	const navItems = $derived([
@@ -370,7 +401,7 @@
 		top: 0;
 		z-index: 20;
 		padding-top: env(safe-area-inset-top);
-		background: var(--bg-card);
+		background: var(--nav-bg);
 		-webkit-backdrop-filter: blur(16px) saturate(1.4);
 		backdrop-filter: blur(16px) saturate(1.4);
 		border-bottom: 1px solid var(--divider);
@@ -462,7 +493,7 @@
 		right: 0;
 		z-index: 20;
 		padding-bottom: env(safe-area-inset-bottom);
-		background: var(--bg-card);
+		background: var(--nav-bg);
 		-webkit-backdrop-filter: blur(16px) saturate(1.4);
 		backdrop-filter: blur(16px) saturate(1.4);
 		border-top: 1px solid var(--divider);
