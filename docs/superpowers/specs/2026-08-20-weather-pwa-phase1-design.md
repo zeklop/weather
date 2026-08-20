@@ -33,8 +33,8 @@ Phase 1 per spec §44:
 | `/map` route | Static prerendered placeholder, no MapLibre, honest «Карта — в следующей версии» message, working navigation | §45 requires graceful `/map`, tab and CTA must never 404; MapLibre still excluded from Home bundle |
 | Details, chart, map implementation | Deferred to Phase 2 | Not in Phase 1 per §44; §46 screenshots for Details/Map documented as an explicit exception in IMPLEMENTATION_NOTES.md |
 | App icons | Original SVG → PNG via devDependency generator (192/512/maskable+apple-touch 180); maskable has its own safe-zone composition; committed PNGs as fallback + CI size check | No proprietary Yandex assets; reproducible, verifiable |
-| Base path | `PUBLIC_BASE_PATH` = `'' \| '/weather'` (no trailing slash), single source into `kit.paths.base` + manifest `start_url`/`scope` + SW; CI builds `/weather`, separate smoke for root mode | Repo is `weather`, username `zeklop` → `https://zeklop.github.io/weather/` |
-| Time handling | `response.timezone` stored in payload; wall-time parsed without `new Date()` shift; all labels via `Intl.DateTimeFormat` with location tz; tests for foreign tz + DST | Spec §23; never phone-local tz |
+| Base path | `PUBLIC_BASE_PATH` = `'' \| '/weather'` (no trailing slash). Derived pair: `KIT_BASE` = PUBLIC_BASE_PATH → `kit.paths.base`; `URL_BASE` = PUBLIC_BASE_PATH + `'/'` → manifest `start_url`/`scope`/`navigateFallback`/icons (`/` in root mode). CI builds `/weather`, separate smoke for root mode | Repo is `weather`, username `zeklop` → `https://zeklop.github.io/weather/` |
+| Time handling | `response.timezone` stored in payload. Open-Meteo values are wall-time ISO in location tz; compare them directly as local wall-time (HH:MM string compare), no `new Date()` conversion — DST-safe by construction. `isDay(at, sunrise, sunset)`, polar day/night as always-day/night. Tests: DST, cross-midnight, polar, foreign tz | Spec §23; never phone-local tz |
 | Units | Fixed Russian defaults (°C, м/с, mmHg); formatting isolated in `units.ts` for later configurability | Spec §19/§6 |
 
 ## Data flow
@@ -45,7 +45,7 @@ Cache key: `forecast:{latRounded4}:{lonRounded4}`. SWR: fresh <15 min, stale-but
 
 ## Service worker
 
-`@vite-pwa/sveltekit` (manifest + SW single source). NetworkFirst for `api.open-meteo.com` (`networkTimeoutSeconds: 3`, cache only successful responses, `maxEntries`/expiry), CacheFirst for static assets. Versioned caches, obsolete cache cleanup. Scope covers `/weather/` (base-path aware). App-level API failures (timeouts, malformed, geocoding) handled outside SW via `AbortController` in the api layer.
+`@vite-pwa/sveltekit` (manifest + SW single source). NetworkFirst for `api.open-meteo.com` (`networkTimeoutSeconds: 3`, cache only successful responses, `maxEntries`/expiry), CacheFirst for static assets. Versioned caches, obsolete cache cleanup. Scope covers `URL_BASE` (`/weather/`). SW filename is `sw.js` (vite-plugin-pwa default; spec §4.4 mentions `service-worker.js` — recorded as a documented deviation, no duplicate file). App-level API failures (timeouts, malformed, geocoding) handled outside SW via `AbortController` in the api layer.
 
 ## Deploy
 
