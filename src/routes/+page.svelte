@@ -30,17 +30,23 @@
 	// "Now" as wall-time ISO in the location tz: the current instant converted
 	// via the payload's timezone (never a payload string parsed with new Date).
 	function wallNow(timezone: string, ms: number): string {
-		const parts = new Intl.DateTimeFormat('en-US', {
-			timeZone: timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			hourCycle: 'h23'
-		}).formatToParts(new Date(ms));
-		const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-		return `${val('year')}-${val('month')}-${val('day')}T${val('hour')}:${val('minute')}`;
+		try {
+			const parts = new Intl.DateTimeFormat('en-US', {
+				timeZone: timezone,
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hourCycle: 'h23'
+			}).formatToParts(new Date(ms));
+			const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+			let hour = val('hour');
+			if (hour === '24') hour = '00';
+			return `${val('year')}-${val('month')}-${val('day')}T${hour}:${val('minute')}`;
+		} catch {
+			return new Date(ms).toISOString().slice(0, 16);
+		}
 	}
 
 	// Wall-time difference in minutes — Date.UTC carrier trick from format.ts.
@@ -96,7 +102,19 @@
 		? (payload.daily.find((d) => isToday(d.date, nowIso)) ?? payload.daily[0])
 		: null);
 	const dayByDate = $derived(payload ? new Map(payload.daily.map((d) => [d.date, d])) : new Map<string, DayForecast>());
-	const previewDays = $derived(payload ? payload.daily.slice(1, 8) : []);
+	const previewDays = $derived.by(() => {
+		if (!payload) return [];
+		const todayIdx = nowIso ? payload.daily.findIndex((d) => isToday(d.date, nowIso)) : -1;
+		const start = todayIdx >= 0 ? todayIdx + 1 : 1;
+		return payload.daily.slice(start, start + 7);
+	});
+
+	function precipLabel(code: number): string {
+		if (code >= 51) {
+			return getWeatherVisual(code).labelRu;
+		}
+		return 'Дождь';
+	}
 
 	// Deterministic heuristic over hourly data (§13.3) — no invented nowcasting:
 	// window is the next 2 full hours; card hidden when the window has no
@@ -108,12 +126,12 @@
 		const hasData = win.some((h) => h.precipitationProbability != null || h.precipitation > 0);
 		if (!hasData) return null;
 		if (payload.current.precipitation > 0) {
-			return `${getWeatherVisual(payload.current.weatherCode).labelRu} идёт`;
+			return `${precipLabel(payload.current.weatherCode)} идёт`;
 		}
 		const soon = win.find((h) => (h.precipitationProbability ?? 0) >= 50 || h.precipitation > 0);
 		if (!soon) return 'Без осадков';
 		const minutes = wallMinutesBetween(nowIso, soon.time);
-		return `${getWeatherVisual(soon.weatherCode).labelRu} начнётся примерно через ${spanWord(minutes)}`;
+		return `${precipLabel(soon.weatherCode)} начнётся примерно через ${spanWord(minutes)}`;
 	});
 
 	function iconName(visual: WeatherVisual, day: boolean): string {
@@ -215,22 +233,17 @@
 
 		<div class="card rail">
 			<div class="rail-scroll" role="group" aria-label="Прогноз по часам">
-				<div class="rail-cell">
-					<span class="cell-time">Сейчас</span>
-					<WeatherIcon name={iconName(heroVisual, dayNightFor(payload.current.time))} size={30} />
-					<span class="cell-temp">{formatTemp(payload.current.temperature)}</span>
-					{#if currentProb != null && currentProb >= 10}
-						<span class="cell-precip">{currentProb}%</span>
-					{/if}
-				</div>
 				{#each railHours as h, i}
-					{@const v = getWeatherVisual(h.weatherCode)}
-					<div class="rail-cell" class:current={isCurrentHour && i === 0}>
-						<span class="cell-time">{formatHour(h.time)}</span>
-						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={30} />
-						<span class="cell-temp">{formatTemp(h.temperature)}</span>
-						{#if h.precipitationProbability != null && h.precipitationProbability >= 10}
-							<span class="cell-precip">{h.precipitationProbability}%</span>
+					{@const current = isCurrentHour && i === 0}
+					{@const v = current ? heroVisual : getWeatherVisual(h.weatherCode)}
+					{@const prob = current ? currentProb : h.precipitationProbability}
+					{@const day = current ? dayNightFor(payload.current.time) : dayNightFor(h.time)}
+					<div class="rail-cell" class:current>
+						<span class="cell-time">{current ? 'Сейчас' : formatHour(h.time)}</span>
+						<WeatherIcon name={iconName(v, day)} size={30} />
+						<span class="cell-temp">{formatTemp(current ? payload.current.temperature : h.temperature)}</span>
+						{#if prob != null && prob >= 10}
+							<span class="cell-precip">{prob}%</span>
 						{/if}
 					</div>
 				{/each}

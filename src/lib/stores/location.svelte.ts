@@ -143,8 +143,7 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 	}
 
 	function requestGeolocation(): void {
-		// Denied/unavailable is final for the session — never re-prompt.
-		if (geoState !== 'idle' || pending) return;
+		if (pending) return;
 		if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
 			setGeoState('unavailable');
 			return;
@@ -153,6 +152,7 @@ export function createLocationStore(storage: Storage | null = defaultStorage()):
 		navigator.geolocation.getCurrentPosition(
 			(position) => {
 				pending = false;
+				setGeoState('idle');
 				setLocation(locationFromCoords(position.coords.latitude, position.coords.longitude));
 			},
 			(error) => {

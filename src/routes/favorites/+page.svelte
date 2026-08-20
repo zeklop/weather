@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { getForecast } from '$lib/api/openMeteo';
@@ -21,7 +22,7 @@
 	const cache = typeof localStorage !== 'undefined' ? createForecastCache(localStorage) : null;
 
 	type Row = { entry: CachedForecast | null; fetching: boolean; failed: boolean };
-	const rows = $state(new Map<string, Row>());
+	const rows = new SvelteMap<string, Row>();
 
 	// SSR/hydration gate: the favorites list lives in localStorage, so server
 	// and client can't agree on it — render a skeleton until the client mounts.

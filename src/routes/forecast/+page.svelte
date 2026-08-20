@@ -28,17 +28,23 @@
 	// "Now" as wall-time ISO in the location tz: the current instant converted
 	// via the payload's timezone (never a payload string parsed with new Date).
 	function wallNow(timezone: string, ms: number): string {
-		const parts = new Intl.DateTimeFormat('en-US', {
-			timeZone: timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			hourCycle: 'h23'
-		}).formatToParts(new Date(ms));
-		const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-		return `${val('year')}-${val('month')}-${val('day')}T${val('hour')}:${val('minute')}`;
+		try {
+			const parts = new Intl.DateTimeFormat('en-US', {
+				timeZone: timezone,
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hourCycle: 'h23'
+			}).formatToParts(new Date(ms));
+			const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+			let hour = val('hour');
+			if (hour === '24') hour = '00';
+			return `${val('year')}-${val('month')}-${val('day')}T${hour}:${val('minute')}`;
+		} catch {
+			return new Date(ms).toISOString().slice(0, 16);
+		}
 	}
 
 	const nowIso = $derived(payload ? wallNow(payload.timezone, nowMs) : null);

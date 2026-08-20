@@ -65,6 +65,16 @@ function requireStrings(block: JsonObject, key: string, length: number): string[
 	return values;
 }
 
+function requireStringsOrNull(block: JsonObject, key: string, length: number): (string | null)[] {
+	const arr = requireArray(block, key);
+	const values = arr.map((v) => {
+		if (v !== null && typeof v !== 'string') throw malformed(`${key} contains non-string`);
+		return v;
+	});
+	if (values.length !== length) throw malformed(`${key} length mismatch`);
+	return values;
+}
+
 function requireNumbers(block: JsonObject, key: string, length: number): number[] {
 	const arr = requireArray(block, key);
 	const values = arr.map((v) => {
@@ -149,8 +159,8 @@ function normalizeDaily(block: JsonObject): DayForecast[] {
 	const precipitationSum = requireNumbers(block, 'precipitation_sum', length);
 	const windSpeedMax = requireNumbers(block, 'wind_speed_10m_max', length);
 	const windGustMax = requireNumbers(block, 'wind_gusts_10m_max', length);
-	const sunrise = requireStrings(block, 'sunrise', length);
-	const sunset = requireStrings(block, 'sunset', length);
+	const sunrise = requireStringsOrNull(block, 'sunrise', length);
+	const sunset = requireStringsOrNull(block, 'sunset', length);
 	const uvIndexMax = requireNumbersOrNull(block, 'uv_index_max', length);
 
 	return time.map((_, i) => ({
@@ -164,8 +174,8 @@ function normalizeDaily(block: JsonObject): DayForecast[] {
 		precipitationSum: precipitationSum[i],
 		windSpeedMax: windSpeedMax[i],
 		windGustMax: windGustMax[i],
-		sunrise: sunrise[i] === '' ? null : sunrise[i],
-		sunset: sunset[i] === '' ? null : sunset[i],
+		sunrise: !sunrise[i] ? null : sunrise[i],
+		sunset: !sunset[i] ? null : sunset[i],
 		uvIndexMax: uvIndexMax[i]
 	}));
 }

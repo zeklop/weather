@@ -135,7 +135,7 @@ describe('createLocationStore', () => {
 		expect(fresh.current.id).toBe('59.9386,30.3141');
 	});
 
-	it('flags denied on permission error and never re-prompts', () => {
+	it('flags denied on permission error and sets geoState to denied', () => {
 		const getCurrentPosition = vi.fn((_success: unknown, error: (e: unknown) => void) =>
 			error({ code: 1 })
 		);
@@ -146,12 +146,9 @@ describe('createLocationStore', () => {
 		store.requestGeolocation();
 		expect(store.geoState).toBe('denied');
 		expect(storage.getItem(GEO_STATE_KEY)).toBe('denied');
-
-		store.requestGeolocation();
-		expect(getCurrentPosition).toHaveBeenCalledTimes(1);
 	});
 
-	it('flags unavailable on position error code 2 and never re-prompts', () => {
+	it('flags unavailable on position error code 2', () => {
 		const getCurrentPosition = vi.fn((_success: unknown, error: (e: unknown) => void) =>
 			error({ code: 2 })
 		);
@@ -161,20 +158,24 @@ describe('createLocationStore', () => {
 		store.requestGeolocation();
 
 		expect(store.geoState).toBe('unavailable');
-		store.requestGeolocation();
-		expect(getCurrentPosition).toHaveBeenCalledTimes(1);
 	});
 
-	it('does not prompt again when a prior denial was persisted', () => {
-		const getCurrentPosition = vi.fn();
+	it('allows user to retry geolocation request after prior denial', () => {
+		const getCurrentPosition = vi.fn((success: (p: unknown) => void) => {
+			success({ coords: { latitude: 59.9386, longitude: 30.3141 } });
+		});
 		makeGeolocation(getCurrentPosition);
 		const storage = makeMemoryStorage({ [GEO_STATE_KEY]: 'denied' });
 
 		const store = createLocationStore(storage);
+		expect(store.geoState).toBe('denied');
+
+		// User clicks retry
 		store.requestGeolocation();
 
-		expect(getCurrentPosition).not.toHaveBeenCalled();
-		expect(store.geoState).toBe('denied');
+		expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+		expect(store.current.id).toBe('59.9386,30.3141');
+		expect(store.geoState).toBe('idle');
 	});
 
 	it('does not issue a second geolocation request while one is in flight', () => {

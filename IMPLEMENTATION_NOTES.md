@@ -74,6 +74,7 @@ As specified in Phase 1 scope (§44), the Phase 1 Design Document, and the Phase
 
 - **Bilingual Interface (i18n):** English by default, optional Russian interface, language selector in Settings, localized WMO descriptions, units, compass directions, date/time formatting, and Open-Meteo geocoding search language integration.
 - **Platform-Specific PWA Install Banners:** Top banner with direct native install button for Android (`beforeinstallprompt`) and interactive step-by-step installation instructions modal for iOS Safari.
+- **Dynamic Weather Favicon & App Badging:** Real-time temperature rendering on dynamic canvas favicon and tab title, plus App Badging API (`navigator.setAppBadge`) on iOS 16.4+ standalone / Android home screen icons.
 - **Weather Change Notifications:** Multi-tier notification system for precipitation transitions, severe weather (thunderstorms, gale), frost warnings, and sudden temperature shifts with quiet hours and rate limiting.
 - **Details Screen Metrics Card:** Expanded atmospheric metrics (UV index, air quality index, detailed humidity / dew point breakdown) deferred to Phase 2.
 - **Precipitation SVG Chart:** Interactive 24-hour precipitation curve chart deferred to Phase 2.
