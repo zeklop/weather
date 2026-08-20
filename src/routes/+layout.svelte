@@ -79,6 +79,9 @@
 
 	const isFavorite = $derived(favorites.isFavorite(location.current));
 	const isUnnamed = $derived(isUnnamedLocation(location.current));
+	const isRefreshing = $derived(
+		forecastStore.status === 'loading' || forecastStore.refreshing
+	);
 	const starLabel = $derived(
 		isUnnamed
 			? 'Недоступно для безымянного местоположения'
@@ -114,6 +117,30 @@
 			<div class="header-row">
 				<div class="app-title">{mounted ? location.current.name : '…'}</div>
 				<div class="header-actions">
+					<button
+						class="icon-btn"
+						type="button"
+						aria-label="Обновить прогноз"
+						aria-busy={isRefreshing}
+						onclick={() => forecastStore.refresh()}
+					>
+						<svg
+							class="icon"
+							class:spinning={isRefreshing}
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+							<path d="M3 3v5h5" />
+							<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+							<path d="M21 21v-5h-5" />
+						</svg>
+					</button>
 					<button class="icon-btn" type="button" aria-label="Найти город" onclick={openSearch}>
 						<svg
 							class="icon"
@@ -385,6 +412,16 @@
 	.icon {
 		width: 22px;
 		height: 22px;
+	}
+
+	.icon.spinning {
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.app-main {

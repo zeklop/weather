@@ -99,6 +99,26 @@ button {
 	min-width: 0;
 }
 
+/* Desktop layout density & comfortable reading width (>= 768px / 1024px) */
+@media (min-width: 768px) {
+	:root {
+		--space-4: 20px;
+		--space-5: 24px;
+		--radius-card: 22px;
+	}
+
+	.card {
+		box-shadow: 0 2px 4px rgba(16, 24, 40, 0.03), 0 4px 16px rgba(16, 24, 40, 0.05);
+	}
+}
+
+@media (min-width: 1024px) {
+	:root {
+		--space-4: 24px;
+		--space-5: 28px;
+	}
+}
+
 /* Screen-reader-only content (a11y) */
 .sr-only {
 	position: absolute;

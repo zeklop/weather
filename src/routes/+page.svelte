@@ -227,6 +227,16 @@
 						{#if todayDay.precipitationSum < 1}
 							<div class="today-note">Без существенных осадков</div>
 						{/if}
+						{#if todayDay.sunrise || todayDay.sunset}
+							<div class="today-sun">
+								{#if todayDay.sunrise}
+									<span>Восход: {formatHour(todayDay.sunrise)}</span>
+								{/if}
+								{#if todayDay.sunset}
+									<span>Закат: {formatHour(todayDay.sunset)}</span>
+								{/if}
+							</div>
+						{/if}
 					</div>
 					<div class="today-icon">
 						<WeatherIcon name={todayVisual.iconDay} size={44} />
@@ -435,6 +445,17 @@
 		min-width: 0;
 	}
 
+	@media (min-width: 768px) {
+		.hero {
+			padding: var(--space-4) 0 var(--space-2);
+		}
+
+		.hero-main {
+			justify-content: flex-start;
+			gap: var(--space-7);
+		}
+	}
+
 	.hero-left {
 		min-width: 0;
 	}
@@ -601,6 +622,15 @@
 		font-size: 13px;
 		color: var(--text-secondary);
 		margin-top: 2px;
+	}
+
+	.today-sun {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2) var(--space-4);
+		font-size: 13px;
+		color: var(--text-secondary);
+		margin-top: var(--space-1);
 	}
 
 	/* ---------- daily preview ---------- */

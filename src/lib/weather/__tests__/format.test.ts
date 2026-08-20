@@ -5,6 +5,7 @@ import {
 	formatDayFull,
 	formatDayHeader,
 	formatDayShort,
+	formatFavoriteLocalTime,
 	formatHour,
 	formatRailDateBadge,
 	formatStaleTime,
@@ -55,6 +56,13 @@ describe('formatDayFull', () => {
 describe('formatTimeShort', () => {
 	it('extracts HH:MM from wall-time ISO with seconds', () => {
 		expect(formatTimeShort('2026-08-20T08:42:00')).toBe('08:42');
+	});
+});
+
+describe('formatFavoriteLocalTime', () => {
+	it('formats observation timestamp with "местное HH:MM"', () => {
+		expect(formatFavoriteLocalTime('2026-08-20T14:30:00')).toBe('местное 14:30');
+		expect(formatFavoriteLocalTime('2026-08-20T09:05')).toBe('местное 09:05');
 	});
 });
 

@@ -12,7 +12,7 @@
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual } from '$lib/weather/wmo';
 	import { isDay } from '$lib/weather/dayNight';
-	import { formatTimeShort } from '$lib/weather/format';
+	import { formatFavoriteLocalTime } from '$lib/weather/format';
 	import { formatTemp } from '$lib/weather/units';
 	import type { CachedForecast, Location } from '$lib/types';
 
@@ -243,7 +243,7 @@
 					<span class="fav-side">
 						{#if row?.entry}
 							<span class="fav-temp">{formatTemp(row.entry.payload.current.temperature)}</span>
-							<span class="fav-time">{formatTimeShort(row.entry.payload.current.time)}</span>
+							<span class="fav-time">{formatFavoriteLocalTime(row.entry.payload.current.time)}</span>
 						{:else if row?.offline}
 							<span class="fav-error">Нет сети</span>
 						{:else if row?.failed}
@@ -395,6 +395,7 @@
 	.fav-time {
 		font-size: 12px;
 		color: var(--text-secondary);
+		white-space: nowrap;
 	}
 
 	.fav-error {

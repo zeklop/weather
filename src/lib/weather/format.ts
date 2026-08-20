@@ -27,6 +27,10 @@ export function formatTimeShort(isoDateTime: string): string {
 	return formatHour(isoDateTime);
 }
 
+export function formatFavoriteLocalTime(isoDateTime: string): string {
+	return `местное ${formatTimeShort(isoDateTime)}`;
+}
+
 const DAY_SHORT = new Intl.DateTimeFormat('ru-RU', {
 	weekday: 'short',
 	day: 'numeric',
