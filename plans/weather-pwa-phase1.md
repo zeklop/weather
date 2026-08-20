@@ -24,7 +24,13 @@ status: draft
 - **Base path (единый источник, точный контракт):** `PUBLIC_BASE_PATH` = `'' | '/weather'` (без trailing slash). От него одна производная пара: `KIT_BASE = PUBLIC_BASE_PATH` (идёт в `kit.paths.base`, без слэша) и `URL_BASE = PUBLIC_BASE_PATH + '/'` (идёт в manifest `start_url`, `scope`, `navigateFallback`, иконки; в root-mode — `/`). CI собирает `/weather` (KIT_BASE=`/weather`, URL_BASE=`/weather/`); отдельный smoke-сценарий — root-mode (`''` → `/`). В коде использовать `%sveltekit.assets%`/относительные пути, никаких хардкодов.
 - **Manifest и SW — один владелец:** интеграция `@vite-pwa/sveltekit` (а не ручной `static/manifest.webmanifest` в обход PWA-плагина). `registerType: 'prompt'`, `scope` = URL_BASE, `navigateFallback` с учётом base. **Имя SW — `sw.js`** (дефолт vite-plugin-pwa); спека в §4.4 называет `service-worker.js` — фиксируем девиацию в IMPLEMENTATION_NOTES.md и не дублируем файл.
 - **Prerender:** `export const prerender = true` и `trailingSlash = 'always'` в корневом `+layout.ts` (не абстракция в svelte.config). Артефакты проверяются: `forecast/index.html`, `favorites/index.html`, `settings/index.html`, `map/index.html`, `manifest.webmanifest`, `sw.js`.
-- **Время (TZ-безопасно, единый контракт):** `response.timezone` хранится в `ForecastPayload`. Все временные значения Open-Meteo — wall-time ISO в таймзоне локации; **сравниваем их напрямую как местное wall-time (time-of-day, строковое сравнение HH:MM) без конвертации через `new Date()`** — DST-безопасно по построению, т.к. все величины одного дня в одном tz. `isDay(at, sunrise, sunset)` сравнивает HH:MM; полярный день/ночь обрабатывать как always-day/always-night. Тесты: DST-переход, cross-midnight, полярный день, чужая TZ.
+- **Время (TZ-безопасно, единый контракт):** `response.timezone` хранится в `ForecastPayload`. Все временные значения Open-Meteo — wall-time ISO в таймзоне локации; **работаем только с wall-time, без конвертации через `new Date()`**. Форматирование меток: HH:MM — строковый срез ISO (никакого Intl/Date); дата/день недели — `Intl.DateTimeFormat` с трюком `Date.UTC(...)` + `timeZone: 'UTC'` (wall-time трактуется как UTC, чтобы не смещаться в TZ телефона) либо чистый алгоритм дня недели. `Intl` никогда не вызывается с TZ локации для wall-time строк.
+- **`isDay(at, sunrise, sunset): boolean` — исполнимые правила** (все значения — минуты-от-полуночи wall-time):
+  1. sunrise или sunset отсутствуют (null/undefined) → fallback-окно 07:00–19:00 wall-time (флаг `source: 'fallback'` в return);
+  2. `R < S` (норма) → `R <= T <= S`;
+  3. `R == S` (вырожденный порог) → day;
+  4. `R > S` (день через полуночь, полярное лето) → `T >= R || T <= S`.
+  Тест-матрица: день, ночь, границы (T==R, T==S), cross-midnight (R>S), вырожденный (R==S), отсутствующие sunrise/sunset, DST-переход (R<S норма, часы не сдвигаются — доказательство отсутствия Date-конверсии), чужая TZ (те же строки → тот же результат).
 - **Сигнатуры:** `isDay(at, sunrise, sunset)` — без `weatherCode`; day/night иконка выбирается по `isDay` + `code`.
 - **State — единый подход:** Svelte 5 runes в `src/lib/stores/*.svelte.ts` (browser-only, cleanup listener'ов). Обычные `.ts` stores не используем.
 - **Кэш с границами (конкретные константы):** `MAX_CACHED_CITIES = 8`, `CACHE_BUDGET_BYTES = 1 * 1024 * 1024`, `RUNTIME_CACHE_CAP = 32` — константы в коде (`src/lib/cache/limits.ts`), с LRU-eviction по обоим лимитам. Обработка битого JSON, миграции версии, `QuotaExceededError` → eviction → работа только с runtime-кэшем. Тесты: eviction по count/budget, битый JSON, миграция, quota-фолбэк.
@@ -47,8 +53,8 @@ status: draft
 - [ ] `src/lib/weather/wmo.ts` — `getWeatherVisual(code): WeatherVisual` (§8.3): все WMO-коды, русские лейблы. Тест на каждый код
 - [ ] `src/lib/weather/units.ts` — `hpaToMmhg`, `formatTemp` (Unicode `−`), `formatWind` (м/с). Тесты
 - [ ] `src/lib/weather/direction.ts` — 8 румбов по градусам. Тесты
-- [ ] `src/lib/weather/format.ts` — время/день/«Сейчас» в TZ локации через `Intl.DateTimeFormat`. Тесты: чужая TZ + DST
-- [ ] `src/lib/weather/dayNight.ts` — `isDay(at, sunrise, sunset)`. Тесты: день/ночь/границы
+- [ ] `src/lib/weather/format.ts` — время/день/«Сейчас»: HH:MM строковым срезом, дата/день недели через `Intl` + `Date.UTC`/`timeZone:'UTC'` (без TZ-сдвигов). Тесты: чужая TZ + DST
+- [ ] `src/lib/weather/dayNight.ts` — `isDay(at, sunrise, sunset)` по правилам контракта (норма / cross-midnight / вырожденный / fallback-окно). Тесты по матрице: день, ночь, границы, cross-midnight, вырожденный, отсутствующие sunrise/sunset, DST, чужая TZ
 - [ ] `src/lib/api/openMeteo.ts` — `getForecast(location)`: только запрашиваемые поля (§6), `timezone=auto`, `wind_speed_unit=ms`, нормализация (в т.ч. `timezone` в payload), validation ответа. Тест нормализации + malformed
 - [ ] `src/lib/api/geocoding.ts` — `searchLocations(query)`, normalize в `Location` (name, admin1, country, countryCode, timezone)
 - [ ] `src/lib/cache/forecastCache.ts` — runtime `Map` (cap) + localStorage (max entries, LRU, budget, миграции, `QuotaExceededError` → eviction), ключ `forecast:{lat4}:{lon4}`, SWR: fresh <15 мин, stale <6 ч, offline любой с меткой. Тесты свежести, LRU, битого JSON
@@ -69,7 +75,8 @@ status: draft
 - [ ] Поиск: SearchSheet — старт с 2 символов, дебаунс 250–350мс, ≤8 результатов (город/регион/страна), loading/empty/error состояния, клавиатурная навигация, отмена устаревших запросов, выбор → смена города
 - [ ] Скелетоны при первом запуске, ошибка «Не удалось обновить прогноз…» + ретрай, offline-сообщение, offline без кэша — отдельное состояние
 - [ ] Meteocons локально в `static/icons/weather/`, `WeatherIcon.svelte` (day/night по `isDay`), hero 76–96px, без анимаций в v1
-- [ ] Иконки приложения: источник — `static/icons/app/icon-source.svg` (оригинал: синий квадрат + облако + солнце); скрипт `scripts/generate-icons.mjs` (devDependency `sharp`), npm-скрипт `icons` (запуск до build и в CI): PNG 180 (apple-touch), 192, 512; `maskable` 512 — отдельная композиция с safe-zone padding (не копия обычной); готовые PNG коммитим как fallback; CI-шаг проверяет размеры и safe-zone
+- [ ] Иконки приложения: источник — `static/icons/app/icon-source.svg` (оригинал: синий квадрат + облако + солнце); скрипт `scripts/generate-icons.mjs` (devDependency `sharp`), npm-скрипт `icons` (запуск до build и в CI): PNG 180 (apple-touch), 192, 512; `maskable` 512 — отдельная композиция с safe-zone padding (не копия обычной); готовые PNG коммитим как fallback
+- [ ] CI-проверка иконок `scripts/check-icons.mjs` (npm-скрипт `check:icons`): численный safe-zone-инвариант — все непрозрачные пиксели maskable-иконки внутри центрального круга радиуса `0.4 * size` (для 512 → ≤204.8px, диаметр 409.6px = 80%); размеры файлов 180/192/512 проверяются точно
 
 ### Фаза 4. PWA и деплой
 - [ ] Manifest через `@vite-pwa/sveltekit` (§11: standalone, portrait-primary, #F5F7FA), apple meta-теги; `start_url`/`scope`/icon URLs base-safe
