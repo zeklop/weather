@@ -4,6 +4,7 @@
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
+	import { getHourStartIdx, getWallNow } from '$lib/weather/now';
 	import { formatTemp, formatWind } from '$lib/weather/units';
 	import { isDay } from '$lib/weather/dayNight';
 	import type { DayForecast, HourForecast } from '$lib/types';
@@ -23,41 +24,12 @@
 		return () => clearInterval(id);
 	});
 
-	// "Now" as wall-time ISO in the location tz: the current instant converted
-	// via the payload's timezone (never a payload string parsed with new Date).
-	function wallNow(timezone: string, ms: number): string {
-		try {
-			const parts = new Intl.DateTimeFormat('en-US', {
-				timeZone: timezone,
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit',
-				hourCycle: 'h23'
-			}).formatToParts(new Date(ms));
-			const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-			let hour = val('hour');
-			if (hour === '24') hour = '00';
-			return `${val('year')}-${val('month')}-${val('day')}T${hour}:${val('minute')}`;
-		} catch {
-			return new Date(ms).toISOString().slice(0, 16);
-		}
-	}
+	const nowIso = $derived(payload ? getWallNow(payload.timezone, nowMs) : null);
 
-	const nowIso = $derived(payload ? wallNow(payload.timezone, nowMs) : null);
-
-	// First hourly entry at or before "now": the current hour in a fresh payload.
-	// Old payload ("now" past the last hourly entry, e.g. offline for 2+ days):
-	// start from the first hour of the payload's first day instead of collapsing
-	// to a single last row.
-	const hourStartIdx = $derived.by(() => {
-		if (!payload || !nowIso) return 0;
-		let idx = payload.hourly.length - 1;
-		while (idx > 0 && payload.hourly[idx].time > nowIso) idx--;
-		if (idx === payload.hourly.length - 1 && payload.hourly[idx].time < nowIso) return 0;
-		return idx;
-	});
+	const rawHourStartIdx = $derived(
+		payload && nowIso ? getHourStartIdx(payload.hourly.map((h) => h.time), nowIso) : 0
+	);
+	const hourStartIdx = $derived(rawHourStartIdx >= 0 ? rawHourStartIdx : 0);
 
 	const hourRows = $derived(payload ? payload.hourly.slice(hourStartIdx, hourStartIdx + 48) : []);
 	const dailyRows = $derived(payload ? payload.daily.slice(0, 10) : []);

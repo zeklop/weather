@@ -5,6 +5,12 @@
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
+	import {
+		formatPrecipitationPhrase,
+		getHourStartIdx,
+		getWallNow,
+		wallMinutesBetween
+	} from '$lib/weather/now';
 	import { formatMmhg, formatTemp, formatWind, hpaToMmhg } from '$lib/weather/units';
 	import { windDirectionLabel } from '$lib/weather/direction';
 	import { isDay } from '$lib/weather/dayNight';
@@ -25,70 +31,12 @@
 		return () => clearInterval(id);
 	});
 
-	// "Now" as wall-time ISO in the location tz: the current instant converted
-	// via the payload's timezone (never a payload string parsed with new Date).
-	function wallNow(timezone: string, ms: number): string {
-		try {
-			const parts = new Intl.DateTimeFormat('en-US', {
-				timeZone: timezone,
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit',
-				hourCycle: 'h23'
-			}).formatToParts(new Date(ms));
-			const val = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-			let hour = val('hour');
-			if (hour === '24') hour = '00';
-			return `${val('year')}-${val('month')}-${val('day')}T${hour}:${val('minute')}`;
-		} catch {
-			return new Date(ms).toISOString().slice(0, 16);
-		}
-	}
+	const nowIso = $derived(payload ? getWallNow(payload.timezone, nowMs) : null);
 
-	// Wall-time difference in minutes — Date.UTC carrier trick from format.ts.
-	function wallEpoch(iso: string): number {
-		return Date.UTC(
-			+iso.slice(0, 4),
-			+iso.slice(5, 7) - 1,
-			+iso.slice(8, 10),
-			+iso.slice(11, 13),
-			+iso.slice(14, 16)
-		);
-	}
-
-	function wallMinutesBetween(from: string, to: string): number {
-		return Math.round((wallEpoch(to) - wallEpoch(from)) / 60_000);
-	}
-
-	function spanWord(minutes: number): string {
-		const m = Math.max(1, minutes);
-		if (m < 60) {
-			const m10 = m % 10;
-			const m100 = m % 100;
-			if (m10 === 1 && m100 !== 11) return `${m} минуту`;
-			if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${m} минуты`;
-			return `${m} минут`;
-		}
-		const h = Math.round((m / 60) * 2) / 2;
-		if (h <= 1) return '1 час';
-		if (h <= 1.5) return '1,5 часа';
-		return '2 часа';
-	}
-
-	const nowIso = $derived(payload ? wallNow(payload.timezone, nowMs) : null);
-
-	// First hourly entry at or before "now": the current hour in a fresh payload.
-	// Old payload ("now" past the last hourly entry, e.g. offline for 2+ days):
-	// start from the first hour instead of collapsing to a single row.
-	const hourStartIdx = $derived.by(() => {
-		if (!payload || !nowIso) return 0;
-		let idx = payload.hourly.length - 1;
-		while (idx > 0 && payload.hourly[idx].time > nowIso) idx--;
-		if (idx === payload.hourly.length - 1 && payload.hourly[idx].time < nowIso) return 0;
-		return idx;
-	});
+	const rawHourStartIdx = $derived(
+		payload && nowIso ? getHourStartIdx(payload.hourly.map((h) => h.time), nowIso) : 0
+	);
+	const hourStartIdx = $derived(rawHourStartIdx >= 0 ? rawHourStartIdx : 0);
 
 	const railHours = $derived(payload ? payload.hourly.slice(hourStartIdx, hourStartIdx + 24) : []);
 	const isCurrentHour = $derived(
@@ -107,29 +55,25 @@
 		return payload.daily.slice(start, start + 7);
 	});
 
-	function precipLabel(code: number): string {
-		if (code >= 51) {
-			return getWeatherVisual(code).labelRu;
-		}
-		return 'Дождь';
-	}
-
 	// Deterministic heuristic over hourly data (§13.3) — no invented nowcasting:
 	// window is the next 2 full hours; card hidden when the window has no
 	// probability/amount data at all.
 	const precipCard = $derived.by((): string | null => {
 		if (!payload || !nowIso) return null;
+		if (rawHourStartIdx === -1) return null;
 		const win = payload.hourly.slice(hourStartIdx + 1, hourStartIdx + 3);
 		if (win.length === 0) return null;
 		const hasData = win.some((h) => h.precipitationProbability != null || h.precipitation > 0);
 		if (!hasData) return null;
 		if (payload.current.precipitation > 0) {
-			return `${precipLabel(payload.current.weatherCode)} идёт`;
+			const visual = getWeatherVisual(payload.current.weatherCode);
+			return formatPrecipitationPhrase(visual.shortLabelRu, null, true);
 		}
 		const soon = win.find((h) => (h.precipitationProbability ?? 0) >= 50 || h.precipitation > 0);
 		if (!soon) return 'Без осадков';
 		const minutes = wallMinutesBetween(nowIso, soon.time);
-		return `${precipLabel(soon.weatherCode)} начнётся примерно через ${spanWord(minutes)}`;
+		const visual = getWeatherVisual(soon.weatherCode);
+		return formatPrecipitationPhrase(visual.shortLabelRu, minutes, false);
 	});
 
 	function iconName(visual: WeatherVisual, day: boolean): string {
