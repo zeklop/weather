@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
-	import { getForecastStore } from '$lib/stores/context';
+	import { getAlertsStoreContext, getForecastStore } from '$lib/stores/context';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
+	import WeatherAlertCard from '$lib/components/WeatherAlertCard.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import {
 		formatDayShort,
@@ -25,11 +26,13 @@
 	import type { DayForecast } from '$lib/types';
 
 	const store = getForecastStore();
+	const alertsStore = getAlertsStoreContext();
 	const settings = getSettingsStore();
 	const lang = $derived(settings.language);
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
 	const refreshing = $derived(store.refreshing);
+	const activeAlert = $derived(alertsStore.activeAlert);
 
 	// Minute ticker keeps «Сейчас»/current-hour highlight honest while the SPA
 	// stays open across an hour boundary.
@@ -163,6 +166,13 @@
 				</span>
 				<button class="retry-btn" type="button" onclick={() => store.refresh()}>{t('home.retry', lang)}</button>
 			</div>
+		{/if}
+
+		{#if activeAlert}
+			<WeatherAlertCard
+				alert={activeAlert}
+				ondismiss={() => alertsStore.dismissAlert(activeAlert.id)}
+			/>
 		{/if}
 
 		<h1 class="sr-only">{t('home.weatherNowSr', lang)}</h1>

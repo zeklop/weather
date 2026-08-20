@@ -113,6 +113,13 @@ export interface Translations {
 		installAppHint: string;
 		author: string;
 		badgeLabel: string;
+		alertsSection: string;
+		alertsEnabled: string;
+		precipitationAlerts: string;
+		severeAlerts: string;
+		freezeAlerts: string;
+		quietHours: string;
+		quietHoursDesc: string;
 	};
 	map: {
 		title: string;
@@ -174,6 +181,7 @@ export interface Translations {
 		takeUmbrella: string;
 		icyRoads: string;
 		quietHours: string;
+		dismiss: string;
 	};
 }
 
@@ -286,7 +294,14 @@ export const translations: Record<Language, Translations> = {
 			installApp: 'Install App',
 			installAppHint: 'To add to Home Screen: Share → Add to Home Screen',
 			author: 'Created by Zeklop',
-			badgeLabel: 'Show temperature on app icon'
+			badgeLabel: 'Show temperature on app icon',
+			alertsSection: 'Weather Alerts',
+			alertsEnabled: 'Allow notifications',
+			precipitationAlerts: 'Precipitation (rain/snow)',
+			severeAlerts: 'Severe weather warnings',
+			freezeAlerts: 'Frost & temperature drop',
+			quietHours: 'Quiet hours (23:00 – 07:00)',
+			quietHoursDesc: 'Suppresses non-critical alerts at night'
 		},
 		map: {
 			title: 'Map',
@@ -347,7 +362,8 @@ export const translations: Record<Language, Translations> = {
 			freezeTitle: 'Freeze Warning',
 			takeUmbrella: 'Take an umbrella!',
 			icyRoads: 'Temp dropping below 0°C, icy roads possible',
-			quietHours: 'Quiet Hours'
+			quietHours: 'Quiet Hours',
+			dismiss: 'Dismiss alert'
 		}
 	},
 	ru: {
@@ -458,7 +474,14 @@ export const translations: Record<Language, Translations> = {
 			installApp: 'Установить приложение',
 			installAppHint: 'Чтобы добавить на экран «Домой»: Поделиться → На экран «Домой»',
 			author: 'Автор: Zeklop',
-			badgeLabel: 'Температура на иконке приложения'
+			badgeLabel: 'Температура на иконке приложения',
+			alertsSection: 'Погодные оповещения',
+			alertsEnabled: 'Разрешить оповещения',
+			precipitationAlerts: 'Осадки (дождь/снег)',
+			severeAlerts: 'Штормовые предупреждения',
+			freezeAlerts: 'Гололёд и перепады температуры',
+			quietHours: 'Тихие часы (23:00 – 07:00)',
+			quietHoursDesc: 'Заглушает обычные оповещения ночью'
 		},
 		map: {
 			title: 'Карта',
@@ -519,7 +542,8 @@ export const translations: Record<Language, Translations> = {
 			freezeTitle: 'Предупреждение о заморозках',
 			takeUmbrella: 'Не забудьте взять зонт!',
 			icyRoads: 'Температура опускается ниже 0°C, возможна гололедица',
-			quietHours: 'Тихие часы'
+			quietHours: 'Тихие часы',
+			dismiss: 'Закрыть оповещение'
 		}
 	}
 };

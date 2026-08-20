@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { openSearch } from '$lib/components/SearchSheet.svelte';
-	import { getForecastStore } from '$lib/stores/context';
+	import { getAlertsStoreContext, getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { t } from '$lib/i18n';
@@ -9,11 +9,25 @@
 	const INSTALL_HINT_KEY = 'weather:installHintSeen';
 
 	const forecast = getForecastStore();
+	const alertsStore = getAlertsStoreContext();
 	const location = getLocationStore();
 	const settings = getSettingsStore();
 	const lang = $derived(settings.language);
 
 	const refreshing = $derived(forecast.refreshing);
+
+	async function toggleAlerts(): Promise<void> {
+		if (!settings.alertsEnabled) {
+			const res = await alertsStore.requestPermission();
+			if (res === 'granted') {
+				settings.setAlertsEnabled(true);
+			} else {
+				settings.setAlertsEnabled(false);
+			}
+		} else {
+			settings.setAlertsEnabled(false);
+		}
+	}
 
 	// Hydration gate: city and lastUpdated come from localStorage, so the
 	// server render shows neutral placeholders until the client mounts
@@ -186,6 +200,90 @@
 				</div>
 			{/if}
 		</div>
+	</div>
+
+	<div class="card group">
+		<div class="group-header">
+			<span class="group-title">{t('settings.alertsSection', lang)}</span>
+		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.alertsEnabled', lang)}</span>
+			<button
+				class="toggle-switch"
+				class:active={mounted && settings.alertsEnabled}
+				type="button"
+				role="switch"
+				aria-checked={mounted && settings.alertsEnabled}
+				aria-label={t('settings.alertsEnabled', lang)}
+				onclick={toggleAlerts}
+			>
+				<span class="toggle-thumb"></span>
+			</button>
+		</div>
+
+		{#if mounted && settings.alertsEnabled}
+			<div class="row">
+				<span class="row-label">{t('settings.precipitationAlerts', lang)}</span>
+				<button
+					class="toggle-switch"
+					class:active={settings.precipitationAlerts}
+					type="button"
+					role="switch"
+					aria-checked={settings.precipitationAlerts}
+					aria-label={t('settings.precipitationAlerts', lang)}
+					onclick={() => settings.setPrecipitationAlerts(!settings.precipitationAlerts)}
+				>
+					<span class="toggle-thumb"></span>
+				</button>
+			</div>
+			<div class="row">
+				<span class="row-label">{t('settings.severeAlerts', lang)}</span>
+				<button
+					class="toggle-switch"
+					class:active={settings.severeAlerts}
+					type="button"
+					role="switch"
+					aria-checked={settings.severeAlerts}
+					aria-label={t('settings.severeAlerts', lang)}
+					onclick={() => settings.setSevereAlerts(!settings.severeAlerts)}
+				>
+					<span class="toggle-thumb"></span>
+				</button>
+			</div>
+			<div class="row">
+				<span class="row-label">{t('settings.freezeAlerts', lang)}</span>
+				<button
+					class="toggle-switch"
+					class:active={settings.freezeAlerts}
+					type="button"
+					role="switch"
+					aria-checked={settings.freezeAlerts}
+					aria-label={t('settings.freezeAlerts', lang)}
+					onclick={() => settings.setFreezeAlerts(!settings.freezeAlerts)}
+				>
+					<span class="toggle-thumb"></span>
+				</button>
+			</div>
+			<div class="row quiet-hours-row">
+				<div class="quiet-hours-line">
+					<div class="label-with-desc">
+						<span class="row-label">{t('settings.quietHours', lang)}</span>
+						<span class="row-desc">{t('settings.quietHoursDesc', lang)}</span>
+					</div>
+					<button
+						class="toggle-switch"
+						class:active={settings.quietHoursEnabled}
+						type="button"
+						role="switch"
+						aria-checked={settings.quietHoursEnabled}
+						aria-label={t('settings.quietHours', lang)}
+						onclick={() => settings.setQuietHoursEnabled(!settings.quietHoursEnabled)}
+					>
+						<span class="toggle-thumb"></span>
+					</button>
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<div class="card group">
@@ -496,6 +594,82 @@
 		font-size: 14px;
 		color: var(--text-secondary);
 		margin-top: 2px;
+	}
+
+	/* ---------- group header & toggles ---------- */
+	.group-header {
+		padding: var(--space-2) 0 var(--space-1);
+		border-bottom: 1px solid var(--divider);
+	}
+
+	.group-title {
+		font-size: 13px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-secondary);
+	}
+
+	.toggle-switch {
+		width: 48px;
+		height: 28px;
+		border-radius: 14px;
+		background: var(--divider);
+		border: none;
+		padding: 2px;
+		cursor: pointer;
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		transition: background-color 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.toggle-switch.active {
+		background: var(--accent);
+	}
+
+	.toggle-thumb {
+		width: 24px;
+		height: 24px;
+		border-radius: 12px;
+		background: #fff;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		transform: translateX(0);
+		transition: transform 0.2s ease;
+		display: block;
+	}
+
+	.toggle-switch.active .toggle-thumb {
+		transform: translateX(20px);
+	}
+
+	.quiet-hours-row {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0;
+		padding: var(--space-2) 0;
+	}
+
+	.quiet-hours-line {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		min-height: 48px;
+		min-width: 0;
+	}
+
+	.label-with-desc {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.row-desc {
+		font-size: 12px;
+		color: var(--text-secondary);
 	}
 
 	/* ---------- settings footer ---------- */

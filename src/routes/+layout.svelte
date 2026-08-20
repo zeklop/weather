@@ -9,7 +9,8 @@
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { createForecastStore } from '$lib/stores/forecast.svelte';
-	import { setForecastStore } from '$lib/stores/context';
+	import { createAlertsStore } from '$lib/stores/alerts.svelte';
+	import { setAlertsStore, setForecastStore } from '$lib/stores/context';
 	import { t } from '$lib/i18n';
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 	import PwaInstallBanner from '$lib/components/PwaInstallBanner.svelte';
@@ -41,8 +42,20 @@
 	const forecastStore = createForecastStore({ locationStore: location });
 	setForecastStore(forecastStore);
 
+	const alertsStore = createAlertsStore({
+		settingsStore: settings,
+		getPayload: () => forecastStore.payload
+	});
+	setAlertsStore(alertsStore);
+
 	$effect(() => {
 		forecastStore.load(location.current);
+	});
+
+	$effect(() => {
+		if (forecastStore.payload) {
+			alertsStore.evaluate();
+		}
 	});
 
 	$effect(() => {

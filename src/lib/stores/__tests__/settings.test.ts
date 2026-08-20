@@ -15,6 +15,34 @@ describe('createSettingsStore', () => {
 		expect(store.theme).toBe('light');
 		expect(store.language).toBe('en');
 		expect(store.lastUpdated).toBeNull();
+		expect(store.alertsEnabled).toBe(false);
+		expect(store.precipitationAlerts).toBe(true);
+		expect(store.severeAlerts).toBe(true);
+		expect(store.freezeAlerts).toBe(true);
+		expect(store.quietHoursEnabled).toBe(true);
+	});
+
+	it('persists and updates alert toggles', () => {
+		const storage = makeMemoryStorage();
+		const store = createSettingsStore(storage);
+
+		store.setAlertsEnabled(true);
+		store.setPrecipitationAlerts(false);
+		store.setSevereAlerts(true);
+		store.setFreezeAlerts(false);
+		store.setQuietHoursEnabled(false);
+
+		expect(store.alertsEnabled).toBe(true);
+		expect(store.precipitationAlerts).toBe(false);
+		expect(store.severeAlerts).toBe(true);
+		expect(store.freezeAlerts).toBe(false);
+		expect(store.quietHoursEnabled).toBe(false);
+
+		const fresh = createSettingsStore(storage);
+		expect(fresh.alertsEnabled).toBe(true);
+		expect(fresh.precipitationAlerts).toBe(false);
+		expect(fresh.freezeAlerts).toBe(false);
+		expect(fresh.quietHoursEnabled).toBe(false);
 	});
 
 	it('setLanguage updates the language and persists it', () => {
@@ -24,10 +52,15 @@ describe('createSettingsStore', () => {
 		store.setLanguage('ru');
 
 		expect(store.language).toBe('ru');
-		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual({
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
 			theme: 'light',
 			language: 'ru',
-			lastUpdated: null
+			lastUpdated: null,
+			alertsEnabled: false,
+			precipitationAlerts: true,
+			severeAlerts: true,
+			freezeAlerts: true,
+			quietHoursEnabled: true
 		});
 
 		const fresh = createSettingsStore(storage);
@@ -77,10 +110,15 @@ describe('createSettingsStore', () => {
 		store.touchLastUpdated(NOW);
 
 		expect(store.lastUpdated).toBe(NOW);
-		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual({
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
 			theme: 'light',
 			language: 'en',
-			lastUpdated: NOW
+			lastUpdated: NOW,
+			alertsEnabled: false,
+			precipitationAlerts: true,
+			severeAlerts: true,
+			freezeAlerts: true,
+			quietHoursEnabled: true
 		});
 
 		const fresh = createSettingsStore(storage);

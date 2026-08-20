@@ -9,20 +9,40 @@ export type SettingsStore = {
 	readonly theme: Theme;
 	readonly language: Language;
 	readonly lastUpdated: number | null;
+	readonly alertsEnabled: boolean;
+	readonly precipitationAlerts: boolean;
+	readonly severeAlerts: boolean;
+	readonly freezeAlerts: boolean;
+	readonly quietHoursEnabled: boolean;
 	setLanguage(lang: Language): void;
 	touchLastUpdated(now?: number): void;
+	setAlertsEnabled(enabled: boolean): void;
+	setPrecipitationAlerts(enabled: boolean): void;
+	setSevereAlerts(enabled: boolean): void;
+	setFreezeAlerts(enabled: boolean): void;
+	setQuietHoursEnabled(enabled: boolean): void;
 };
 
 type SettingsData = {
 	theme: Theme;
 	language: Language;
 	lastUpdated: number | null;
+	alertsEnabled: boolean;
+	precipitationAlerts: boolean;
+	severeAlerts: boolean;
+	freezeAlerts: boolean;
+	quietHoursEnabled: boolean;
 };
 
 const DEFAULT_SETTINGS: SettingsData = {
 	theme: 'light',
 	language: DEFAULT_LANGUAGE,
-	lastUpdated: null
+	lastUpdated: null,
+	alertsEnabled: false,
+	precipitationAlerts: true,
+	severeAlerts: true,
+	freezeAlerts: true,
+	quietHoursEnabled: true
 };
 
 function defaultStorage(): Storage | null {
@@ -80,7 +100,37 @@ function readSettings(storage: Storage | null): SettingsData | null {
 		? entry['language']
 		: DEFAULT_SETTINGS.language;
 
-	return { theme, language, lastUpdated: lastUpdated as number | null };
+	const alertsEnabled =
+		typeof entry['alertsEnabled'] === 'boolean'
+			? entry['alertsEnabled']
+			: DEFAULT_SETTINGS.alertsEnabled;
+	const precipitationAlerts =
+		typeof entry['precipitationAlerts'] === 'boolean'
+			? entry['precipitationAlerts']
+			: DEFAULT_SETTINGS.precipitationAlerts;
+	const severeAlerts =
+		typeof entry['severeAlerts'] === 'boolean'
+			? entry['severeAlerts']
+			: DEFAULT_SETTINGS.severeAlerts;
+	const freezeAlerts =
+		typeof entry['freezeAlerts'] === 'boolean'
+			? entry['freezeAlerts']
+			: DEFAULT_SETTINGS.freezeAlerts;
+	const quietHoursEnabled =
+		typeof entry['quietHoursEnabled'] === 'boolean'
+			? entry['quietHoursEnabled']
+			: DEFAULT_SETTINGS.quietHoursEnabled;
+
+	return {
+		theme,
+		language,
+		lastUpdated: lastUpdated as number | null,
+		alertsEnabled,
+		precipitationAlerts,
+		severeAlerts,
+		freezeAlerts,
+		quietHoursEnabled
+	};
 }
 
 export function createSettingsStore(storage: Storage | null = defaultStorage()): SettingsStore {
@@ -88,13 +138,31 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	let theme = $state<Theme>(persisted?.theme ?? DEFAULT_SETTINGS.theme);
 	let language = $state<Language>(persisted?.language ?? DEFAULT_SETTINGS.language);
 	let lastUpdated = $state<number | null>(persisted?.lastUpdated ?? DEFAULT_SETTINGS.lastUpdated);
+	let alertsEnabled = $state<boolean>(persisted?.alertsEnabled ?? DEFAULT_SETTINGS.alertsEnabled);
+	let precipitationAlerts = $state<boolean>(
+		persisted?.precipitationAlerts ?? DEFAULT_SETTINGS.precipitationAlerts
+	);
+	let severeAlerts = $state<boolean>(persisted?.severeAlerts ?? DEFAULT_SETTINGS.severeAlerts);
+	let freezeAlerts = $state<boolean>(persisted?.freezeAlerts ?? DEFAULT_SETTINGS.freezeAlerts);
+	let quietHoursEnabled = $state<boolean>(
+		persisted?.quietHoursEnabled ?? DEFAULT_SETTINGS.quietHoursEnabled
+	);
 
 	function persist(): void {
 		if (storage === null) return;
 		try {
 			storage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ theme, language, lastUpdated } satisfies SettingsData)
+				JSON.stringify({
+					theme,
+					language,
+					lastUpdated,
+					alertsEnabled,
+					precipitationAlerts,
+					severeAlerts,
+					freezeAlerts,
+					quietHoursEnabled
+				} satisfies SettingsData)
 			);
 		} catch {
 			/* storage unavailable — keep running in memory */
@@ -111,6 +179,31 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		persist();
 	}
 
+	function setAlertsEnabled(enabled: boolean): void {
+		alertsEnabled = enabled;
+		persist();
+	}
+
+	function setPrecipitationAlerts(enabled: boolean): void {
+		precipitationAlerts = enabled;
+		persist();
+	}
+
+	function setSevereAlerts(enabled: boolean): void {
+		severeAlerts = enabled;
+		persist();
+	}
+
+	function setFreezeAlerts(enabled: boolean): void {
+		freezeAlerts = enabled;
+		persist();
+	}
+
+	function setQuietHoursEnabled(enabled: boolean): void {
+		quietHoursEnabled = enabled;
+		persist();
+	}
+
 	return {
 		get theme() {
 			return theme;
@@ -121,8 +214,28 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get lastUpdated() {
 			return lastUpdated;
 		},
+		get alertsEnabled() {
+			return alertsEnabled;
+		},
+		get precipitationAlerts() {
+			return precipitationAlerts;
+		},
+		get severeAlerts() {
+			return severeAlerts;
+		},
+		get freezeAlerts() {
+			return freezeAlerts;
+		},
+		get quietHoursEnabled() {
+			return quietHoursEnabled;
+		},
 		setLanguage,
-		touchLastUpdated
+		touchLastUpdated,
+		setAlertsEnabled,
+		setPrecipitationAlerts,
+		setSevereAlerts,
+		setFreezeAlerts,
+		setQuietHoursEnabled
 	};
 }
 
