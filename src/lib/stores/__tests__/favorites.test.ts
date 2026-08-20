@@ -25,6 +25,14 @@ const SPB: Location = {
 	timezone: 'Europe/Moscow'
 };
 
+const UNNAMED_LOCATION: Location = {
+	id: '55.75,37.61',
+	name: 'Моё местоположение',
+	latitude: 55.75,
+	longitude: 37.61,
+	timezone: 'Europe/Moscow'
+};
+
 describe('createFavoritesStore', () => {
 	it('starts empty', () => {
 		const store = createFavoritesStore(makeMemoryStorage());
@@ -50,6 +58,40 @@ describe('createFavoritesStore', () => {
 		store.toggleFavorite(MOSCOW);
 		store.toggleFavorite({ ...MOSCOW, name: 'Москва-Сити' });
 
+		expect(store.list).toEqual([]);
+	});
+
+	it('matches by stable location coordinates/geoId even when id differs (W-04)', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+
+		store.toggleFavorite(MOSCOW);
+		const moscowWithDifferentId: Location = {
+			...MOSCOW,
+			id: 'custom-moscow-id'
+		};
+
+		expect(store.isFavorite(moscowWithDifferentId)).toBe(true);
+
+		store.toggleFavorite(moscowWithDifferentId);
+		expect(store.isFavorite(MOSCOW)).toBe(false);
+		expect(store.list).toEqual([]);
+	});
+
+	it('disallows adding unnamed geolocation "Моё местоположение" to favorites (FV-3)', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+
+		expect(store.isFavorite(UNNAMED_LOCATION)).toBe(false);
+
+		store.toggleFavorite(UNNAMED_LOCATION);
+		expect(store.isFavorite(UNNAMED_LOCATION)).toBe(false);
+		expect(store.list).toEqual([]);
+
+		const blankLocation: Location = {
+			...UNNAMED_LOCATION,
+			name: '   '
+		};
+		expect(store.isFavorite(blankLocation)).toBe(false);
+		store.toggleFavorite(blankLocation);
 		expect(store.list).toEqual([]);
 	});
 
@@ -104,9 +146,9 @@ describe('createFavoritesStore', () => {
 		expect(storage.getItem(STORAGE_KEY)).toBeNull();
 	});
 
-	it('drops invalid entries on load, keeps valid ones, and cleans the storage', () => {
+	it('drops invalid entries and unnamed locations on load, keeps valid ones, and cleans the storage', () => {
 		const storage = makeMemoryStorage({
-			[STORAGE_KEY]: JSON.stringify([MOSCOW, { id: 42 }, null, 'x'])
+			[STORAGE_KEY]: JSON.stringify([MOSCOW, UNNAMED_LOCATION, { id: 42 }, null, 'x'])
 		});
 
 		const store = createFavoritesStore(storage);

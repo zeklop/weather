@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { pwaInfo } from 'virtual:pwa-info';
-	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
+	import { getFavoritesStore, isUnnamedLocation } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { createForecastStore } from '$lib/stores/forecast.svelte';
 	import { setForecastStore } from '$lib/stores/context';
@@ -78,6 +78,17 @@
 	}
 
 	const isFavorite = $derived(favorites.isFavorite(location.current));
+	const isUnnamed = $derived(isUnnamedLocation(location.current));
+	const starLabel = $derived(
+		isUnnamed
+			? 'Недоступно для безымянного местоположения'
+			: isFavorite
+				? 'Убрать из избранного'
+				: 'Добавить в избранное'
+	);
+	const starTitle = $derived(
+		isUnnamed ? 'Нельзя добавить текущее местоположение без названия в избранное' : undefined
+	);
 </script>
 
 <svelte:head>
@@ -122,7 +133,10 @@
 						class="icon-btn"
 						class:favorited={isFavorite}
 						type="button"
-						aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+						disabled={isUnnamed}
+						aria-disabled={isUnnamed ? 'true' : undefined}
+						title={starTitle}
+						aria-label={starLabel}
 						aria-pressed={isFavorite}
 						onclick={() => favorites.toggleFavorite(location.current)}
 					>

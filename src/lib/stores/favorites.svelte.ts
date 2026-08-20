@@ -1,6 +1,12 @@
+import { geoId } from '../api/geocoding';
 import type { Location } from '../types';
 
 export const STORAGE_KEY = 'weather:favorites';
+export const UNNAMED_LOCATION_NAME = 'Моё местоположение';
+
+export function isUnnamedLocation(location: Location): boolean {
+	return location.name === UNNAMED_LOCATION_NAME || location.name.trim() === '';
+}
 
 export type FavoritesStore = {
 	readonly list: Location[];
@@ -58,9 +64,16 @@ function readFavorites(storage: Storage | null): Location[] {
 		removeItem(storage, STORAGE_KEY);
 		return [];
 	}
-	// Skip invalid entries rather than dropping the whole list, and rewrite
-	// the cleaned list so the garbage doesn't stay in storage.
-	const locations = value.filter(isLocation);
+	// Skip invalid or unnamed entries and deduplicate by stable coordinates
+	const locations: Location[] = [];
+	const seen = new Set<string>();
+	for (const item of value) {
+		if (!isLocation(item) || isUnnamedLocation(item)) continue;
+		const key = geoId(item.latitude, item.longitude);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		locations.push(item);
+	}
 	if (locations.length !== value.length) {
 		try {
 			storage.setItem(STORAGE_KEY, JSON.stringify(locations));
@@ -84,18 +97,30 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 	}
 
 	function isFavorite(location: Location): boolean {
-		return list.some((entry) => entry.id === location.id);
+		if (isUnnamedLocation(location)) return false;
+		const key = geoId(location.latitude, location.longitude);
+		return list.some(
+			(entry) => entry.id === location.id || geoId(entry.latitude, entry.longitude) === key
+		);
 	}
 
 	function removeFavorite(id: string): void {
-		if (!list.some((entry) => entry.id === id)) return;
-		list = list.filter((entry) => entry.id !== id);
+		const next = list.filter(
+			(entry) => entry.id !== id && geoId(entry.latitude, entry.longitude) !== id
+		);
+		if (next.length === list.length) return;
+		list = next;
 		persist();
 	}
 
 	function toggleFavorite(location: Location): void {
+		if (isUnnamedLocation(location)) return;
 		if (isFavorite(location)) {
-			removeFavorite(location.id);
+			const key = geoId(location.latitude, location.longitude);
+			list = list.filter(
+				(entry) => entry.id !== location.id && geoId(entry.latitude, entry.longitude) !== key
+			);
+			persist();
 		} else {
 			list = [...list, location];
 			persist();
