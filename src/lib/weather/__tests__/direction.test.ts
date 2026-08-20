@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatWindDirection, windDirectionAngle, windDirectionLabel } from '../direction';
+import { formatWindDirection, windDirectionAngle } from '../direction';
 
 describe('formatWindDirection', () => {
 	it('maps the 8 compass points to English labels by default', () => {
@@ -44,15 +44,6 @@ describe('formatWindDirection', () => {
 		expect(formatWindDirection(405, 'ru')).toBe('СВ');
 		expect(formatWindDirection(-45, 'ru')).toBe('СЗ');
 		expect(formatWindDirection(-90, 'ru')).toBe('З');
-	});
-});
-
-describe('windDirectionLabel backward compatibility alias', () => {
-	it('supports lang parameter and defaults to English', () => {
-		expect(windDirectionLabel(0)).toBe('N');
-		expect(windDirectionLabel(0, 'ru')).toBe('С');
-		expect(windDirectionLabel(135, 'en')).toBe('SE');
-		expect(windDirectionLabel(135, 'ru')).toBe('ЮВ');
 	});
 });
 

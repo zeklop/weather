@@ -6,49 +6,42 @@
 
 ---
 
-A lightweight, high-performance, offline-capable Progressive Web Application (PWA) for weather forecasts inspired by the clean visual density and information hierarchy of modern weather apps. Built with **SvelteKit 5** (runes), the open **Open-Meteo API**, and vector **Meteocons**.
+A lightweight, high-performance, offline-capable Progressive Web Application (PWA) for weather forecasts inspired by the clean visual density and information hierarchy of modern weather apps. Built with **SvelteKit** (Svelte 5 runes), the open **Open-Meteo API**, and vector **Meteocons**.
 
 Engineered mobile-first for **iOS Safari** (standalone PWA mode) and modern desktop browsers, completely static (zero server-side runtime footprint), with resilient offline caching, and deployable to **GitHub Pages** or any static web server.
 
 ---
 
-## Features (Phase 1)
+## Features
 
 - **Home Screen Hero:** Large temperature display in °C with Unicode minus (`−`), weather conditions, feels-like temperature, wind speed in m/s with 8-point compass direction, and atmospheric pressure in mmHg.
-- **Near-Term Precipitation Heuristic:** Deterministic 2-hour rain/snow probability heuristic based on hourly data with direct map link.
+- **Expanded Weather Metrics:** UV index, humidity, dew point, and air quality index (Open-Meteo Air Quality API) in a dedicated details card.
+- **Near-Term Precipitation Heuristic:** Deterministic 2-hour rain/snow probability heuristic based on hourly data with direct map link, plus an interactive 24-hour precipitation SVG chart.
 - **Hourly Forecast Rail:** Smooth horizontal scrolling forecast («Now» + 24+ hours) with current-hour highlighting, day/night weather icons, and precipitation probability badges.
 - **10-Day Forecast:** Daily summary on Home and detailed breakdown on the `/forecast/` page.
-- **City Search & Geocoding:** Powered by Open-Meteo Geocoding API (300 ms debounce, queries starting at 2 characters, up to 8 results with region/country, and automatic request cancellation).
+- **City Search & Geocoding:** Powered by Open-Meteo Geocoding API (300 ms debounce, queries starting at 2 characters, up to 8 results with region/country, automatic request cancellation, localized queries).
 - **Favorites:** Fast local storage of favourite locations (`localStorage`), quick switching, and cached temperature previews on `/favorites/`.
-- **Settings:** City selection, GPS geolocation request, last updated status with manual refresh trigger, and iOS installation guidance.
+- **Settings:** City selection, GPS geolocation request, last updated status with manual refresh trigger, theme (System / Light / Dark), language switcher (English / Russian), weather alerts configuration, and iOS installation guidance.
+- **Bilingual Interface (i18n):** English by default with instant Russian switch; localized WMO descriptions, units, compass points, and date/time formatting.
+- **Smart Weather Alerts:** In-app and system notifications for approaching precipitation, severe weather, frost, and sudden temperature drops, with quiet hours and rate limiting.
+- **Dynamic Favicon & App Badging:** Live temperature rendered in the browser tab favicon (Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android).
+- **Platform-Specific PWA Prompts:** Native 1-click install banner on Android (`beforeinstallprompt`) and top banner with animated step-by-step installation instructions for iOS Safari.
+- **Interactive Radar Map:** MapLibre GL JS map on `/map/` with RainViewer precipitation radar animation (past + forecast frames) and layer switching.
 - **Offline Mode & Caching:** Two-layer cache (in-memory `Map` + versioned `localStorage` with LRU eviction, 8-city cap, and 1 MB budget), SWR strategy (fresh < 15 min, stale < 6 hours, offline fallback with timestamp).
 - **Vector Icons:** High-quality SVG Meteocons with dynamic day/night switching based on wall-time solar calculations (sunrise/sunset).
 
 ---
 
-## Phase 2 Roadmap
-
-- **Bilingual Interface (i18n):** English by default, Russian language option, language switcher in Settings, localized WMO descriptions, units, compass points, and localized geocoding queries ([`plans/weather-pwa-phase2.md`](plans/weather-pwa-phase2.md)).
-- **Dynamic Favicon & App Badging:** Live temperature rendering directly in the browser tab favicon (via Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android, enabled by default in Settings).
-- **Favorites UX Overhaul:** Direct "Add City" search trigger in the empty favorites state and quick-add button in the favorites list.
-- **Settings Authorship & Version Footer:** Dedicated footer in Settings crediting Zeklop (with GitHub profile link) and displaying the build version date (`YYYY-MM-DD`).
-- **Platform-Specific PWA Prompts:** Native 1-click install banner on Android (`beforeinstallprompt`) and top banner with animated step-by-step installation instructions for iOS Safari.
-- **Smart Weather Change Alerts:** Multi-tier notifications (in-app, local notifications, periodic sync) for approaching precipitation, severe thunderstorms, frost alerts, and sudden temperature shifts.
-- **Dark Mode:** System / Light / Dark theme support with dedicated CSS custom properties.
-- **Interactive Radar Map:** MapLibre GL JS precipitation overlay on `/map/`.
-- **Precipitation Chart:** Interactive 24-hour SVG curve chart.
-- **Expanded Weather Metrics:** UV index, air quality, dew point, and humidity breakdown.
-
----
-
 ## Tech Stack
 
-- **Framework:** [SvelteKit 5](https://kit.svelte.dev/) (Svelte 5 runes `$state`, `$derived`, `$effect.root`)
+- **Framework:** [SvelteKit](https://kit.svelte.dev/) 2 with Svelte 5 runes (`$state`, `$derived`, `$effect.root`)
 - **Language:** TypeScript (strict mode)
 - **Bundler & PWA:** [Vite](https://vitejs.dev/) + [@vite-pwa/sveltekit](https://vite-pwa-org.netlify.app/) (Workbox Service Worker, offline fallback)
 - **Adapter:** `@sveltejs/adapter-static` (full static prerender of all routes with `trailingSlash: 'always'`)
 - **Styling:** Handcrafted CSS with CSS variables, iOS Safe Areas (`env(safe-area-inset-*)`), and zero UI bloat (no Tailwind / bulky component libraries)
-- **Weather Data & Geocoding:** [Open-Meteo API](https://open-meteo.com/) (no API keys required)
+- **Weather Data, Geocoding & Air Quality:** [Open-Meteo API](https://open-meteo.com/) (no API keys required)
+- **Radar Data:** [RainViewer](https://www.rainviewer.com/) public radar API
+- **Maps:** [MapLibre GL JS](https://maplibre.org/) with OpenStreetMap / CARTO basemap tiles
 - **Weather Icons:** [Meteocons](https://meteocons.com/) (SVG, MIT License)
 - **App Icons:** Original vector SVG + automated PNG generation via `sharp`
 
@@ -57,7 +50,7 @@ Engineered mobile-first for **iOS Safari** (standalone PWA mode) and modern desk
 ## Local Development
 
 ### Requirements
-- Node.js 22+ (or Node.js 20+)
+- Node.js 22+ (see `.nvmrc`)
 - npm 10+
 
 ### Start Dev Server
@@ -81,7 +74,7 @@ npm run dev -- --open
 # Typecheck TypeScript and Svelte diagnostics
 npm run check
 
-# Run Vitest test suites (14 suites, 137+ tests)
+# Run Vitest test suites (26 suites, 300+ tests)
 npm test
 
 # Verify PWA icon dimensions and maskable safe-zone invariant (radius <= 0.4 * size)
@@ -140,8 +133,9 @@ Since the app is 100% static, no Node.js runtime is required on the server. A pr
 
 ## Attribution & Licenses
 
-- **Weather data & geocoding:** [Open-Meteo](https://open-meteo.com/) — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Weather data, geocoding & air quality:** [Open-Meteo](https://open-meteo.com/) — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Weather icons:** [Meteocons](https://github.com/basmilius/meteocons) by Bas Milius — MIT License.
-- **Interactive maps (Phase 2):** [MapLibre GL JS](https://maplibre.org/) — BSD 3-Clause.
+- **Interactive maps:** [MapLibre GL JS](https://maplibre.org/) — BSD 3-Clause; basemap tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [CARTO](https://carto.com/).
+- **Radar precipitation data:** [RainViewer](https://www.rainviewer.com/).
 
 Detailed license information is available in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

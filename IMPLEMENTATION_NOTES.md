@@ -54,7 +54,7 @@ This document records the architectural decisions, implemented features, intenti
 
 10. **PWA Manifest & Service Worker:**
     - Single-source PWA configuration via `@vite-pwa/sveltekit`.
-    - Workbox caching strategy: `NetworkFirst` (3s timeout) for `api.open-meteo.com` API requests, `CacheFirst` for static assets (icons, fonts, images).
+    - Workbox caching strategy: full precache of the app shell and build assets; a bounded `CacheFirst` runtime rule (60 entries, 30 days) for same-origin static assets (icons, fonts, images). Weather API responses are not runtime-cached by the Service Worker — offline forecast data is served from the application-level two-layer cache (§6).
     - Standalone display mode, `#F5F7FA` theme color, and offline navigation fallback to the app shell.
 
 11. **Icons & Assets:**
@@ -164,3 +164,27 @@ All internal asset references in Svelte templates use `%sveltekit.assets%` or re
   - Precache Manifest: 58 entries (~304 KiB total assets pre-cached for full offline support).
   - Initial JS bundle footprint for Home screen excludes any map rendering engine.
 - **Server Requirements:** Zero runtime dependencies. 100% static hosting compatible.
+
+---
+
+## 8. Phase 2 Addendum
+
+Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phase 1. Items deferred in §2 are now implemented, with the following documented notes:
+
+1. **Delivered scope:** bilingual i18n (English default, Russian switch), System/Light/Dark themes, dynamic temperature favicon + app badging, platform-specific PWA install banners (Android `beforeinstallprompt`, iOS illustrated instructions modal), weather alerts engine (in-app cards + Web Notifications, quiet hours, 3 h rate limiting, persistent dismissal), interactive radar map (`/map/` with MapLibre GL JS + RainViewer frames), 24 h precipitation chart, expanded metrics card (UV index, humidity, dew point, air quality), and Settings author/version footer.
+
+2. **New external endpoints:** `air-quality-api.open-meteo.com` (best-effort AQI, failure renders «—»), `api.rainviewer.com` + `tilecache.rainviewer.com` (radar frames and tiles, 8 s timeout, failures degrade to the basemap), and basemap tiles from `tile.openstreetmap.org` / `basemaps.cartocdn.com`. All are allow-listed in the CSP (see below) and mirrored in `Caddyfile`.
+
+3. **Deferred from Phase 2 spec:** Periodic Background Sync / Web Push delivery contract (requires server-side push infra, e.g. a Cloudflare Worker); the alerts engine runs on app visits instead. The `/map/` coming-soon placeholder copy was removed with the real map.
+
+4. **Content-Security-Policy decision:**
+   - CSP is delivered via `<meta http-equiv="Content-Security-Policy">` in `src/app.html` and mirrored as a header in `Caddyfile`; both must stay in sync when endpoints change.
+   - `script-src 'self' 'unsafe-inline'` is an accepted risk: the only inline script is the 10-line theme bootstrap in `app.html` that must run before first paint to avoid dark-mode flash. `meta` CSP cannot use nonces/hashes, so removing `'unsafe-inline'` would require moving the bootstrap to an external file with a render-blocking load — rejected for now. No third-party scripts are allowed; `connect-src`/`img-src` are strictly allow-listed.
+
+5. **Rollback procedure (GitHub Pages):**
+   - Identify the last good commit: `git log --oneline main`.
+   - Point `main` at it: `git revert <bad-commit>` (preferred, keeps history) or `git reset --hard <good-commit> && git push --force-with-lease` (only when the bad commit is the tip).
+   - Push to `main`; the `Deploy to GitHub Pages` workflow rebuilds and republishes automatically (or trigger it via `Actions → workflow_dispatch`).
+   - Verify `https://zeklop.github.io/weather/` after deploy; force a Service Worker update via the in-app "Update" toast (`registerType: 'prompt'`).
+
+6. **Post-review hardening (pre-deploy pass):** notification icon/badge paths now respect `paths.base`; RainViewer fetch has an 8 s timeout; the map page guards against late `maplibre-gl` import after unmount and starts the radar animation on the newest past frame; Open-Meteo forecast fetch retries once on 429/5xx; alert dismissals persist across reloads (`weather:alerts:dismissed`, capped at 50 ids); install banner dismissal key renamed to `weather:installBannerDismissedUntil` per spec.

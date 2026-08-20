@@ -5,7 +5,6 @@ import {
 	formatPrecipMm,
 	formatPressure,
 	formatTemp,
-	formatWind,
 	formatWindSpeed,
 	hpaToMmhg
 } from '../units';
@@ -43,19 +42,17 @@ describe('formatTemp', () => {
 	});
 });
 
-describe('formatWindSpeed & formatWind', () => {
+describe('formatWindSpeed', () => {
 	it('formats in English by default with dot separator and m/s unit', () => {
 		expect(formatWindSpeed(3.84)).toBe('3.8 m/s');
 		expect(formatWindSpeed(0.0)).toBe('0.0 m/s');
 		expect(formatWindSpeed(20)).toBe('20.0 m/s');
-		expect(formatWind(3.84)).toBe('3.8 m/s');
 	});
 
 	it('formats in Russian with comma decimal separator and м/с unit', () => {
 		expect(formatWindSpeed(3.84, 'ru')).toBe('3,8 м/с');
 		expect(formatWindSpeed(0.0, 'ru')).toBe('0,0 м/с');
 		expect(formatWindSpeed(20, 'ru')).toBe('20,0 м/с');
-		expect(formatWind(3.84, 'ru')).toBe('3,8 м/с');
 	});
 });
 

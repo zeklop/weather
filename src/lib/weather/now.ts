@@ -58,13 +58,6 @@ export function getHourStartIdx(times: string[], nowIso: string): number {
 }
 
 /**
- * Returns true if the forecast payload is completely expired relative to `nowIso`.
- */
-export function isPayloadExpired(times: string[], nowIso: string): boolean {
-	return getHourStartIdx(times, nowIso) === -1;
-}
-
-/**
  * Wall-time components interpreted as UTC epoch ms (carrier trick).
  */
 export function wallEpoch(iso: string): number {

@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { isUnnamedLocation } from '$lib/stores/favorites.svelte';
 	import { t } from '$lib/i18n';
 	import { createBasemapStyle, updateRadarLayer } from '$lib/map/weatherLayer';
 	import { fetchRainViewerData, formatRadarFrameLabel, type RadarFrame } from '$lib/map/rainviewer';
@@ -11,6 +12,9 @@
 	const settings = getSettingsStore();
 	const location = getLocationStore();
 	const lang = $derived(settings.language);
+	const displayName = $derived(
+		isUnnamedLocation(location.current) ? t('header.myLocation', lang) : location.current.name
+	);
 
 	let mapContainer: HTMLDivElement | null = $state(null);
 	let mapInstance: any = $state(null);
@@ -26,6 +30,7 @@
 	let radarError = $state(false);
 
 	let playTimer: ReturnType<typeof setInterval> | null = null;
+	let destroyed = false;
 
 	const activeFrame = $derived<RadarFrame | null>(
 		frames.length > 0 && frames[activeFrameIndex] ? frames[activeFrameIndex]! : null
@@ -118,8 +123,9 @@
 			const data = await fetchRainViewerData();
 			if (data.frames.length > 0) {
 				frames = data.frames;
-				// Start on the latest past frame or last frame
-				activeFrameIndex = frames.length - 1;
+				// Start on the latest past frame (fall back to the last frame)
+				const lastPastIdx = frames.findLastIndex((f) => f.isPast);
+				activeFrameIndex = lastPastIdx >= 0 ? lastPastIdx : frames.length - 1;
 				updateMapRadar();
 			} else {
 				radarError = true;
@@ -136,6 +142,8 @@
 
 		try {
 			const maplibregl = await import('maplibre-gl');
+			// User navigated away while the chunk was loading — do not mount on a detached container
+			if (destroyed) return;
 
 			const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 			const initialStyle = createBasemapStyle(isDark ? 'dark' : 'light');
@@ -156,7 +164,7 @@
 			// Add location pin marker with pulse styling
 			const markerEl = document.createElement('div');
 			markerEl.className = 'city-pin-marker';
-			markerEl.setAttribute('aria-label', location.current.name);
+			markerEl.setAttribute('aria-label', isUnnamedLocation(location.current) ? 'My location' : location.current.name);
 
 			const markerInner = document.createElement('div');
 			markerInner.className = 'pin-inner';
@@ -181,6 +189,7 @@
 	});
 
 	onDestroy(() => {
+		destroyed = true;
 		pause();
 		if (markerInstance) {
 			markerInstance.remove();
@@ -231,7 +240,7 @@
 				<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
 				<circle cx="12" cy="10" r="3" />
 			</svg>
-			<span class="city-name">{location.current.name}</span>
+			<span class="city-name">{displayName}</span>
 		</div>
 	</header>
 

@@ -11,7 +11,7 @@ const TIMEOUT_MS = 8000;
 
 // Request only fields actually displayed (§6 spec, review: normalization drops the rest).
 const CURRENT_FIELDS =
-	'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m';
+	'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,dew_point_2m';
 
 const HOURLY_FIELDS =
 	'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m';
@@ -116,7 +116,8 @@ function normalizeCurrent(block: JsonObject): CurrentWeather {
 		windSpeed: requireNumberField(block, 'wind_speed_10m'),
 		windDirection: requireNumberField(block, 'wind_direction_10m'),
 		windGusts: requireNumberField(block, 'wind_gusts_10m'),
-		precipitation: requireNumberField(block, 'precipitation')
+		precipitation: requireNumberField(block, 'precipitation'),
+		dewPoint: typeof block['dew_point_2m'] === 'number' ? block['dew_point_2m'] : undefined
 	};
 }
 
@@ -216,16 +217,29 @@ export async function getForecast(location: Location): Promise<ForecastPayload> 
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+	async function attempt(): Promise<Response> {
+		try {
+			return await fetch(`${API_URL}?${params.toString()}`, { signal: controller.signal });
+		} catch (err) {
+			if (controller.signal.aborted) {
+				throw new ForecastApiError(
+					'timeout',
+					`forecast request timed out after ${TIMEOUT_MS}ms`,
+					{ cause: err }
+				);
+			}
+			throw new ForecastApiError('network', 'forecast request failed', { cause: err });
+		}
+	}
+
 	let response: Response;
 	try {
-		response = await fetch(`${API_URL}?${params.toString()}`, { signal: controller.signal });
-	} catch (err) {
-		if (controller.signal.aborted) {
-			throw new ForecastApiError('timeout', `forecast request timed out after ${TIMEOUT_MS}ms`, {
-				cause: err
-			});
+		response = await attempt();
+		// One automatic retry on rate-limit / transient server errors (free-tier 429, 5xx)
+		if ((response.status === 429 || response.status >= 500) && !controller.signal.aborted) {
+			await new Promise((r) => setTimeout(r, 1000));
+			response = await attempt();
 		}
-		throw new ForecastApiError('network', 'forecast request failed', { cause: err });
 	} finally {
 		clearTimeout(timer);
 	}

@@ -82,7 +82,7 @@
 					last?.focus();
 				}
 			} else {
-				if (document.activeElement === last) {
+				if (document.activeElement === last || !dialogEl.contains(document.activeElement)) {
 					event.preventDefault();
 					first?.focus();
 				}

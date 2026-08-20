@@ -217,7 +217,7 @@
 			</svg>
 		</div>
 		<div class="state-title">{t('favorites.emptyTitle', lang)}</div>
-		<div class="state-text">{t('favorites.emptyText', lang)}</div>
+		<div class="state-text">{t('favorites.emptyHint', lang)}</div>
 		<button class="primary-btn" type="button" onclick={openSearch}>{t('favorites.addCity', lang)}</button>
 	</div>
 {:else}

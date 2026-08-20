@@ -20,6 +20,7 @@ export type CurrentWeather = {
 	windDirection: number;
 	windGusts: number;
 	precipitation: number;
+	dewPoint?: number; // optional: absent in payloads cached before the field existed
 };
 
 export type HourForecast = {

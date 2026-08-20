@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Local plans and specs
 plans/
 docs/superpowers/
+
+# Generated icon comparison artifacts
+static/icons-comparison.*

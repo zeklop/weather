@@ -42,7 +42,6 @@ export function isQuietTime(timezone: string, nowMs: number = Date.now()): boole
 
 export function evaluateWeatherAlerts(
 	payload: ForecastPayload,
-	previousPayload?: ForecastPayload,
 	options: AlertOptions = {}
 ): WeatherAlert[] {
 	if (!payload) return [];
@@ -83,7 +82,7 @@ export function evaluateWeatherAlerts(
 
 			if (precipHour) {
 				const visual = getWeatherVisual(precipHour.weatherCode, lang);
-				const minutes = Math.max(1, wallMinutesBetween(nowIso, precipHour.time));
+				const minutes = wallMinutesBetween(nowIso, precipHour.time);
 				const title = t('alerts.precipitationTitle', lang);
 
 				let message: string;

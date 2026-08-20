@@ -164,6 +164,8 @@
 
 	const isFavorite = $derived(favorites.isFavorite(location.current));
 	const isUnnamed = $derived(isUnnamedLocation(location.current));
+	// Geolocation marker is stored as a fixed string; localize at render time.
+	const displayName = $derived(isUnnamed ? t('header.myLocation', lang) : location.current.name);
 	const isRefreshing = $derived(
 		forecastStore.status === 'loading' || forecastStore.refreshing
 	);
@@ -183,9 +185,9 @@
 		if (forecastStore.payload) {
 			const tempStr = formatTemp(forecastStore.payload.current.temperature);
 			const visual = getWeatherVisual(forecastStore.payload.current.weatherCode, lang);
-			return `${tempStr} ${visual.shortLabel} — ${location.current.name} | ${t('app.title', lang)}`;
+			return `${tempStr} ${visual.shortLabel} — ${displayName} | ${t('app.title', lang)}`;
 		}
-		return `${t('app.title', lang)} — ${location.current.name}`;
+		return `${t('app.title', lang)} — ${displayName}`;
 	});
 </script>
 
@@ -210,7 +212,7 @@
 	<header class="app-header">
 		<div class="container">
 			<div class="header-row">
-				<div class="app-title">{mounted ? location.current.name : '…'}</div>
+				<div class="app-title">{mounted ? displayName : '…'}</div>
 				<div class="header-actions">
 					<button
 						class="icon-btn"

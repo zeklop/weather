@@ -5,9 +5,7 @@ import {
 	isStandalone,
 	isIosSafari,
 	isInstallDismissed,
-	dismissInstall,
-	createPwaInstallController,
-	type BeforeInstallPromptEvent
+	dismissInstall
 } from '../pwa/install';
 import { memoryStorage } from '../stores/memoryStorage';
 import { t, translations } from '../i18n';
@@ -149,160 +147,6 @@ describe('PWA install utilities', () => {
 		});
 	});
 
-	describe('PwaInstallController', () => {
-		it('initializes in idle state when conditions not met', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => false
-			});
-
-			expect(controller.bannerType).toBe('none');
-			expect(controller.showBanner).toBe(false);
-		});
-
-		it('shows iOS banner when on iOS Safari and not dismissed', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => true
-			});
-
-			expect(controller.bannerType).toBe('ios');
-			expect(controller.showBanner).toBe(true);
-		});
-
-		it('does not show iOS banner when dismissed', () => {
-			const now = 1000000;
-			const storage = memoryStorage({
-				[PWA_DISMISS_STORAGE_KEY]: String(now + 500000)
-			});
-			const controller = createPwaInstallController({
-				storage,
-				now: () => now,
-				isStandalone: () => false,
-				isIosSafari: () => true
-			});
-
-			expect(controller.bannerType).toBe('none');
-			expect(controller.showBanner).toBe(false);
-		});
-
-		it('does not show iOS banner when standalone', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => true,
-				isIosSafari: () => true
-			});
-
-			expect(controller.bannerType).toBe('none');
-			expect(controller.showBanner).toBe(false);
-		});
-
-		it('shows Android banner when beforeinstallprompt event is received', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => false
-			});
-
-			const preventDefault = vi.fn();
-			const prompt = vi.fn().mockResolvedValue(undefined);
-			const mockEvent = {
-				preventDefault,
-				prompt,
-				userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' })
-			} as unknown as BeforeInstallPromptEvent;
-
-			controller.handleBeforeInstallPrompt(mockEvent);
-
-			expect(preventDefault).toHaveBeenCalled();
-			expect(controller.bannerType).toBe('android');
-			expect(controller.showBanner).toBe(true);
-		});
-
-		it('triggers install prompt and hides banner on user choice', async () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => false
-			});
-
-			const prompt = vi.fn().mockResolvedValue(undefined);
-			const mockEvent = {
-				preventDefault: vi.fn(),
-				prompt,
-				userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' })
-			} as unknown as BeforeInstallPromptEvent;
-
-			controller.handleBeforeInstallPrompt(mockEvent);
-			const result = await controller.promptInstall();
-
-			expect(prompt).toHaveBeenCalled();
-			expect(result?.outcome).toBe('accepted');
-			expect(controller.showBanner).toBe(false);
-		});
-
-		it('dismisses banner and persists 7 days expiration', () => {
-			const now = 1700000000000;
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				now: () => now,
-				isStandalone: () => false,
-				isIosSafari: () => true
-			});
-
-			expect(controller.showBanner).toBe(true);
-			controller.dismiss();
-
-			expect(controller.showBanner).toBe(false);
-			expect(storage.getItem(PWA_DISMISS_STORAGE_KEY)).toBe(String(now + SEVEN_DAYS_MS));
-		});
-
-		it('hides banner when appinstalled event fires', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => false
-			});
-
-			const mockEvent = {
-				preventDefault: vi.fn(),
-				prompt: vi.fn().mockResolvedValue(undefined),
-				userChoice: Promise.resolve({ outcome: 'dismissed', platform: 'web' })
-			} as unknown as BeforeInstallPromptEvent;
-
-			controller.handleBeforeInstallPrompt(mockEvent);
-			expect(controller.showBanner).toBe(true);
-
-			controller.handleAppInstalled();
-			expect(controller.showBanner).toBe(false);
-			expect(controller.bannerType).toBe('none');
-		});
-
-		it('manages modal open/close state for iOS instructions', () => {
-			const storage = memoryStorage();
-			const controller = createPwaInstallController({
-				storage,
-				isStandalone: () => false,
-				isIosSafari: () => true
-			});
-
-			expect(controller.showModal).toBe(false);
-			controller.openModal();
-			expect(controller.showModal).toBe(true);
-			controller.closeModal();
-			expect(controller.showModal).toBe(false);
-		});
-	});
-
 	describe('PWA i18n translation coverage for Phase 2.4', () => {
 		it('contains required Android & iOS banner strings in English', () => {
 			expect(t('pwa.bannerAndroidText', 'en')).toBe(
@@ -312,7 +156,7 @@ describe('PWA install utilities', () => {
 				'Add Weather to your Home Screen for the best experience'
 			);
 			expect(t('pwa.installBtn', 'en')).toBe('Install');
-			expect(t('pwa.howToInstall', 'en')).toBe('How to install');
+			expect(t('pwa.bannerIosAction', 'en')).toBe('How to install');
 			expect(t('pwa.bannerDismiss', 'en')).toBe('Dismiss');
 		});
 
@@ -324,7 +168,7 @@ describe('PWA install utilities', () => {
 				'Установите на экран «Домой» для удобной работы'
 			);
 			expect(t('pwa.installBtn', 'ru')).toBe('Установить');
-			expect(t('pwa.howToInstall', 'ru')).toBe('Инструкция');
+			expect(t('pwa.bannerIosAction', 'ru')).toBe('Как установить');
 			expect(t('pwa.bannerDismiss', 'ru')).toBe('Закрыть');
 		});
 

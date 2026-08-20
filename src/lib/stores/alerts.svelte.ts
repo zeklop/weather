@@ -1,3 +1,4 @@
+import { base } from '$app/paths';
 import type { ForecastPayload } from '$lib/types';
 import {
 	evaluateWeatherAlerts,
@@ -7,6 +8,8 @@ import {
 import { getSettingsStore, type SettingsStore } from './settings.svelte';
 
 export const LAST_SENT_KEY = 'weather:alerts:lastSent';
+export const DISMISSED_KEY = 'weather:alerts:dismissed';
+const DISMISSED_LIMIT = 50;
 
 export type AlertsStore = {
 	readonly alerts: readonly WeatherAlert[];
@@ -58,6 +61,27 @@ function persistLastSentTimestamps(
 	}
 }
 
+function readDismissedIds(storage: Storage | null): string[] {
+	if (!storage) return [];
+	try {
+		const raw = storage.getItem(DISMISSED_KEY);
+		if (!raw) return [];
+		const parsed = JSON.parse(raw);
+		return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+	} catch {
+		return [];
+	}
+}
+
+function persistDismissedIds(storage: Storage | null, ids: string[]): void {
+	if (!storage) return;
+	try {
+		storage.setItem(DISMISSED_KEY, JSON.stringify(ids.slice(-DISMISSED_LIMIT)));
+	} catch {
+		/* noop */
+	}
+}
+
 function dispatchNotification(alert: WeatherAlert): void {
 	if (typeof Notification === 'undefined') return;
 	if (Notification.permission !== 'granted') return;
@@ -69,15 +93,15 @@ function dispatchNotification(alert: WeatherAlert): void {
 					if (registration && 'showNotification' in registration) {
 						registration.showNotification(alert.title, {
 							body: alert.message,
-							icon: '/icons/app/icon-192.png',
-							badge: '/icons/app/icon-192.png',
+							icon: `${base}/icons/app/icon-192.png`,
+							badge: `${base}/icons/app/icon-192.png`,
 							tag: alert.id,
 							data: { alertId: alert.id }
 						});
 					} else {
 						new Notification(alert.title, {
 							body: alert.message,
-							icon: '/icons/app/icon-192.png',
+							icon: `${base}/icons/app/icon-192.png`,
 							tag: alert.id
 						});
 					}
@@ -85,14 +109,14 @@ function dispatchNotification(alert: WeatherAlert): void {
 				.catch(() => {
 					new Notification(alert.title, {
 						body: alert.message,
-						icon: '/icons/app/icon-192.png',
+						icon: `${base}/icons/app/icon-192.png`,
 						tag: alert.id
 					});
 				});
 		} else {
 			new Notification(alert.title, {
 				body: alert.message,
-				icon: '/icons/app/icon-192.png',
+				icon: `${base}/icons/app/icon-192.png`,
 				tag: alert.id
 			});
 		}
@@ -107,7 +131,7 @@ export function createAlertsStore(options: CreateAlertsStoreOptions = {}): Alert
 	const getPayload = options.getPayload ?? (() => null);
 
 	let alerts = $state<WeatherAlert[]>([]);
-	let dismissedIds = $state<string[]>([]);
+	let dismissedIds = $state<string[]>(readDismissedIds(storage));
 	let permission = $state<NotificationPermission>(getBrowserPermission());
 	let lastSentTimestamps = readLastSentTimestamps(storage);
 
@@ -140,6 +164,7 @@ export function createAlertsStore(options: CreateAlertsStoreOptions = {}): Alert
 	function dismissAlert(id: string): void {
 		if (!dismissedIds.includes(id)) {
 			dismissedIds = [...dismissedIds, id];
+			persistDismissedIds(storage, dismissedIds);
 		}
 	}
 
@@ -158,7 +183,7 @@ export function createAlertsStore(options: CreateAlertsStoreOptions = {}): Alert
 			freeze: settings.freezeAlerts
 		};
 
-		const evaluated = evaluateWeatherAlerts(payload, undefined, {
+		const evaluated = evaluateWeatherAlerts(payload, {
 			lang: settings.language,
 			nowMs,
 			quietHours: settings.quietHoursEnabled,
@@ -199,11 +224,4 @@ export function createAlertsStore(options: CreateAlertsStoreOptions = {}): Alert
 		syncPermission,
 		evaluate
 	};
-}
-
-let singleton: AlertsStore | null = null;
-
-export function getAlertsStore(): AlertsStore {
-	singleton ??= createAlertsStore();
-	return singleton;
 }

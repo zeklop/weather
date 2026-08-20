@@ -48,10 +48,10 @@ export default defineConfig(({ mode }) => {
 				},
 
 				manifest: {
-					name: 'Погода',
-					short_name: 'Погода',
-					description: 'Погода и прогноз до 10 дней',
-					lang: 'ru',
+					name: 'Weather',
+					short_name: 'Weather',
+					description: 'Weather and forecast up to 10 days',
+					lang: 'en',
 					display: 'standalone',
 					orientation: 'portrait-primary',
 					background_color: '#F5F7FA',

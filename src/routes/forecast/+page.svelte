@@ -15,7 +15,7 @@
 		isToday
 	} from '$lib/weather/format';
 	import { getHourStartIdx, getWallNow } from '$lib/weather/now';
-	import { formatPrecipMm, formatTemp, formatWind } from '$lib/weather/units';
+	import { formatPrecipMm, formatTemp, formatWindSpeed } from '$lib/weather/units';
 	import { isDay } from '$lib/weather/dayNight';
 	import type { DayForecast, HourForecast } from '$lib/types';
 
@@ -168,7 +168,7 @@
 							<span aria-hidden="true">–</span>
 						{/if}
 					</span>
-					<span class="hour-wind">{formatWind(h.windSpeed, lang)}</span>
+					<span class="hour-wind">{formatWindSpeed(h.windSpeed, lang)}</span>
 				</div>
 			{/each}
 		</div>

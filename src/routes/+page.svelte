@@ -3,6 +3,8 @@
 	import { base } from '$app/paths';
 	import { getAlertsStoreContext, getForecastStore } from '$lib/stores/context';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { getAirQuality } from '$lib/api/airQuality';
 	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import WeatherAlertCard from '$lib/components/WeatherAlertCard.svelte';
@@ -21,8 +23,8 @@
 		getWallNow,
 		wallMinutesBetween
 	} from '$lib/weather/now';
-	import { formatMmhg, formatTemp, formatWind, hpaToMmhg } from '$lib/weather/units';
-	import { windDirectionLabel } from '$lib/weather/direction';
+	import { formatMmhg, formatTemp, formatWindSpeed, hpaToMmhg } from '$lib/weather/units';
+	import { formatWindDirection } from '$lib/weather/direction';
 	import { isDay } from '$lib/weather/dayNight';
 	import { hasMeaningfulPrecipitation } from '$lib/weather/chart';
 	import type { DayForecast } from '$lib/types';
@@ -30,6 +32,7 @@
 	const store = getForecastStore();
 	const alertsStore = getAlertsStoreContext();
 	const settings = getSettingsStore();
+	const location = getLocationStore();
 	const lang = $derived(settings.language);
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
@@ -98,6 +101,19 @@
 	function iconName(visual: WeatherVisual, day: boolean): string {
 		return day ? visual.iconDay : visual.iconNight;
 	}
+
+	// Best-effort AQI per active location; stays "—" on any failure.
+	let aqi = $state<number | null>(null);
+	$effect(() => {
+		const loc = location.current;
+		const controller = new AbortController();
+		getAirQuality(loc.latitude, loc.longitude, controller.signal).then((value) => {
+			if (!controller.signal.aborted) aqi = value;
+		});
+		return () => controller.abort();
+	});
+
+	const uvToday = $derived(todayDay?.uvIndexMax ?? null);
 
 	function dayNightFor(isoTime: string): boolean {
 		const d = dayByDate.get(isoTime.slice(0, 10));
@@ -193,7 +209,7 @@
 				</div>
 			</div>
 			<div class="hero-secondary">
-				<span>{t('home.wind', lang, { speed: formatWind(payload.current.windSpeed, lang), dir: windDirectionLabel(payload.current.windDirection, lang) })}</span>
+				<span>{t('home.wind', lang, { speed: formatWindSpeed(payload.current.windSpeed, lang), dir: formatWindDirection(payload.current.windDirection, lang) })}</span>
 				<span>{t('home.pressure', lang, { pressure: formatMmhg(hpaToMmhg(payload.current.pressureHpa), lang) })}</span>
 			</div>
 		</div>
@@ -207,6 +223,27 @@
 				<div class="precip-text">{precipCard}</div>
 			</a>
 		{/if}
+
+		<div class="card metrics" role="group" aria-label={t('home.metricsTitle', lang)}>
+			<div class="metric">
+				<span class="metric-label">{t('home.uvIndex', lang)}</span>
+				<span class="metric-value">{uvToday != null ? Math.round(uvToday) : '—'}</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">{t('home.humidity', lang)}</span>
+				<span class="metric-value">{payload.current.humidity}%</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">{t('home.dewPoint', lang)}</span>
+				<span class="metric-value">
+					{payload.current.dewPoint != null ? formatTemp(payload.current.dewPoint) : '—'}
+				</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">{t('home.airQuality', lang)}</span>
+				<span class="metric-value">{aqi != null ? Math.round(aqi) : '—'}</span>
+			</div>
+		</div>
 
 		{#if !isExpired && railHours.length > 0}
 			<div class="card rail">
@@ -561,6 +598,34 @@
 	.precip-text {
 		font-size: 15px;
 		margin-top: 2px;
+	}
+
+	/* ---------- weather details metrics ---------- */
+	.metrics {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1px;
+		padding: 0;
+		overflow: hidden;
+		background: var(--divider);
+	}
+
+	.metric {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: var(--space-3) var(--space-4);
+		background: var(--bg-card);
+	}
+
+	.metric-label {
+		font-size: 13px;
+		color: var(--text-secondary);
+	}
+
+	.metric-value {
+		font-size: 19px;
+		font-weight: 600;
 	}
 
 	/* ---------- hourly rail ---------- */

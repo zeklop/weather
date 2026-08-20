@@ -17,13 +17,6 @@ export function formatWindDirection(degrees: number, lang: Language = 'en'): str
 	return lang === 'ru' ? DIRECTIONS_RU[sectorIndex] : DIRECTIONS_EN[sectorIndex];
 }
 
-/**
- * Backward compatibility alias for formatWindDirection.
- */
-export function windDirectionLabel(degrees: number, lang: Language = 'en'): string {
-	return formatWindDirection(degrees, lang);
-}
-
 // Rotation angle (deg, clockwise) for an up-pointing arrow glyph so it shows
 // the direction the wind blows TO: from-direction + 180, normalized.
 export function windDirectionAngle(degrees: number): number {

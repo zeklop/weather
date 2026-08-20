@@ -25,6 +25,7 @@ export interface Translations {
 		removeFromFavorites: string;
 		unnamedLocationStar: string;
 		unnamedLocationTitle: string;
+		myLocation: string;
 	};
 	home: {
 		loading: string;
@@ -62,6 +63,11 @@ export interface Translations {
 		precipitationProbability: string;
 		noPrecipitation24h: string;
 		showOnMap: string;
+		metricsTitle: string;
+		uvIndex: string;
+		humidity: string;
+		dewPoint: string;
+		airQuality: string;
 	};
 	forecast: {
 		title: string;
@@ -85,10 +91,8 @@ export interface Translations {
 		description: string;
 		loading: string;
 		emptyTitle: string;
-		emptyText: string;
 		emptyHint: string;
 		addCity: string;
-		addCityAction: string;
 		localTime: string;
 		noNetwork: string;
 		failedToLoad: string;
@@ -134,8 +138,6 @@ export interface Translations {
 	map: {
 		title: string;
 		description: string;
-		comingSoonTitle: string;
-		comingSoonText: string;
 		toHome: string;
 		radar: string;
 		standard: string;
@@ -176,9 +178,7 @@ export interface Translations {
 		updateAvailable: string;
 		updateBtn: string;
 		installTitle: string;
-		installText: string;
 		installBtn: string;
-		howToInstall: string;
 		bannerAndroidText: string;
 		bannerIosText: string;
 		bannerIosAction: string;
@@ -201,9 +201,6 @@ export interface Translations {
 		precipitationTitle: string;
 		severeTitle: string;
 		freezeTitle: string;
-		takeUmbrella: string;
-		icyRoads: string;
-		quietHours: string;
 		dismiss: string;
 	};
 }
@@ -229,7 +226,8 @@ export const translations: Record<Language, Translations> = {
 			addToFavorites: 'Add to favorites',
 			removeFromFavorites: 'Remove from favorites',
 			unnamedLocationStar: 'Not available for unnamed location',
-			unnamedLocationTitle: 'Cannot add current unnamed location to favorites'
+			unnamedLocationTitle: 'Cannot add current unnamed location to favorites',
+			myLocation: 'My location'
 		},
 		home: {
 			loading: 'Loading forecast',
@@ -266,7 +264,12 @@ export const translations: Record<Language, Translations> = {
 			precipitationVolume: 'Amount',
 			precipitationProbability: 'Probability',
 			noPrecipitation24h: 'No precipitation expected in the next 24 hours',
-			showOnMap: 'Show on map →'
+			showOnMap: 'Show on map →',
+			metricsTitle: 'Weather details',
+			uvIndex: 'UV index',
+			humidity: 'Humidity',
+			dewPoint: 'Dew point',
+			airQuality: 'Air quality'
 		},
 		forecast: {
 			title: 'Forecast',
@@ -290,10 +293,8 @@ export const translations: Record<Language, Translations> = {
 			description: 'Saved locations and quick access to forecast',
 			loading: 'Loading favorites',
 			emptyTitle: 'No saved locations',
-			emptyText: 'Add locations for quick access to weather forecasts.',
 			emptyHint: 'No saved locations yet. Tap below to find and add a city',
 			addCity: 'Add city',
-			addCityAction: '+ Add city',
 			localTime: 'local {time}',
 			noNetwork: 'No network',
 			failedToLoad: 'Failed to load',
@@ -339,8 +340,6 @@ export const translations: Record<Language, Translations> = {
 		map: {
 			title: 'Map',
 			description: 'Interactive weather map',
-			comingSoonTitle: 'Map coming in v2',
-			comingSoonText: 'Interactive weather and precipitation map will appear in version 2 of the application.',
 			toHome: 'Back to Home',
 			radar: 'Radar',
 			standard: 'Standard',
@@ -381,9 +380,7 @@ export const translations: Record<Language, Translations> = {
 			updateAvailable: 'New version available',
 			updateBtn: 'Update',
 			installTitle: 'Install Weather App',
-			installText: 'Install for fast access and offline support',
 			installBtn: 'Install',
-			howToInstall: 'How to install',
 			bannerAndroidText: 'Install Weather for quick access and offline mode',
 			bannerIosText: 'Add Weather to your Home Screen for the best experience',
 			bannerIosAction: 'How to install',
@@ -406,9 +403,6 @@ export const translations: Record<Language, Translations> = {
 			precipitationTitle: 'Precipitation Alert',
 			severeTitle: 'Severe Weather Alert',
 			freezeTitle: 'Freeze Warning',
-			takeUmbrella: 'Take an umbrella!',
-			icyRoads: 'Temp dropping below 0°C, icy roads possible',
-			quietHours: 'Quiet Hours',
 			dismiss: 'Dismiss alert'
 		}
 	},
@@ -432,7 +426,8 @@ export const translations: Record<Language, Translations> = {
 			addToFavorites: 'Добавить в избранное',
 			removeFromFavorites: 'Убрать из избранного',
 			unnamedLocationStar: 'Недоступно для безымянного местоположения',
-			unnamedLocationTitle: 'Нельзя добавить текущее местоположение без названия в избранное'
+			unnamedLocationTitle: 'Нельзя добавить текущее местоположение без названия в избранное',
+			myLocation: 'Моё местоположение'
 		},
 		home: {
 			loading: 'Загрузка прогноза',
@@ -469,7 +464,12 @@ export const translations: Record<Language, Translations> = {
 			precipitationVolume: 'Количество',
 			precipitationProbability: 'Вероятность',
 			noPrecipitation24h: 'Без осадков в ближайшие 24 часа',
-			showOnMap: 'Показать на карте →'
+			showOnMap: 'Показать на карте →',
+			metricsTitle: 'Подробно о погоде',
+			uvIndex: 'УФ-индекс',
+			humidity: 'Влажность',
+			dewPoint: 'Точка росы',
+			airQuality: 'Качество воздуха'
 		},
 		forecast: {
 			title: 'Прогноз',
@@ -493,10 +493,8 @@ export const translations: Record<Language, Translations> = {
 			description: 'Сохранённые города и быстрый доступ к прогнозу',
 			loading: 'Загрузка избранного',
 			emptyTitle: 'Нет избранных городов',
-			emptyText: 'Добавьте города для быстрого доступа к прогнозу погоды.',
 			emptyHint: 'У вас пока нет сохранённых городов. Нажмите кнопку ниже, чтобы найти и добавить город',
 			addCity: 'Добавить город',
-			addCityAction: '+ Добавить город',
 			localTime: 'местное {time}',
 			noNetwork: 'Нет сети',
 			failedToLoad: 'Не удалось загрузить',
@@ -542,8 +540,6 @@ export const translations: Record<Language, Translations> = {
 		map: {
 			title: 'Карта',
 			description: 'Интерактивная карта погоды и осадков',
-			comingSoonTitle: 'Карта — в следующей версии',
-			comingSoonText: 'Интерактивная карта погоды и осадков появится во второй версии приложения.',
 			toHome: 'На главную',
 			radar: 'Осадки',
 			standard: 'Схема',
@@ -584,12 +580,10 @@ export const translations: Record<Language, Translations> = {
 			updateAvailable: 'Доступна новая версия приложения',
 			updateBtn: 'Обновить',
 			installTitle: 'Установить приложение Погода',
-			installText: 'Установите для быстрого доступа и оффлайн-режима',
 			installBtn: 'Установить',
-			howToInstall: 'Инструкция',
 			bannerAndroidText: 'Установите приложение Погода для быстрого доступа и оффлайн-режима',
 			bannerIosText: 'Установите на экран «Домой» для удобной работы',
-			bannerIosAction: 'Инструкция',
+			bannerIosAction: 'Как установить',
 			bannerDismiss: 'Закрыть',
 			modalTitle: 'Инструкция по установке',
 			modalStep1: 'Нажмите кнопку «Поделиться» в Safari',
@@ -609,9 +603,6 @@ export const translations: Record<Language, Translations> = {
 			precipitationTitle: 'Приближение осадков',
 			severeTitle: 'Штормовое предупреждение',
 			freezeTitle: 'Предупреждение о заморозках',
-			takeUmbrella: 'Не забудьте взять зонт!',
-			icyRoads: 'Температура опускается ниже 0°C, возможна гололедица',
-			quietHours: 'Тихие часы',
 			dismiss: 'Закрыть оповещение'
 		}
 	}

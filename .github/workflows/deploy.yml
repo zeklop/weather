@@ -61,3 +61,17 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Smoke check deployed site
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          for i in $(seq 1 6); do
+            if curl -fsS -o /dev/null "$url"; then
+              echo "Site is up: $url"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
+          echo "Deployed site did not respond at $url" >&2
+          exit 1

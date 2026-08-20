@@ -55,11 +55,15 @@ export function formatRadarFrameLabel(
  * Fetches current radar frames metadata from RainViewer public API.
  */
 export async function fetchRainViewerData(
-	fetchFn: typeof fetch = fetch
+	fetchFn: typeof fetch = fetch,
+	timeoutMs = 8000
 ): Promise<{ host: string; frames: RadarFrame[] }> {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
 	try {
 		const res = await fetchFn(RAINVIEWER_API_URL, {
-			headers: { Accept: 'application/json' }
+			headers: { Accept: 'application/json' },
+			signal: controller.signal
 		});
 		if (!res.ok) {
 			return { host: 'https://tilecache.rainviewer.com', frames: [] };
@@ -95,6 +99,8 @@ export async function fetchRainViewerData(
 		};
 	} catch {
 		return { host: 'https://tilecache.rainviewer.com', frames: [] };
+	} finally {
+		clearTimeout(timer);
 	}
 }
 export type { RadarFrame, RainViewerApiResponse };

@@ -180,7 +180,7 @@
 					last?.focus();
 				}
 			} else {
-				if (document.activeElement === last) {
+				if (document.activeElement === last || !sheetEl.contains(document.activeElement)) {
 					event.preventDefault();
 					first?.focus();
 				}

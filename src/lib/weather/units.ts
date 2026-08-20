@@ -27,10 +27,6 @@ export function formatWindSpeed(ms: number, lang: Language = 'en'): string {
 	return `${ms.toFixed(1)} m/s`;
 }
 
-export function formatWind(ms: number, lang: Language = 'en'): string {
-	return formatWindSpeed(ms, lang);
-}
-
 export function formatMmhg(mmhg: number, lang: Language = 'en'): string {
 	const rounded = Math.round(mmhg);
 	return lang === 'ru' ? `${rounded} мм рт. ст.` : `${rounded} mmHg`;

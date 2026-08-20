@@ -3,7 +3,6 @@ import {
 	formatPrecipitationPhrase,
 	getHourStartIdx,
 	getWallNow,
-	isPayloadExpired,
 	spanWord,
 	wallMinutesBetween
 } from '../now';
@@ -45,7 +44,7 @@ describe('getWallNow', () => {
 	});
 });
 
-describe('getHourStartIdx and isPayloadExpired', () => {
+describe('getHourStartIdx', () => {
 	const sampleTimes = [
 		'2026-08-20T10:00',
 		'2026-08-20T11:00',
@@ -56,35 +55,27 @@ describe('getHourStartIdx and isPayloadExpired', () => {
 
 	it('returns 0 if nowIso is before the first hour in payload', () => {
 		expect(getHourStartIdx(sampleTimes, '2026-08-20T09:15')).toBe(0);
-		expect(isPayloadExpired(sampleTimes, '2026-08-20T09:15')).toBe(false);
 	});
 
 	it('returns exact index on exact hour match', () => {
 		expect(getHourStartIdx(sampleTimes, '2026-08-20T12:00')).toBe(2);
-		expect(isPayloadExpired(sampleTimes, '2026-08-20T12:00')).toBe(false);
 	});
 
 	it('returns current hour index when nowIso is in middle of the hour', () => {
 		expect(getHourStartIdx(sampleTimes, '2026-08-20T12:45')).toBe(2);
-		expect(isPayloadExpired(sampleTimes, '2026-08-20T12:45')).toBe(false);
 	});
 
 	it('returns last index when nowIso is within the last hourly block', () => {
 		expect(getHourStartIdx(sampleTimes, '2026-08-20T14:59')).toBe(4);
-		expect(isPayloadExpired(sampleTimes, '2026-08-20T14:59')).toBe(false);
 	});
 
 	it('returns -1 when nowIso is past the last hourly block (expired payload)', () => {
 		expect(getHourStartIdx(sampleTimes, '2026-08-20T15:00')).toBe(-1);
-		expect(isPayloadExpired(sampleTimes, '2026-08-20T15:00')).toBe(true);
-
 		expect(getHourStartIdx(sampleTimes, '2026-08-21T10:00')).toBe(-1);
-		expect(isPayloadExpired(sampleTimes, '2026-08-21T10:00')).toBe(true);
 	});
 
 	it('returns -1 on empty times array', () => {
 		expect(getHourStartIdx([], '2026-08-20T12:00')).toBe(-1);
-		expect(isPayloadExpired([], '2026-08-20T12:00')).toBe(true);
 	});
 });
 

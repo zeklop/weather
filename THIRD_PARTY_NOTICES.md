@@ -8,7 +8,7 @@ This project incorporates open-source libraries, weather data APIs, and visual a
 
 - **Provider:** Open-Meteo (https://open-meteo.com/)
 - **License:** Creative Commons Attribution 4.0 International (CC BY 4.0) / Open-Meteo Terms of Service (Free for non-commercial use)
-- **Attribution:** Weather forecasts and geocoding data are provided by Open-Meteo under the [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
+- **Attribution:** Weather forecasts, geocoding, and air quality data are provided by Open-Meteo under the [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
 - **Documentation:** https://open-meteo.com/en/docs
 
 ---
@@ -46,11 +46,11 @@ SOFTWARE.
 
 ---
 
-## 3. Map Rendering: MapLibre GL JS (Phase 2 Dependency)
+## 3. Map Rendering: MapLibre GL JS
 
 - **Project:** MapLibre GL JS (https://maplibre.org/)
 - **Source Repository:** https://github.com/maplibre/maplibre-gl-js
-- **Status in Phase 1:** Deferred to Phase 2. Not bundled in Phase 1 client assets. The `/map` route in Phase 1 is a static lightweight placeholder with zero map runtime footprint.
+- **Status:** Dynamically imported on the `/map/` route (kept out of the initial Home screen bundle).
 - **License:** BSD 3-Clause License
 
 ```text
@@ -85,7 +85,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-## 4. Frameworks & Build Tools
+## 4. Radar Precipitation Data: RainViewer
+
+- **Provider:** RainViewer (https://www.rainviewer.com/)
+- **Used for:** Past and forecast precipitation radar frames rendered on the `/map/` route (`api.rainviewer.com`, `tilecache.rainviewer.com`).
+- **Attribution:** Radar imagery is provided by the RainViewer public API. See https://www.rainviewer.com/api.html for terms and attribution requirements.
+
+---
+
+## 5. Map Basemap Tiles: OpenStreetMap & CARTO
+
+- **Providers:** OpenStreetMap (https://www.openstreetmap.org/), CARTO (https://carto.com/)
+- **Used for:** Standard basemap tiles on the `/map/` route.
+- **Attribution:** © OpenStreetMap contributors (ODbL), © CARTO. See https://www.openstreetmap.org/copyright.
+
+---
+
+## 6. Frameworks & Build Tools
 
 ### Svelte & SvelteKit
 - **Source:** https://github.com/sveltejs/svelte, https://github.com/sveltejs/kit
@@ -104,7 +120,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-## 5. Original Artwork & App Icons
+## 7. Original Artwork & App Icons
 
 - The app icon (`static/icons/app/icon-source.svg` and generated PNGs `icon-180.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) was created specifically for this project.
 - No proprietary Yandex imagery, typography, or assets are included.

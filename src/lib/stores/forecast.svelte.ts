@@ -5,7 +5,8 @@ import { getLocationStore, type LocationStore } from './location.svelte';
 import { memoryStorage } from './memoryStorage';
 import { getSettingsStore, type SettingsStore } from './settings.svelte';
 
-export const REFRESH_ERROR_MESSAGE = 'Не удалось обновить прогноз';
+// Internal diagnostic flag — never rendered to the user (UI shows localized t() strings).
+export const REFRESH_ERROR_MESSAGE = 'Failed to refresh forecast';
 
 export type ForecastStore = {
 	readonly payload: ForecastPayload | null;

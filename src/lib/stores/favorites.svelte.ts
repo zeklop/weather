@@ -2,10 +2,12 @@ import { geoId } from '../api/geocoding';
 import type { Location } from '../types';
 
 export const STORAGE_KEY = 'weather:favorites';
+// Storage marker for a geolocated point; render-localized via t('header.myLocation').
 export const UNNAMED_LOCATION_NAME = 'Моё местоположение';
+const UNNAMED_LOCATION_NAMES = new Set(['Моё местоположение', 'My location']);
 
 export function isUnnamedLocation(location: Location): boolean {
-	return location.name === UNNAMED_LOCATION_NAME || location.name.trim() === '';
+	return UNNAMED_LOCATION_NAMES.has(location.name) || location.name.trim() === '';
 }
 
 export type FavoritesStore = {

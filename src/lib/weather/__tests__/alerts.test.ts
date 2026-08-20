@@ -70,7 +70,7 @@ describe('evaluateWeatherAlerts - Precipitation Trigger', () => {
 		payload.hourly[1]!.weatherCode = 61; // Rain
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15); // 14:15 in Moscow
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -90,7 +90,7 @@ describe('evaluateWeatherAlerts - Precipitation Trigger', () => {
 		payload.hourly[1]!.weatherCode = 61;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'ru',
 			nowMs,
 			quietHours: false
@@ -109,7 +109,7 @@ describe('evaluateWeatherAlerts - Precipitation Trigger', () => {
 		payload.hourly[1]!.precipitationProbability = 80;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -126,7 +126,7 @@ describe('evaluateWeatherAlerts - Precipitation Trigger', () => {
 		payload.hourly[4]!.precipitation = 3.0;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -142,7 +142,7 @@ describe('evaluateWeatherAlerts - Precipitation Trigger', () => {
 		payload.hourly[1]!.precipitation = 0.1;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -160,7 +160,7 @@ describe('evaluateWeatherAlerts - Severe Weather Trigger', () => {
 		payload.hourly[1]!.windSpeed = 12;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -179,7 +179,7 @@ describe('evaluateWeatherAlerts - Severe Weather Trigger', () => {
 		payload.hourly[1]!.weatherCode = 75;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'ru',
 			nowMs,
 			quietHours: false
@@ -197,7 +197,7 @@ describe('evaluateWeatherAlerts - Severe Weather Trigger', () => {
 		payload.current.windGusts = 22;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -220,7 +220,7 @@ describe('evaluateWeatherAlerts - Freeze & Temperature Drop Trigger', () => {
 		payload.hourly[2]!.temperature = -2; // Drops below zero
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -239,7 +239,7 @@ describe('evaluateWeatherAlerts - Freeze & Temperature Drop Trigger', () => {
 		payload.hourly[1]!.temperature = -1;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'ru',
 			nowMs,
 			quietHours: false
@@ -259,7 +259,7 @@ describe('evaluateWeatherAlerts - Freeze & Temperature Drop Trigger', () => {
 		payload.hourly[2]!.temperature = 14; // Drop of 6°C in 2 hours
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false
@@ -304,7 +304,7 @@ describe('evaluateWeatherAlerts - Quiet Hours & Filtering', () => {
 		});
 
 		const nowMs = Date.UTC(2026, 7, 20, 20, 30); // 23:30 in Moscow
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: true
@@ -345,7 +345,7 @@ describe('evaluateWeatherAlerts - Quiet Hours & Filtering', () => {
 		});
 
 		const nowMs = Date.UTC(2026, 7, 20, 20, 30); // 23:30 in Moscow
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: true
@@ -362,7 +362,7 @@ describe('evaluateWeatherAlerts - Quiet Hours & Filtering', () => {
 		payload.hourly[1]!.weatherCode = 61;
 
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false,
@@ -382,7 +382,7 @@ describe('evaluateWeatherAlerts - Quiet Hours & Filtering', () => {
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
 		const oneHourAgo = nowMs - 60 * 60 * 1000;
 
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false,
@@ -402,7 +402,7 @@ describe('evaluateWeatherAlerts - Quiet Hours & Filtering', () => {
 		const nowMs = Date.UTC(2026, 7, 20, 11, 15);
 		const fourHoursAgo = nowMs - 4 * 60 * 60 * 1000;
 
-		const alerts = evaluateWeatherAlerts(payload, undefined, {
+		const alerts = evaluateWeatherAlerts(payload, {
 			lang: 'en',
 			nowMs,
 			quietHours: false,
