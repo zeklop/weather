@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_UNITS, formatMmhg, formatTemp, formatWind, hpaToMmhg } from '../units';
+import {
+	DEFAULT_UNITS,
+	formatMmhg,
+	formatPrecipMm,
+	formatTemp,
+	formatWind,
+	hpaToMmhg
+} from '../units';
 
 describe('hpaToMmhg', () => {
 	it('converts standard pressure 1013.25 hPa to ~760 mmHg', () => {
@@ -55,6 +62,23 @@ describe('formatMmhg', () => {
 
 	it('formats fractional mmHg as integer', () => {
 		expect(formatMmhg(748.2)).toBe('748 мм рт. ст.');
+	});
+});
+
+describe('formatPrecipMm', () => {
+	it('formats zero as 0 мм', () => {
+		expect(formatPrecipMm(0)).toBe('0 мм');
+	});
+
+	it('formats fractional values with comma', () => {
+		expect(formatPrecipMm(0.4)).toBe('0,4 мм');
+		expect(formatPrecipMm(2.5)).toBe('2,5 мм');
+		expect(formatPrecipMm(12.34)).toBe('12,3 мм');
+	});
+
+	it('formats integer values without trailing comma zero', () => {
+		expect(formatPrecipMm(1)).toBe('1 мм');
+		expect(formatPrecipMm(5.0)).toBe('5 мм');
 	});
 });
 

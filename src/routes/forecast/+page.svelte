@@ -4,9 +4,16 @@
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
-	import { formatDayShort, formatHour, formatTimeShort, isToday } from '$lib/weather/format';
+	import {
+		formatDateShort,
+		formatDayAndDate,
+		formatDayHeader,
+		formatHour,
+		formatTimeShort,
+		isToday
+	} from '$lib/weather/format';
 	import { getHourStartIdx, getWallNow } from '$lib/weather/now';
-	import { formatTemp, formatWind } from '$lib/weather/units';
+	import { formatPrecipMm, formatTemp, formatWind } from '$lib/weather/units';
 	import { isDay } from '$lib/weather/dayNight';
 	import type { DayForecast, HourForecast } from '$lib/types';
 
@@ -62,13 +69,6 @@
 		return h.precipitationProbability != null && h.precipitationProbability >= 10
 			? `${h.precipitationProbability}%`
 			: null;
-	}
-
-	function dayPrecip(d: DayForecast): string | null {
-		if (d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10) {
-			return `${d.precipitationProbabilityMax}%`;
-		}
-		return d.precipitationSum > 0 ? 'rain' : null;
 	}
 </script>
 
@@ -132,15 +132,37 @@
 
 		<h2 class="section-title">Почасовой прогноз</h2>
 		<div class="card hourly">
+			<div class="hour-header" aria-hidden="true">
+				<span class="col-time">Время</span>
+				<span class="col-icon">Погода</span>
+				<span class="col-temp">Темп</span>
+				<span class="col-precip">Осадки</span>
+				<span class="col-wind">Ветер</span>
+			</div>
 			{#each hourRows as h, i}
 				{@const v = getWeatherVisual(h.weatherCode)}
 				{@const p = hourPrecip(h)}
+				{@const showDayHeader = i === 0 || h.time.slice(0, 10) !== hourRows[i - 1]?.time.slice(0, 10)}
+				{#if showDayHeader}
+					<div class="day-divider" role="heading" aria-level="3">
+						<span>{formatDayHeader(h.time.slice(0, 10), nowIso)}</span>
+					</div>
+				{/if}
 				<div class="hour-row" class:current={isCurrentHour && i === 0}>
 					<span class="hour-time">{isCurrentHour && i === 0 ? 'Сейчас' : formatHour(h.time)}</span>
-					<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={24} />
-					<span class="sr-only">{v.shortLabelRu}</span>
+					<div class="hour-icon">
+						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={24} />
+						<span class="sr-only">{v.shortLabelRu}</span>
+					</div>
 					<span class="hour-temp">{formatTemp(h.temperature)}</span>
-					<span class="hour-precip" class:empty={p === null}>{p ?? '–'}</span>
+					<span class="hour-precip" class:empty={p === null} title={p ? `Вероятность осадков: ${p}` : 'Без осадков'}>
+						{#if p}
+							{p}<span class="sr-only"> вероятность осадков</span>
+						{:else}
+							<span class="sr-only">Без осадков</span>
+							<span aria-hidden="true">–</span>
+						{/if}
+					</span>
 					<span class="hour-wind">{formatWind(h.windSpeed)}</span>
 				</div>
 			{/each}
@@ -148,24 +170,47 @@
 
 		<h2 class="section-title">Прогноз на 10 дней</h2>
 		<div class="card daily">
+			<div class="daily-header" aria-hidden="true">
+				<span class="col-day">День</span>
+				<span class="col-icon">Погода</span>
+				<span class="col-precip">Осадки</span>
+				<span class="col-temps">Мин / Макс</span>
+			</div>
 			{#each dailyRows as d}
 				{@const dv = getWeatherVisual(d.weatherCode)}
 				{@const today = !!nowIso && isToday(d.date, nowIso)}
-				{@const p = dayPrecip(d)}
+				{@const hasProb = d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10}
+				{@const hasMm = d.precipitationSum > 0}
 				<div class="day-row">
-					<span class="day-label" class:today>{today ? 'Сегодня' : formatDayShort(d.date)}</span>
-					<WeatherIcon name={iconName(dv, dayIsDay(d))} size={26} />
-					<span class="sr-only">{dv.shortLabelRu}</span>
-					<span class="day-high">{formatTemp(d.temperatureMax)}</span>
-					<span class="day-low">{formatTemp(d.temperatureMin)}</span>
-					<span class="day-precip">
-						{#if p === 'rain'}
-							<WeatherIcon name="rain" size={14} />
-							<span class="sr-only">Осадки</span>
-						{:else if p}
-							{p}
-						{/if}
+					<span class="day-label" class:today title={today ? 'Сегодня' : formatDayAndDate(d.date)}>
+						{today ? `Сегодня, ${formatDateShort(d.date)}` : formatDayAndDate(d.date)}
 					</span>
+					<div class="day-icon">
+						<WeatherIcon name={iconName(dv, dayIsDay(d))} size={26} />
+						<span class="sr-only">{dv.shortLabelRu}</span>
+					</div>
+					<div class="day-precip">
+						{#if hasProb || hasMm}
+							<div class="day-precip-box">
+								{#if hasProb}
+									<span class="precip-prob">{d.precipitationProbabilityMax}%<span class="sr-only"> вероятность осадков</span></span>
+								{/if}
+								{#if hasMm}
+									<span class="precip-mm">{formatPrecipMm(d.precipitationSum)}</span>
+								{/if}
+							</div>
+						{:else}
+							<span class="day-precip-empty" title="Без осадков">
+								<span class="sr-only">Без осадков</span>
+								<span aria-hidden="true">–</span>
+							</span>
+						{/if}
+					</div>
+					<div class="day-temps">
+						<span class="day-low" title="Ночной минимум">{formatTemp(d.temperatureMin)}</span>
+						<span class="day-sep" aria-hidden="true">/</span>
+						<span class="day-high" title="Дневной максимум">{formatTemp(d.temperatureMax)}</span>
+					</div>
 				</div>
 			{/each}
 		</div>
@@ -322,9 +367,51 @@
 		min-width: 0;
 	}
 
+	.hour-header {
+		display: grid;
+		grid-template-columns: 56px 44px 44px 52px 1fr;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--divider);
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--text-secondary);
+		min-width: 0;
+	}
+
+	.hour-header .col-time {
+		text-align: left;
+	}
+	.hour-header .col-icon {
+		text-align: center;
+	}
+	.hour-header .col-temp {
+		text-align: left;
+	}
+	.hour-header .col-precip {
+		text-align: right;
+	}
+	.hour-header .col-wind {
+		text-align: right;
+	}
+
+	.day-divider {
+		position: sticky;
+		top: 0;
+		z-index: 2;
+		background: var(--bg-card);
+		backdrop-filter: blur(8px);
+		padding: var(--space-3) 0 var(--space-2);
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text-primary);
+		border-bottom: 1px solid var(--divider);
+	}
+
 	.hour-row {
 		display: grid;
-		grid-template-columns: 56px 26px 48px 40px 1fr;
+		grid-template-columns: 56px 44px 44px 52px 1fr;
 		align-items: center;
 		gap: var(--space-2);
 		min-height: 44px;
@@ -350,6 +437,12 @@
 	.hour-row.current .hour-time {
 		color: var(--accent-strong);
 		font-weight: 600;
+	}
+
+	.hour-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.hour-temp {
@@ -379,12 +472,38 @@
 		min-width: 0;
 	}
 
+	.daily-header {
+		display: grid;
+		grid-template-columns: 96px 36px 1fr 76px;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--divider);
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--text-secondary);
+		min-width: 0;
+	}
+
+	.daily-header .col-day {
+		text-align: left;
+	}
+	.daily-header .col-icon {
+		text-align: center;
+	}
+	.daily-header .col-precip {
+		text-align: right;
+	}
+	.daily-header .col-temps {
+		text-align: right;
+	}
+
 	.day-row {
 		display: grid;
-		grid-template-columns: 1fr 28px 44px 44px auto;
+		grid-template-columns: 96px 36px 1fr 76px;
 		align-items: center;
-		gap: var(--space-3);
-		min-height: 44px;
+		gap: var(--space-2);
+		min-height: 48px;
 		border-bottom: 1px solid var(--divider);
 		min-width: 0;
 	}
@@ -394,7 +513,7 @@
 	}
 
 	.day-label {
-		font-size: 15px;
+		font-size: 14px;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -406,24 +525,64 @@
 		font-weight: 600;
 	}
 
-	.day-high {
-		font-size: 15px;
-		font-weight: 600;
-		min-width: 44px;
-		text-align: right;
-	}
-
-	.day-low {
-		font-size: 15px;
-		color: var(--text-secondary);
-		min-width: 44px;
-		text-align: right;
+	.day-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.day-precip {
+		min-width: 0;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.day-precip-box {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		line-height: 1.2;
+	}
+
+	.precip-prob {
 		font-size: 13px;
+		font-weight: 500;
 		color: var(--accent-strong);
+	}
+
+	.precip-mm {
+		font-size: 11px;
+		color: var(--text-secondary);
+	}
+
+	.day-precip-empty {
+		font-size: 13px;
+		color: var(--text-secondary);
 		text-align: right;
-		min-width: 36px;
+	}
+
+	.day-temps {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: var(--space-1);
+		text-align: right;
+		font-size: 15px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.day-low {
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.day-sep {
+		color: var(--divider);
+		font-size: 12px;
+	}
+
+	.day-high {
+		color: var(--text-primary);
+		font-weight: 600;
 	}
 </style>

@@ -25,3 +25,9 @@ export function formatWind(ms: number): string {
 export function formatMmhg(mmhg: number): string {
 	return `${Math.round(mmhg)} мм рт. ст.`;
 }
+
+export function formatPrecipMm(mm: number): string {
+	const rounded = Math.round(mm * 10) / 10;
+	const formatted = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1).replace('.', ',');
+	return `${formatted} мм`;
+}

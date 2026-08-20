@@ -55,8 +55,37 @@ const DATE_SHORT = new Intl.DateTimeFormat('ru-RU', {
 	timeZone: 'UTC'
 });
 
+const DATE_MONTH_FULL = new Intl.DateTimeFormat('ru-RU', {
+	day: 'numeric',
+	month: 'long',
+	timeZone: 'UTC'
+});
+
+const DAY_AND_DATE = new Intl.DateTimeFormat('ru-RU', {
+	weekday: 'short',
+	day: 'numeric',
+	month: 'short',
+	timeZone: 'UTC'
+});
+
 export function formatDateShort(isoDate: string): string {
 	return DATE_SHORT.format(wallDate(isoDate)).replace(/\.$/, '');
+}
+
+export function formatDayAndDate(isoDate: string): string {
+	return DAY_AND_DATE.format(wallDate(isoDate)).replace(/\.$/, '');
+}
+
+export function formatDayHeader(isoDate: string, nowWallTime: string | null): string {
+	if (!nowWallTime) return formatDayFull(isoDate);
+	const nowDay = nowWallTime.slice(0, 10);
+	const nowWall = wallDate(nowDay);
+	const targetWall = wallDate(isoDate);
+	const diffDays = Math.round((targetWall.getTime() - nowWall.getTime()) / (24 * 3600 * 1000));
+	const dateMonth = DATE_MONTH_FULL.format(targetWall);
+	if (diffDays === 0) return `Сегодня, ${dateMonth}`;
+	if (diffDays === 1) return `Завтра, ${dateMonth}`;
+	return formatDayFull(isoDate);
 }
 
 export function formatStaleTime(isoDateTime: string, nowWallTime: string | null): string {

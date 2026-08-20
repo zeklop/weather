@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
 	formatDateShort,
+	formatDayAndDate,
 	formatDayFull,
+	formatDayHeader,
 	formatDayShort,
 	formatHour,
 	formatRailDateBadge,
@@ -104,5 +106,37 @@ describe('formatRailDateBadge', () => {
 
 	it('falls back to formatDayShort when nowWallTime is null', () => {
 		expect(formatRailDateBadge('2026-08-21', null)).toBe('пт, 21');
+	});
+});
+
+describe('formatDayHeader', () => {
+	it('returns "Сегодня, 20 августа" for today', () => {
+		expect(formatDayHeader('2026-08-20', '2026-08-20T14:00')).toBe('Сегодня, 20 августа');
+	});
+
+	it('returns "Завтра, 21 августа" for tomorrow', () => {
+		expect(formatDayHeader('2026-08-21', '2026-08-20T14:00')).toBe('Завтра, 21 августа');
+	});
+
+	it('returns full day string like "Суббота, 22 августа" for subsequent days', () => {
+		expect(formatDayHeader('2026-08-22', '2026-08-20T14:00')).toBe('Суббота, 22 августа');
+	});
+
+	it('falls back to formatDayFull when nowWallTime is null', () => {
+		expect(formatDayHeader('2026-08-20', null)).toBe('Четверг, 20 августа');
+	});
+});
+
+describe('formatDayAndDate', () => {
+	it('formats Thursday as "чт, 20 авг"', () => {
+		expect(formatDayAndDate('2026-08-20')).toBe('чт, 20 авг');
+	});
+
+	it('formats Friday as "пт, 21 авг"', () => {
+		expect(formatDayAndDate('2026-08-21')).toBe('пт, 21 авг');
+	});
+
+	it('formats Sunday as "вс, 23 авг"', () => {
+		expect(formatDayAndDate('2026-08-23')).toBe('вс, 23 авг');
 	});
 });
