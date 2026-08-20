@@ -1,29 +1,58 @@
 import { describe, expect, it } from 'vitest';
-import { windDirectionAngle, windDirectionLabel } from '../direction';
+import { formatWindDirection, windDirectionAngle, windDirectionLabel } from '../direction';
 
-describe('windDirectionLabel', () => {
-	it('maps the 8 compass points to Russian labels', () => {
-		expect(windDirectionLabel(0)).toBe('С');
-		expect(windDirectionLabel(45)).toBe('СВ');
-		expect(windDirectionLabel(90)).toBe('В');
-		expect(windDirectionLabel(135)).toBe('ЮВ');
-		expect(windDirectionLabel(180)).toBe('Ю');
-		expect(windDirectionLabel(225)).toBe('ЮЗ');
-		expect(windDirectionLabel(270)).toBe('З');
-		expect(windDirectionLabel(315)).toBe('СЗ');
+describe('formatWindDirection', () => {
+	it('maps the 8 compass points to English labels by default', () => {
+		expect(formatWindDirection(0)).toBe('N');
+		expect(formatWindDirection(45)).toBe('NE');
+		expect(formatWindDirection(90)).toBe('E');
+		expect(formatWindDirection(135)).toBe('SE');
+		expect(formatWindDirection(180)).toBe('S');
+		expect(formatWindDirection(225)).toBe('SW');
+		expect(formatWindDirection(270)).toBe('W');
+		expect(formatWindDirection(315)).toBe('NW');
+	});
+
+	it('maps the 8 compass points to Russian labels when requested', () => {
+		expect(formatWindDirection(0, 'ru')).toBe('С');
+		expect(formatWindDirection(45, 'ru')).toBe('СВ');
+		expect(formatWindDirection(90, 'ru')).toBe('В');
+		expect(formatWindDirection(135, 'ru')).toBe('ЮВ');
+		expect(formatWindDirection(180, 'ru')).toBe('Ю');
+		expect(formatWindDirection(225, 'ru')).toBe('ЮЗ');
+		expect(formatWindDirection(270, 'ru')).toBe('З');
+		expect(formatWindDirection(315, 'ru')).toBe('СЗ');
 	});
 
 	it('assigns sector boundaries to the next direction (half-open intervals)', () => {
-		expect(windDirectionLabel(22.5)).toBe('СВ');
-		expect(windDirectionLabel(337.5)).toBe('С');
-		expect(windDirectionLabel(359.9)).toBe('С');
+		expect(formatWindDirection(22.5, 'en')).toBe('NE');
+		expect(formatWindDirection(337.5, 'en')).toBe('N');
+		expect(formatWindDirection(359.9, 'en')).toBe('N');
+
+		expect(formatWindDirection(22.5, 'ru')).toBe('СВ');
+		expect(formatWindDirection(337.5, 'ru')).toBe('С');
+		expect(formatWindDirection(359.9, 'ru')).toBe('С');
 	});
 
 	it('normalizes degrees >= 360 and negatives', () => {
-		expect(windDirectionLabel(360)).toBe('С');
-		expect(windDirectionLabel(405)).toBe('СВ');
-		expect(windDirectionLabel(-45)).toBe('СЗ');
-		expect(windDirectionLabel(-90)).toBe('З');
+		expect(formatWindDirection(360, 'en')).toBe('N');
+		expect(formatWindDirection(405, 'en')).toBe('NE');
+		expect(formatWindDirection(-45, 'en')).toBe('NW');
+		expect(formatWindDirection(-90, 'en')).toBe('W');
+
+		expect(formatWindDirection(360, 'ru')).toBe('С');
+		expect(formatWindDirection(405, 'ru')).toBe('СВ');
+		expect(formatWindDirection(-45, 'ru')).toBe('СЗ');
+		expect(formatWindDirection(-90, 'ru')).toBe('З');
+	});
+});
+
+describe('windDirectionLabel backward compatibility alias', () => {
+	it('supports lang parameter and defaults to English', () => {
+		expect(windDirectionLabel(0)).toBe('N');
+		expect(windDirectionLabel(0, 'ru')).toBe('С');
+		expect(windDirectionLabel(135, 'en')).toBe('SE');
+		expect(windDirectionLabel(135, 'ru')).toBe('ЮВ');
 	});
 });
 

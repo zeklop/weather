@@ -34,22 +34,26 @@ describe('formatHour', () => {
 });
 
 describe('formatDayShort', () => {
-	it('formats Thursday as "чт, 20"', () => {
-		expect(formatDayShort('2026-08-20')).toBe('чт, 20');
+	it('formats in English by default', () => {
+		expect(formatDayShort('2026-08-20')).toBe('Thu, 20');
+		expect(formatDayShort('2026-08-21')).toBe('Fri, 21');
+		expect(formatDayShort('2026-08-23')).toBe('Sun, 23');
 	});
 
-	it('formats Friday as "пт, 21"', () => {
-		expect(formatDayShort('2026-08-21')).toBe('пт, 21');
-	});
-
-	it('formats Sunday as "вс, 23"', () => {
-		expect(formatDayShort('2026-08-23')).toBe('вс, 23');
+	it('formats in Russian when specified', () => {
+		expect(formatDayShort('2026-08-20', 'ru')).toBe('чт, 20');
+		expect(formatDayShort('2026-08-21', 'ru')).toBe('пт, 21');
+		expect(formatDayShort('2026-08-23', 'ru')).toBe('вс, 23');
 	});
 });
 
 describe('formatDayFull', () => {
-	it('formats weekday capitalized, day and genitive month', () => {
-		expect(formatDayFull('2026-08-20')).toBe('Четверг, 20 августа');
+	it('formats in English by default (weekday, Month Day)', () => {
+		expect(formatDayFull('2026-08-20')).toBe('Thursday, August 20');
+	});
+
+	it('formats in Russian when specified (capitalized, genitive month)', () => {
+		expect(formatDayFull('2026-08-20', 'ru')).toBe('Четверг, 20 августа');
 	});
 });
 
@@ -60,9 +64,14 @@ describe('formatTimeShort', () => {
 });
 
 describe('formatFavoriteLocalTime', () => {
-	it('formats observation timestamp with "местное HH:MM"', () => {
-		expect(formatFavoriteLocalTime('2026-08-20T14:30:00')).toBe('местное 14:30');
-		expect(formatFavoriteLocalTime('2026-08-20T09:05')).toBe('местное 09:05');
+	it('formats observation timestamp with "local HH:MM" in English by default', () => {
+		expect(formatFavoriteLocalTime('2026-08-20T14:30:00')).toBe('local 14:30');
+		expect(formatFavoriteLocalTime('2026-08-20T09:05')).toBe('local 09:05');
+	});
+
+	it('formats observation timestamp with "местное HH:MM" in Russian', () => {
+		expect(formatFavoriteLocalTime('2026-08-20T14:30:00', 'ru')).toBe('местное 14:30');
+		expect(formatFavoriteLocalTime('2026-08-20T09:05', 'ru')).toBe('местное 09:05');
 	});
 });
 
@@ -77,9 +86,14 @@ describe('isToday', () => {
 });
 
 describe('formatDateShort', () => {
-	it('formats date as day and short month in Russian', () => {
-		expect(formatDateShort('2026-08-20')).toMatch(/^20 авг/);
-		expect(formatDateShort('2026-01-05')).toMatch(/^5 янв/);
+	it('formats date in English by default as "Month Day"', () => {
+		expect(formatDateShort('2026-08-20')).toBe('Aug 20');
+		expect(formatDateShort('2026-01-05')).toBe('Jan 5');
+	});
+
+	it('formats date in Russian as day and short month', () => {
+		expect(formatDateShort('2026-08-20', 'ru')).toMatch(/^20 авг/);
+		expect(formatDateShort('2026-01-05', 'ru')).toMatch(/^5 янв/);
 	});
 });
 
@@ -88,63 +102,70 @@ describe('formatStaleTime', () => {
 		expect(formatStaleTime('2026-08-20T14:00', '2026-08-20T18:30')).toBe('14:00');
 	});
 
-	it('returns date and HH:MM when payload time is not today in wall time', () => {
+	it('returns date and HH:MM in English by default when not today', () => {
 		const result = formatStaleTime('2026-08-20T14:00', '2026-08-21T09:00');
+		expect(result).toBe('Aug 20, 14:00');
+	});
+
+	it('returns date and HH:MM in Russian when requested and not today', () => {
+		const result = formatStaleTime('2026-08-20T14:00', '2026-08-21T09:00', 'ru');
 		expect(result).toMatch(/^20 авг.*, 14:00$/);
 	});
 
 	it('returns date and HH:MM when nowWallTime is null', () => {
-		const result = formatStaleTime('2026-08-20T14:00', null);
-		expect(result).toMatch(/^20 авг.*, 14:00$/);
+		expect(formatStaleTime('2026-08-20T14:00', null)).toBe('Aug 20, 14:00');
+		expect(formatStaleTime('2026-08-20T14:00', null, 'ru')).toMatch(/^20 авг.*, 14:00$/);
 	});
 });
 
 describe('formatRailDateBadge', () => {
-	it('returns "Завтра" for tomorrow', () => {
-		expect(formatRailDateBadge('2026-08-21', '2026-08-20T14:00')).toBe('Завтра');
+	it('returns "Today" / "Tomorrow" in English by default', () => {
+		expect(formatRailDateBadge('2026-08-20', '2026-08-20T14:00')).toBe('Today');
+		expect(formatRailDateBadge('2026-08-21', '2026-08-20T14:00')).toBe('Tomorrow');
+		expect(formatRailDateBadge('2026-08-22', '2026-08-20T14:00')).toBe('Sat, 22');
 	});
 
-	it('returns "Сегодня" for today', () => {
-		expect(formatRailDateBadge('2026-08-20', '2026-08-20T14:00')).toBe('Сегодня');
-	});
-
-	it('returns short formatted day for 2+ days ahead', () => {
-		expect(formatRailDateBadge('2026-08-22', '2026-08-20T14:00')).toBe('сб, 22');
+	it('returns "Сегодня" / "Завтра" in Russian when requested', () => {
+		expect(formatRailDateBadge('2026-08-20', '2026-08-20T14:00', 'ru')).toBe('Сегодня');
+		expect(formatRailDateBadge('2026-08-21', '2026-08-20T14:00', 'ru')).toBe('Завтра');
+		expect(formatRailDateBadge('2026-08-22', '2026-08-20T14:00', 'ru')).toBe('сб, 22');
 	});
 
 	it('falls back to formatDayShort when nowWallTime is null', () => {
-		expect(formatRailDateBadge('2026-08-21', null)).toBe('пт, 21');
+		expect(formatRailDateBadge('2026-08-21', null)).toBe('Fri, 21');
+		expect(formatRailDateBadge('2026-08-21', null, 'ru')).toBe('пт, 21');
 	});
 });
 
 describe('formatDayHeader', () => {
-	it('returns "Сегодня, 20 августа" for today', () => {
-		expect(formatDayHeader('2026-08-20', '2026-08-20T14:00')).toBe('Сегодня, 20 августа');
+	it('returns "Today, Month Day" / "Tomorrow, Month Day" in English by default', () => {
+		expect(formatDayHeader('2026-08-20', '2026-08-20T14:00')).toBe('Today, August 20');
+		expect(formatDayHeader('2026-08-21', '2026-08-20T14:00')).toBe('Tomorrow, August 21');
+		expect(formatDayHeader('2026-08-22', '2026-08-20T14:00')).toBe('Saturday, August 22');
 	});
 
-	it('returns "Завтра, 21 августа" for tomorrow', () => {
-		expect(formatDayHeader('2026-08-21', '2026-08-20T14:00')).toBe('Завтра, 21 августа');
-	});
-
-	it('returns full day string like "Суббота, 22 августа" for subsequent days', () => {
-		expect(formatDayHeader('2026-08-22', '2026-08-20T14:00')).toBe('Суббота, 22 августа');
+	it('returns "Сегодня, 20 августа" / "Завтра, 21 августа" in Russian when requested', () => {
+		expect(formatDayHeader('2026-08-20', '2026-08-20T14:00', 'ru')).toBe('Сегодня, 20 августа');
+		expect(formatDayHeader('2026-08-21', '2026-08-20T14:00', 'ru')).toBe('Завтра, 21 августа');
+		expect(formatDayHeader('2026-08-22', '2026-08-20T14:00', 'ru')).toBe('Суббота, 22 августа');
 	});
 
 	it('falls back to formatDayFull when nowWallTime is null', () => {
-		expect(formatDayHeader('2026-08-20', null)).toBe('Четверг, 20 августа');
+		expect(formatDayHeader('2026-08-20', null)).toBe('Thursday, August 20');
+		expect(formatDayHeader('2026-08-20', null, 'ru')).toBe('Четверг, 20 августа');
 	});
 });
 
 describe('formatDayAndDate', () => {
-	it('formats Thursday as "чт, 20 авг"', () => {
-		expect(formatDayAndDate('2026-08-20')).toBe('чт, 20 авг');
+	it('formats in English by default as "Weekday, Month Day"', () => {
+		expect(formatDayAndDate('2026-08-20')).toBe('Thu, Aug 20');
+		expect(formatDayAndDate('2026-08-21')).toBe('Fri, Aug 21');
+		expect(formatDayAndDate('2026-08-23')).toBe('Sun, Aug 23');
 	});
 
-	it('formats Friday as "пт, 21 авг"', () => {
-		expect(formatDayAndDate('2026-08-21')).toBe('пт, 21 авг');
-	});
-
-	it('formats Sunday as "вс, 23 авг"', () => {
-		expect(formatDayAndDate('2026-08-23')).toBe('вс, 23 авг');
+	it('formats in Russian as "чт, 20 авг"', () => {
+		expect(formatDayAndDate('2026-08-20', 'ru')).toBe('чт, 20 авг');
+		expect(formatDayAndDate('2026-08-21', 'ru')).toBe('пт, 21 авг');
+		expect(formatDayAndDate('2026-08-23', 'ru')).toBe('вс, 23 авг');
 	});
 });

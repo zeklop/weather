@@ -89,21 +89,31 @@ describe('getHourStartIdx and isPayloadExpired', () => {
 });
 
 describe('spanWord', () => {
-	it('formats Russian declension for minutes', () => {
-		expect(spanWord(1)).toBe('1 минуту');
-		expect(spanWord(2)).toBe('2 минуты');
-		expect(spanWord(4)).toBe('4 минуты');
-		expect(spanWord(5)).toBe('5 минут');
-		expect(spanWord(11)).toBe('11 минут');
-		expect(spanWord(21)).toBe('21 минуту');
-		expect(spanWord(22)).toBe('22 минуты');
-		expect(spanWord(40)).toBe('40 минут');
+	it('formats English words by default', () => {
+		expect(spanWord(1)).toBe('1 minute');
+		expect(spanWord(2)).toBe('2 minutes');
+		expect(spanWord(15)).toBe('15 minutes');
+		expect(spanWord(40)).toBe('40 minutes');
+		expect(spanWord(60)).toBe('1 hour');
+		expect(spanWord(90)).toBe('1.5 hours');
+		expect(spanWord(120)).toBe('2 hours');
 	});
 
-	it('formats Russian phrases for hour spans', () => {
-		expect(spanWord(60)).toBe('1 час');
-		expect(spanWord(90)).toBe('1,5 часа');
-		expect(spanWord(120)).toBe('2 часа');
+	it('formats Russian declension for minutes when requested', () => {
+		expect(spanWord(1, 'ru')).toBe('1 минуту');
+		expect(spanWord(2, 'ru')).toBe('2 минуты');
+		expect(spanWord(4, 'ru')).toBe('4 минуты');
+		expect(spanWord(5, 'ru')).toBe('5 минут');
+		expect(spanWord(11, 'ru')).toBe('11 минут');
+		expect(spanWord(21, 'ru')).toBe('21 минуту');
+		expect(spanWord(22, 'ru')).toBe('22 минуты');
+		expect(spanWord(40, 'ru')).toBe('40 минут');
+	});
+
+	it('formats Russian phrases for hour spans when requested', () => {
+		expect(spanWord(60, 'ru')).toBe('1 час');
+		expect(spanWord(90, 'ru')).toBe('1,5 часа');
+		expect(spanWord(120, 'ru')).toBe('2 часа');
 	});
 });
 
@@ -116,29 +126,51 @@ describe('wallMinutesBetween', () => {
 });
 
 describe('formatPrecipitationPhrase', () => {
-	it('formats current precipitation using shortLabelRu', () => {
-		expect(formatPrecipitationPhrase('Дождь', null, true)).toBe('Дождь идёт');
-		expect(formatPrecipitationPhrase('Снег', null, true)).toBe('Снег идёт');
-		expect(formatPrecipitationPhrase('Морось', null, true)).toBe('Морось идёт');
-		expect(formatPrecipitationPhrase('Ливень', null, true)).toBe('Ливень идёт');
-		expect(formatPrecipitationPhrase('Снегопад', null, true)).toBe('Снегопад идёт');
-		expect(formatPrecipitationPhrase('Гроза', null, true)).toBe('Гроза идёт');
+	it('formats in English by default for active precipitation', () => {
+		expect(formatPrecipitationPhrase('Rain', null, true)).toBe('Rain is falling');
+		expect(formatPrecipitationPhrase('Snow', null, true)).toBe('Snow is falling');
+		expect(formatPrecipitationPhrase('Drizzle', null, true)).toBe('Drizzle is falling');
 	});
 
-	it('formats precipitation ending phrase when currently raining and minutes are provided', () => {
-		expect(formatPrecipitationPhrase('Дождь', 15, true)).toBe('Дождь закончится через 15 минут');
-		expect(formatPrecipitationPhrase('Снег', 1, true)).toBe('Снег закончится через 1 минуту');
+	it('formats in English by default when currently raining and stopping time is known', () => {
+		expect(formatPrecipitationPhrase('Snow', 15, true)).toBe('Snow will stop in ~15 minutes');
+		expect(formatPrecipitationPhrase('Rain', 1, true)).toBe('Rain will stop in ~1 minute');
 	});
 
-	it('formats precipitation starting phrase when not currently raining and minutes are provided', () => {
-		expect(formatPrecipitationPhrase('Дождь', 40, false)).toBe('Дождь начнётся примерно через 40 минут');
-		expect(formatPrecipitationPhrase('Морось', 20, false)).toBe('Морось начнётся примерно через 20 минут');
-		expect(formatPrecipitationPhrase('Снег', 60, false)).toBe('Снег начнётся примерно через 1 час');
-		expect(formatPrecipitationPhrase('Ливень', 90, false)).toBe('Ливень начнётся примерно через 1,5 часа');
+	it('formats in English by default when precipitation will start in future', () => {
+		expect(formatPrecipitationPhrase('Rain', 40, false)).toBe('Rain will start in ~40 minutes');
+		expect(formatPrecipitationPhrase('Snow', 60, false)).toBe('Snow will start in ~1 hour');
+		expect(formatPrecipitationPhrase('Rain', 90, false)).toBe('Rain will start in ~1.5 hours');
 	});
 
-	it('formats "Без осадков" when not currently raining and no upcoming precipitation minutes', () => {
-		expect(formatPrecipitationPhrase('Дождь', null, false)).toBe('Без осадков');
-		expect(formatPrecipitationPhrase('Ясно', null, false)).toBe('Без осадков');
+	it('formats "No precipitation" in English by default when dry', () => {
+		expect(formatPrecipitationPhrase('Rain', null, false)).toBe('No precipitation');
+		expect(formatPrecipitationPhrase('Clear', null, false)).toBe('No precipitation');
+	});
+
+	it('formats current precipitation using Russian phrase when requested', () => {
+		expect(formatPrecipitationPhrase('Дождь', null, true, 'ru')).toBe('Дождь идёт');
+		expect(formatPrecipitationPhrase('Снег', null, true, 'ru')).toBe('Снег идёт');
+		expect(formatPrecipitationPhrase('Морось', null, true, 'ru')).toBe('Морось идёт');
+		expect(formatPrecipitationPhrase('Ливень', null, true, 'ru')).toBe('Ливень идёт');
+		expect(formatPrecipitationPhrase('Снегопад', null, true, 'ru')).toBe('Снегопад идёт');
+		expect(formatPrecipitationPhrase('Гроза', null, true, 'ru')).toBe('Гроза идёт');
+	});
+
+	it('formats precipitation ending phrase in Russian when currently raining and minutes are provided', () => {
+		expect(formatPrecipitationPhrase('Дождь', 15, true, 'ru')).toBe('Дождь закончится через 15 минут');
+		expect(formatPrecipitationPhrase('Снег', 1, true, 'ru')).toBe('Снег закончится через 1 минуту');
+	});
+
+	it('formats precipitation starting phrase in Russian when not currently raining and minutes are provided', () => {
+		expect(formatPrecipitationPhrase('Дождь', 40, false, 'ru')).toBe('Дождь начнётся примерно через 40 минут');
+		expect(formatPrecipitationPhrase('Морось', 20, false, 'ru')).toBe('Морось начнётся примерно через 20 минут');
+		expect(formatPrecipitationPhrase('Снег', 60, false, 'ru')).toBe('Снег начнётся примерно через 1 час');
+		expect(formatPrecipitationPhrase('Ливень', 90, false, 'ru')).toBe('Ливень начнётся примерно через 1,5 часа');
+	});
+
+	it('formats "Без осадков" in Russian when not currently raining and no upcoming precipitation minutes', () => {
+		expect(formatPrecipitationPhrase('Дождь', null, false, 'ru')).toBe('Без осадков');
+		expect(formatPrecipitationPhrase('Ясно', null, false, 'ru')).toBe('Без осадков');
 	});
 });

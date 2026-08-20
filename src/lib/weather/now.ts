@@ -1,3 +1,5 @@
+import type { Language } from '$lib/i18n/translations';
+
 // Memoized Intl.DateTimeFormat instances per timezone to avoid re-instantiation per tick.
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -83,42 +85,68 @@ export function wallMinutesBetween(from: string, to: string): number {
 }
 
 /**
- * Formats duration in minutes with Russian declension or hour approximation.
+ * Formats duration in minutes with Russian or English declension or hour approximation.
  */
-export function spanWord(minutes: number): string {
+export function spanWord(minutes: number, lang: Language = 'en'): string {
 	const m = Math.max(1, minutes);
+	if (lang === 'ru') {
+		if (m < 60) {
+			const m10 = m % 10;
+			const m100 = m % 100;
+			if (m10 === 1 && m100 !== 11) return `${m} минуту`;
+			if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${m} минуты`;
+			return `${m} минут`;
+		}
+		const h = Math.round((m / 60) * 2) / 2;
+		if (h <= 1) return '1 час';
+		if (h <= 1.5) return '1,5 часа';
+		return '2 часа';
+	}
+
 	if (m < 60) {
-		const m10 = m % 10;
-		const m100 = m % 100;
-		if (m10 === 1 && m100 !== 11) return `${m} минуту`;
-		if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${m} минуты`;
-		return `${m} минут`;
+		if (m === 1) return '1 minute';
+		return `${m} minutes`;
 	}
 	const h = Math.round((m / 60) * 2) / 2;
-	if (h <= 1) return '1 час';
-	if (h <= 1.5) return '1,5 часа';
-	return '2 часа';
+	if (h <= 1) return '1 hour';
+	if (h <= 1.5) return '1.5 hours';
+	return '2 hours';
 }
 
 /**
- * Russian phrase helper using shortLabelRu ("Дождь идёт", "Морось начнётся примерно через 40 минут",
- * "Дождь закончится через 15 минут", etc.).
+ * Localized precipitation phrase helper.
  */
 export function formatPrecipitationPhrase(
-	shortLabelRu: string,
+	shortLabel: string,
 	minutesRemaining: number | null,
-	isCurrentlyRaining: boolean
+	isCurrentlyRaining: boolean,
+	lang: Language = 'en'
 ): string {
+	if (lang === 'ru') {
+		if (isCurrentlyRaining) {
+			if (minutesRemaining !== null && minutesRemaining > 0) {
+				return `${shortLabel} закончится через ${spanWord(minutesRemaining, 'ru')}`;
+			}
+			return `${shortLabel} идёт`;
+		}
+
+		if (minutesRemaining !== null && minutesRemaining > 0) {
+			return `${shortLabel} начнётся примерно через ${spanWord(minutesRemaining, 'ru')}`;
+		}
+
+		return 'Без осадков';
+	}
+
 	if (isCurrentlyRaining) {
 		if (minutesRemaining !== null && minutesRemaining > 0) {
-			return `${shortLabelRu} закончится через ${spanWord(minutesRemaining)}`;
+			return `${shortLabel} will stop in ~${spanWord(minutesRemaining, 'en')}`;
 		}
-		return `${shortLabelRu} идёт`;
+		return `${shortLabel} is falling`;
 	}
 
 	if (minutesRemaining !== null && minutesRemaining > 0) {
-		return `${shortLabelRu} начнётся примерно через ${spanWord(minutesRemaining)}`;
+		return `${shortLabel} will start in ~${spanWord(minutesRemaining, 'en')}`;
 	}
 
-	return 'Без осадков';
+	return 'No precipitation';
 }
