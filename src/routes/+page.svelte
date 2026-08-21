@@ -38,6 +38,7 @@
 	import { formatWindDirection } from '$lib/weather/direction';
 	import { isDay } from '$lib/weather/dayNight';
 	import { hasMeaningfulPrecipitation } from '$lib/weather/chart';
+	import { isRadarSupported } from '$lib/map/rainviewer';
 	import type { DayForecast } from '$lib/types';
 
 	const store = getForecastStore();
@@ -49,6 +50,7 @@
 	const status = $derived(store.status);
 	const refreshing = $derived(store.refreshing);
 	const activeAlert = $derived(alertsStore.activeAlert);
+	const radarSupported = $derived(isRadarSupported(location.current));
 
 	// Minute ticker keeps «Сейчас»/current-hour highlight honest while the SPA
 	// stays open across an hour boundary.
@@ -409,13 +411,22 @@
 					{/if}
 				{:else if secId === 'precipHeuristic'}
 					{#if precipCard}
-						<a class="card precip" href={base + '/map/'}>
-							<div class="precip-header">
-								<div class="precip-title">{t('home.next2Hours', lang)}</div>
-								<div class="precip-map-link">{t('home.showOnMap', lang)}</div>
+						{#if radarSupported}
+							<a class="card precip" href={base + '/map/'}>
+								<div class="precip-header">
+									<div class="precip-title">{t('home.next2Hours', lang)}</div>
+									<div class="precip-map-link">{t('home.showOnMap', lang)}</div>
+								</div>
+								<div class="precip-text">{precipCard}</div>
+							</a>
+						{:else}
+							<div class="card precip">
+								<div class="precip-header">
+									<div class="precip-title">{t('home.next2Hours', lang)}</div>
+								</div>
+								<div class="precip-text">{precipCard}</div>
 							</div>
-							<div class="precip-text">{precipCard}</div>
-						</a>
+						{/if}
 					{/if}
 				{:else if secId === 'metrics'}
 					<div class="card metrics" role="group" aria-label={t('home.metricsTitle', lang)}>
@@ -832,10 +843,13 @@
 		text-decoration: none;
 		color: inherit;
 		display: block;
+	}
+
+	a.precip {
 		transition: opacity 0.15s ease, transform 0.15s ease;
 	}
 
-	.precip:active {
+	a.precip:active {
 		transform: scale(0.99);
 		opacity: 0.9;
 	}

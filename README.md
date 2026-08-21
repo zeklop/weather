@@ -29,10 +29,11 @@ Engineered as a cross-platform Progressive Web Application (PWA). It provides an
 - **Favorites:** Fast local storage of favourite locations (`localStorage`), quick switching, and cached temperature previews on `/favorites/`.
 - **Settings:** City selection, GPS geolocation request, last updated status, theme (System / Light / Dark), language switcher (English / Russian), section customizer, weather alerts configuration, and iOS installation guidance.
 - **Bilingual Interface (i18n):** English by default with instant Russian switch; localized WMO descriptions, units, compass points, and date/time formatting.
-- **Smart Weather Alerts:** In-app and system notifications for approaching precipitation, severe weather, frost, and sudden temperature drops, with quiet hours and rate limiting.
+- **Smart Weather Alerts & Background Web Push:** In-app alerts when the tab is active, plus autonomous background Web Push delivery via lightweight Cloudflare Workers + D1 for locked/closed devices (iOS 16.4+ standalone / Android / Desktop) with quiet hours, rate limiting, and 3-hour cooldown.
+- **Privacy-First Analytics Dashboard (`/stats/`):** 100% anonymous telemetry (device platform breakdown, active installations over 7 days, top subscriber cities, and alert history) with token-protected management.
 - **Dynamic Favicon & App Badging:** Live temperature rendered in the browser tab favicon (Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android).
-- **Platform-Specific PWA Prompts:** Native 1-click install banner on Android (`beforeinstallprompt`) and top banner with animated step-by-step installation instructions for iOS Safari.
-- **Interactive Radar Map:** MapLibre GL JS map on `/map/` with RainViewer precipitation radar animation (past + forecast frames) and layer switching.
+- **Platform-Specific PWA Prompts & Onboarding:** Native 1-click install banner on Android (`beforeinstallprompt`), top banner with animated step-by-step instructions for iOS Safari, and smart push alert onboarding banner on first standalone launch.
+- **Interactive Radar Map:** MapLibre GL JS map on `/map/` with RainViewer precipitation radar animation (past + forecast frames) and layer switching. For cities in Russia and Belarus, the map link is automatically omitted because the provider (RainViewer / MeteoLab) unilaterally stopped collecting and serving radar data for these regions.
 - **Offline Mode & Caching:** Two-layer cache (in-memory `Map` + versioned `localStorage` with LRU eviction, 8-city cap, and 1 MB budget), SWR strategy (fresh < 15 min, stale < 6 hours, offline fallback with timestamp).
 - **Vector Icons:** High-quality SVG Meteocons with dynamic day/night switching based on wall-time solar calculations (sunrise/sunset).
 
@@ -46,7 +47,7 @@ Engineered as a cross-platform Progressive Web Application (PWA). It provides an
 - **Adapter:** `@sveltejs/adapter-static` (full static prerender of all routes with `trailingSlash: 'always'`)
 - **Styling:** Handcrafted CSS with CSS variables, iOS Safe Areas (`env(safe-area-inset-*)`), and zero UI bloat (no Tailwind / bulky component libraries)
 - **Weather Data, Geocoding & Air Quality:** [Open-Meteo API](https://open-meteo.com/) (no API keys required)
-- **Radar Data:** [RainViewer](https://www.rainviewer.com/) public radar API
+- **Radar Data:** [RainViewer](https://www.rainviewer.com/) public radar API (the provider unilaterally blocked radar aggregation and maps for Russia and Belarus; the app automatically suppresses map links for unsupported regions)
 - **Maps:** [MapLibre GL JS](https://maplibre.org/) with OpenStreetMap / CARTO basemap tiles
 - **Weather Icons:** [Meteocons](https://meteocons.com/) (SVG, MIT License)
 - **App Icons:** Original vector SVG + automated PNG generation via `sharp`
@@ -125,6 +126,30 @@ npm run build
 
 Since the app is 100% static, no Node.js runtime is required on the server. A production-ready [`Caddyfile`](Caddyfile) is included in the repository.
 
+### 4. Optional Serverless Push & Analytics Backend (Cloudflare Workers + D1)
+
+For autonomous background push delivery on locked devices and self-hosted analytics:
+
+```bash
+cd serverless
+npx wrangler login
+# Create D1 database, then paste the printed database_id into wrangler.toml
+npx wrangler d1 create weather_pwa
+# Execute schema migrations (on the remote database, not local)
+npx wrangler d1 execute weather_pwa --remote --file=schema.sql
+# Generate VAPID keypair (raw base64url format is supported as-is)
+npx web-push generate-vapid-keys
+# Paste the public key into wrangler.toml (PUBLIC_VAPID_KEY) and set secrets:
+npx wrangler secret put VAPID_PRIVATE_KEY
+npx wrangler secret put ADMIN_TOKEN   # protects the /stats/ dashboard
+# Deploy worker
+npx wrangler deploy
+```
+
+Also set `APP_ORIGIN` in `wrangler.toml` to the frontend origin (e.g. `https://<user>.github.io`) so CORS only allows the app, and keep `APP_BASE_PATH` in sync with `PUBLIC_BASE_PATH` (`/weather` on GitHub Pages, `""` for root deploys).
+
+Then build the frontend with `PUBLIC_PUSH_WORKER_URL` and `PUBLIC_VAPID_KEY` environment variables. If these variables are omitted, the application runs in 100% static zero-backend mode with graceful fallback.
+
 ---
 
 ## Installing PWA on iOS (Safari)
@@ -160,7 +185,7 @@ Since the app is 100% static, no Node.js runtime is required on the server. A pr
 - **Weather data, geocoding & air quality:** [Open-Meteo](https://open-meteo.com/) — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Weather icons:** [Meteocons](https://github.com/basmilius/meteocons) by Bas Milius — MIT License.
 - **Interactive maps:** [MapLibre GL JS](https://maplibre.org/) — BSD 3-Clause; basemap tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [CARTO](https://carto.com/).
-- **Radar precipitation data:** [RainViewer](https://www.rainviewer.com/).
+- **Radar precipitation data:** [RainViewer](https://www.rainviewer.com/) (unilaterally blocked Doppler radar feeds and precipitation maps for Russia and Belarus).
 - **Reverse geocoding (GPS → city name):** [BigDataCloud](https://www.bigdatacloud.com/) free client-side API.
 
 Detailed license information is available in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

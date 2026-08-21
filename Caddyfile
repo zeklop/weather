@@ -10,7 +10,9 @@ weather.example.com {
         Referrer-Policy strict-origin-when-cross-origin
         Permissions-Policy "geolocation=(self)"
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://tilecache.rainviewer.com https://*.tilecache.rainviewer.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://air-quality-api.open-meteo.com https://marine-api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com https://*.tilecache.rainviewer.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://api.bigdatacloud.net; font-src 'self'; manifest-src 'self'; worker-src 'self' blob:;"
+        # connect-src must list the push worker origin — keep in sync with
+        # PUBLIC_PUSH_WORKER_URL in .github/workflows/deploy.yml and the meta CSP in src/app.html
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://tilecache.rainviewer.com https://*.tilecache.rainviewer.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://air-quality-api.open-meteo.com https://marine-api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com https://*.tilecache.rainviewer.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://api.bigdatacloud.net https://weather-pwa-push.zeklop-cloudflare.workers.dev; font-src 'self'; manifest-src 'self'; worker-src 'self' blob:;"
     }
 
     @immutable path /_app/immutable/*

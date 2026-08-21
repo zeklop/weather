@@ -1,6 +1,72 @@
+import type { Location } from '../types';
 import type { RadarFrame, RainViewerApiResponse } from './types';
 
 export const RAINVIEWER_API_URL = 'https://api.rainviewer.com/public/weather-maps.json';
+
+export const UNSUPPORTED_RADAR_COUNTRY_CODES = new Set(['RU', 'BY']);
+
+export const UNSUPPORTED_RADAR_TIMEZONES = new Set([
+	'Europe/Moscow',
+	'Europe/Kaliningrad',
+	'Europe/Samara',
+	'Europe/Volgograd',
+	'Europe/Kirov',
+	'Europe/Astrakhan',
+	'Europe/Ulyanovsk',
+	'Europe/Saratov',
+	'Asia/Yekaterinburg',
+	'Asia/Omsk',
+	'Asia/Novosibirsk',
+	'Asia/Barnaul',
+	'Asia/Tomsk',
+	'Asia/Novokuznetsk',
+	'Asia/Krasnoyarsk',
+	'Asia/Irkutsk',
+	'Asia/Chita',
+	'Asia/Yakutsk',
+	'Asia/Khandyga',
+	'Asia/Vladivostok',
+	'Asia/Ust-Nera',
+	'Asia/Magadan',
+	'Asia/Sakhalin',
+	'Asia/Srednekolymsk',
+	'Asia/Kamchatka',
+	'Asia/Anadyr',
+	'Europe/Minsk'
+]);
+
+const UNSUPPORTED_COUNTRY_NAMES = new Set([
+	'russia',
+	'россия',
+	'russian federation',
+	'российская федерация',
+	'рф',
+	'belarus',
+	'беларусь',
+	'белоруссия',
+	'republic of belarus'
+]);
+
+/**
+ * Checks whether live Doppler weather radar tiles are supported for the given location.
+ * RainViewer stopped collecting and serving radar data for Russia and Belarus.
+ */
+export function isRadarSupported(location: Location | null | undefined): boolean {
+	if (!location) return false;
+	if (
+		location.countryCode &&
+		UNSUPPORTED_RADAR_COUNTRY_CODES.has(location.countryCode.toUpperCase())
+	) {
+		return false;
+	}
+	if (location.country && UNSUPPORTED_COUNTRY_NAMES.has(location.country.trim().toLowerCase())) {
+		return false;
+	}
+	if (location.timezone && UNSUPPORTED_RADAR_TIMEZONES.has(location.timezone)) {
+		return false;
+	}
+	return true;
+}
 
 export interface RadarTileOptions {
 	size?: 256 | 512;

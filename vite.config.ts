@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
 	const urlBase = `${kitBase}/`;
 
 	return {
+		// Expose PUBLIC_* vars on import.meta.env (used by pushManager and /stats for
+		// PUBLIC_PUSH_WORKER_URL / PUBLIC_VAPID_KEY); Vite's default prefix is VITE_ only.
+		envPrefix: ['VITE_', 'PUBLIC_'],
 		define: {
 			__BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10))
 		},
@@ -74,6 +77,7 @@ export default defineConfig(({ mode }) => {
 
 				workbox: {
 					cleanupOutdatedCaches: true,
+					importScripts: [`${urlBase}sw-push.js`],
 					// Exact precached home URL (vite.base is normalized to end with '/', matching the
 					// home precache entry); offline navigation to unknown URLs serves the app shell.
 					navigateFallback: urlBase,

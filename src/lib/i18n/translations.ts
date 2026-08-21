@@ -129,6 +129,7 @@ export interface Translations {
 		badgeLabel: string;
 		alertsSection: string;
 		alertsEnabled: string;
+		pushNotifications: string;
 		precipitationAlerts: string;
 		severeAlerts: string;
 		freezeAlerts: string;
@@ -206,6 +207,35 @@ export interface Translations {
 		severeTitle: string;
 		freezeTitle: string;
 		dismiss: string;
+	};
+	push: {
+		onboardingTitle: string;
+		onboardingText: string;
+		enableBtn: string;
+		laterBtn: string;
+		errorPrefix: string;
+	};
+	stats: {
+		title: string;
+		subtitle: string;
+		totalSubscribers: string;
+		active7Days: string;
+		alertsSent7Days: string;
+		platforms: string;
+		iosStandalone: string;
+		android: string;
+		desktop: string;
+		topCities: string;
+		recentAlerts: string;
+		noAlerts: string;
+		noData: string;
+		lock: string;
+		tokenPlaceholder: string;
+		unlockBtn: string;
+		unauthorized: string;
+		loading: string;
+		subscribersCount: string;
+		recipients: string;
 	};
 	sections: {
 		hero: string;
@@ -425,6 +455,7 @@ export const translations: Record<Language, Translations> = {
 			badgeLabel: 'Show temperature on app icon',
 			alertsSection: 'Weather Alerts',
 			alertsEnabled: 'Allow notifications',
+			pushNotifications: 'Server push alerts',
 			precipitationAlerts: 'Precipitation (rain/snow)',
 			severeAlerts: 'Severe weather warnings',
 			freezeAlerts: 'Frost & temperature drop',
@@ -502,6 +533,35 @@ export const translations: Record<Language, Translations> = {
 			severeTitle: 'Severe Weather Alert',
 			freezeTitle: 'Freeze Warning',
 			dismiss: 'Dismiss alert'
+		},
+		push: {
+			onboardingTitle: 'Smart Weather Alerts',
+			onboardingText: 'Enable notifications to get timely warnings about upcoming rain, snow, and freeze.',
+			enableBtn: 'Enable',
+			laterBtn: 'Later',
+			errorPrefix: 'Could not enable notifications'
+		},
+		stats: {
+			title: 'Analytics & Subscriptions',
+			subtitle: 'Privacy-first telemetry and Web Push distribution metrics',
+			totalSubscribers: 'Total Subscribers',
+			active7Days: 'Active (7 Days)',
+			alertsSent7Days: 'Alerts Sent (7 Days)',
+			platforms: 'Platform Distribution',
+			iosStandalone: 'iOS (Standalone PWA)',
+			android: 'Android Chrome',
+			desktop: 'Desktop Browser',
+			topCities: 'Top 10 Subscriber Cities',
+			recentAlerts: 'Recent Dispatched Alerts',
+			noAlerts: 'No alerts sent recently',
+			noData: 'No data yet',
+			lock: 'Lock',
+			tokenPlaceholder: 'Enter ADMIN_TOKEN...',
+			unlockBtn: 'Unlock Stats',
+			unauthorized: 'Invalid admin token or unauthorized access.',
+			loading: 'Loading analytics data...',
+			subscribersCount: 'subscribers',
+			recipients: 'recipients'
 		},
 		sections: {
 			hero: 'Current weather',
@@ -719,6 +779,7 @@ export const translations: Record<Language, Translations> = {
 			badgeLabel: 'Температура на иконке приложения',
 			alertsSection: 'Погодные оповещения',
 			alertsEnabled: 'Разрешить оповещения',
+			pushNotifications: 'Серверные push-уведомления',
 			precipitationAlerts: 'Осадки (дождь/снег)',
 			severeAlerts: 'Штормовые предупреждения',
 			freezeAlerts: 'Гололёд и перепады температуры',
@@ -796,6 +857,35 @@ export const translations: Record<Language, Translations> = {
 			severeTitle: 'Штормовое предупреждение',
 			freezeTitle: 'Предупреждение о заморозках',
 			dismiss: 'Закрыть оповещение'
+		},
+		push: {
+			onboardingTitle: 'Умные оповещения о погоде',
+			onboardingText: 'Включите уведомления, чтобы вовремя узнавать о дожде, снеге и заморозках.',
+			enableBtn: 'Включить',
+			laterBtn: 'Позже',
+			errorPrefix: 'Не удалось включить оповещения'
+		},
+		stats: {
+			title: 'Аналитика и подписки',
+			subtitle: 'Privacy-First телеметрия и статистика доставки фоновых Web Push алертов',
+			totalSubscribers: 'Всего подписчиков',
+			active7Days: 'Активных (7 дней)',
+			alertsSent7Days: 'Отправлено алертов (7 дней)',
+			platforms: 'Распределение платформ',
+			iosStandalone: 'iOS (Standalone PWA)',
+			android: 'Android Chrome',
+			desktop: 'Desktop Browser',
+			topCities: 'Топ-10 городов по подпискам',
+			recentAlerts: 'Последние отправленные алерты',
+			noAlerts: 'Нет недавно отправленных алертов',
+			noData: 'Пока нет данных',
+			lock: 'Заблокировать',
+			tokenPlaceholder: 'Введите ADMIN_TOKEN...',
+			unlockBtn: 'Открыть статистику',
+			unauthorized: 'Неверный токен администратора или доступ запрещен.',
+			loading: 'Загрузка аналитики...',
+			subscribersCount: 'подписчиков',
+			recipients: 'получателей'
 		},
 		sections: {
 			hero: 'Текущая погода',

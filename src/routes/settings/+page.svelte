@@ -6,6 +6,7 @@
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { SECTIONS_METADATA } from '$lib/weather/sections';
 	import { t } from '$lib/i18n';
+	import { isPushSupported, pushClient } from '$lib/pwa/pushManager';
 
 	const INSTALL_HINT_KEY = 'weather:installHintSeen';
 
@@ -27,6 +28,23 @@
 			}
 		} else {
 			settings.setAlertsEnabled(false);
+		}
+	}
+
+	let pushEnabled = $state(false);
+	let pushPending = $state(false);
+
+	async function togglePush(): Promise<void> {
+		if (pushPending || !location.current) return;
+		pushPending = true;
+		try {
+			if (!pushEnabled) {
+				pushEnabled = (await pushClient.subscribe(location.current, lang)).success;
+			} else {
+				pushEnabled = !(await pushClient.unsubscribe());
+			}
+		} finally {
+			pushPending = false;
 		}
 	}
 
@@ -55,6 +73,11 @@
 	onMount(() => {
 		mounted = true;
 		void location.syncPermission();
+		if (isPushSupported() && pushClient.isConfigured) {
+			void pushClient.getExistingSubscription().then((sub) => {
+				pushEnabled = sub !== null;
+			});
+		}
 		// The hint only ever renders inside Settings, so «unless opened from
 		// Settings» is satisfied by construction; the persisted flag enforces
 		// «no more than once».
@@ -270,6 +293,24 @@
 				<span class="toggle-thumb"></span>
 			</button>
 		</div>
+
+		{#if mounted && isPushSupported() && pushClient.isConfigured}
+			<div class="row">
+				<span class="row-label">{t('settings.pushNotifications', lang)}</span>
+				<button
+					class="toggle-switch"
+					class:active={pushEnabled}
+					type="button"
+					role="switch"
+					aria-checked={pushEnabled}
+					aria-label={t('settings.pushNotifications', lang)}
+					disabled={pushPending}
+					onclick={togglePush}
+				>
+					<span class="toggle-thumb"></span>
+				</button>
+			</div>
+		{/if}
 
 		{#if mounted && settings.alertsEnabled}
 			<div class="row">

@@ -20,6 +20,8 @@
 	import SearchSheet, { openSearch } from '$lib/components/SearchSheet.svelte';
 	import PwaInstallBanner from '$lib/components/PwaInstallBanner.svelte';
 	import PwaInstallModal, { openPwaInstallModal } from '$lib/components/PwaInstallModal.svelte';
+	import PushOnboardingBanner from '$lib/components/PushOnboardingBanner.svelte';
+	import { pushClient } from '$lib/pwa/pushManager';
 
 	let { children } = $props();
 
@@ -54,6 +56,24 @@
 	$effect(() => {
 		if (forecastStore.payload) {
 			alertsStore.evaluate();
+		}
+	});
+
+	// Re-syncs subscription city/language to the server; intentionally tracks
+	// `lang` so a language switch updates the stored subscription language.
+	$effect(() => {
+		if (mounted && location.current) {
+			pushClient.syncLocation(location.current, lang);
+		}
+	});
+
+	// Ping once per session when a location is known; the server throttles
+	// repeats. Uses the stable geocoded name, not the localized placeholder.
+	let pinged = false;
+	$effect(() => {
+		if (mounted && location.current && !pinged) {
+			pinged = true;
+			pushClient.sendPing(location.current.name, lang);
 		}
 	});
 
@@ -270,6 +290,7 @@
 	</header>
 
 	<PwaInstallBanner onopenmodal={openPwaInstallModal} />
+	<PushOnboardingBanner />
 
 	<main class="app-main" class:map-page={routeId === '/map'}>
 		{@render children()}

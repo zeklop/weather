@@ -39,6 +39,10 @@ jobs:
 
       - name: Build static PWA for GitHub Pages subpath
         run: PUBLIC_BASE_PATH=/weather npm run build
+        env:
+          # Optional serverless backend — omit both to build in zero-backend mode
+          PUBLIC_PUSH_WORKER_URL: https://weather-pwa-push.zeklop-cloudflare.workers.dev
+          PUBLIC_VAPID_KEY: BF3yPCN7QaK2_vhIVyGna10aU0jfHBCFwkufLxsA5FGzzdMOImAs97Hz3QzTFzYq1Qn5kQgDRtQQsz5THfGOx9c
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

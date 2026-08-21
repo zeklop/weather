@@ -217,3 +217,46 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - Section reordering (up/down arrow controls) with immutable locking for top Hero/Alerts.
    - Section visibility toggles saved in `localStorage` with defensive schema normalization and fallback defaults.
 
+---
+
+## 10. Phase 4: Serverless Web Push, Onboarding & Analytics
+
+1. **Architecture & Zero-Backend Graceful Fallback:**
+   - The core frontend remains 100% static (GitHub Pages / Caddy).
+   - An optional serverless add-on (`serverless/`) runs on Cloudflare Workers + D1 SQLite.
+   - When `PUBLIC_PUSH_WORKER_URL` is omitted, the frontend operates in zero-backend mode with no deadcode or console errors.
+
+2. **Serverless Web Push (RFC 8291 aes128gcm + RFC 8292 VAPID):**
+   - Edge-native Web Crypto API implementation (ECDH P-256 + HKDF-SHA256 + AES-128-GCM + ES256 JWT).
+   - Fan-out Cron engine (`scheduled` trigger every 30 minutes) batching queries by rounded coordinates (0.05° ≈ 5 km) with 1 request per unique city.
+   - Push gateway allowlist (`*.push.apple.com`, `fcm.googleapis.com`, `*.notify.windows.com`, `*.push.services.mozilla.com`) for SSRF protection.
+   - Self-cleaning database on `410 Gone` / `404 Not Found` gateway responses.
+   - Rate limits (per-IP request windows, 24 h ping throttle) are per-isolate in-memory: Cloudflare evicts isolates on deploys and low load, so they are best-effort abuse protection, not hard guarantees.
+
+3. **Alert Deduplication & Cooldown:**
+   - State-transition detection («Dry → Upcoming Rain/Snow within 1–2 hours», severe thunderstorm/gale, frost transition across 0°C).
+   - 3-hour cooldown per subscriber for non-critical alerts.
+   - App active suppression: push alerts are suppressed if `last_seen_at` < 15 minutes to avoid duplicating in-app alerts.
+   - Timezone-aware quiet hours (22:00 to 08:00 in location local time).
+
+4. **Standalone Onboarding Banner (`PushOnboardingBanner.svelte`):**
+   - Appears only on first launch of the installed PWA from Home Screen (`isStandalone() === true`).
+   - Synchronous user gesture permission request complying with iOS 16.4+ Safari requirements.
+   - Visibility is gated on the live PushManager subscription (not a localStorage flag), so silently evicted subscriptions re-trigger onboarding.
+   - Dismissal persistence with a 14-day snooze period.
+   - Push can also be toggled from Settings → «Server push alerts» (`pushClient.subscribe` / `unsubscribe`).
+
+5. **Privacy-First Analytics (`/stats/`):**
+   - 100% anonymous telemetry: random local UUID `install_id`, platform breakdown, active installations over 7 days, top subscriber cities, and alert history.
+   - Zero IP addresses, cookies, or third-party tracking scripts.
+   - Access to `/api/stats/summary` is secured via `ADMIN_TOKEN`. The endpoint fails closed: without a configured secret it returns 503, and token comparison is constant-time. There is no fallback token.
+
+6. **Worker Deployment Contract (pre-deploy review findings, 2026-08-21):**
+   - `PUBLIC_VAPID_KEY`, `APP_BASE_PATH` (must equal `PUBLIC_BASE_PATH`), and `APP_ORIGIN` (CORS allowlist, localhost entries included for local preview) live in `wrangler.toml` `[vars]`; `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` are wrangler secrets. `database_id` must be replaced after `wrangler d1 create`, and schema migrations run with `--remote` (without it wrangler applies them to the local dev DB).
+   - VAPID private key import accepts raw 32-byte scalars (`npx web-push generate-vapid-keys` format) by deriving the P-256 public point in `crypto/vapid.ts`; an invalid configured key makes the cron run fail loudly instead of silently disabling push.
+   - Cron evaluates alerts at the current local hour (derived via `Intl` from the Open-Meteo timezone), not index 0, and rotates city batches (`LIMIT 30 OFFSET rotation`) so >30 city groups all get evaluated.
+   - Push payloads build icon/badge/URL from `APP_BASE_PATH` and point at `icons/app/icon-192.png` (the only PNG; `icons/weather/` is SVG-only).
+   - `vite.config.ts` sets `envPrefix: ['VITE_', 'PUBLIC_']` so `PUBLIC_PUSH_WORKER_URL` / `PUBLIC_VAPID_KEY` reach `import.meta.env` (Vite's default prefix is `VITE_` only); CI passes them in `.github/workflows/deploy.yml`.
+   - The CSP `connect-src` in `src/app.html` and `Caddyfile` must include the worker origin; both were updated together.
+
+
