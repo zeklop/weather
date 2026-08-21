@@ -4,7 +4,7 @@
 
 You are a senior frontend engineer and UI implementer. Build the application, do not merely propose architecture.
 
-The goal is a **very lightweight, self-hosted weather PWA for iPhone/iOS**, visually and functionally inspired by the information density, hierarchy, spacing, cards and forecast presentation of Yandex Weather, while using original/open-source assets and no advertising, trackers, analytics SDKs or proprietary Yandex assets.
+The goal is a **very lightweight, self-hosted weather PWA for iPhone/iOS**, featuring excellent information density, clear hierarchy, proper spacing, well-structured cards and forecast presentation, while using original/open-source assets and no advertising, trackers, or analytics SDKs.
 
 The final result must be deployable primarily to **GitHub Pages** as a fully static site, with a small VPS static deployment kept only as a fallback option.
 
@@ -18,7 +18,6 @@ Create a fast personal weather dashboard that:
 
 - opens instantly from the iOS Home Screen as a PWA;
 - looks and behaves like a native iOS weather application;
-- is visually close in spirit to Yandex Weather;
 - has no advertising;
 - shows current weather, hourly forecast, daily forecast, detailed metrics and precipitation map;
 - remembers favorite locations;
@@ -64,8 +63,6 @@ Do NOT implement:
 - news;
 - recommendations;
 - AI-generated weather text;
-- Yandex proprietary API calls;
-- copying Yandex logos, icons, fonts, CSS, JavaScript or image assets.
 
 The design may closely reproduce layout ideas and interaction patterns, but visual assets must be original or open-source.
 
@@ -510,11 +507,10 @@ flat
 
 Use local bundled SVG files in production instead of loading icons from a third-party CDN.
 
-Do not copy Yandex Weather image files.
 
 ## 8.2 Visual adaptation
 
-The icons should evoke the same pleasant, friendly visual weight as Yandex Weather:
+The icons should evoke a pleasant, friendly visual weight:
 
 - large simple sun disc;
 - soft rounded clouds;
@@ -578,7 +574,7 @@ Use day/night variants based on sunrise and sunset.
 The application should feel like:
 
 ```text
-Yandex Weather information architecture
+App information architecture
 +
 clean iOS visual language
 +
@@ -695,7 +691,7 @@ Provide:
 - 512×512 icon;
 - maskable 512×512 icon.
 
-Create an original app icon: blue rounded square containing a simplified white cloud + yellow sun. Do not use Yandex branding.
+Create an original app icon: blue rounded square containing a simplified white cloud + yellow sun.
 
 ---
 
@@ -1501,7 +1497,7 @@ The designer/developer should compare the result to the supplied concept mockup.
 
 The result should have these characteristics:
 
-- Yandex-Weather-like information hierarchy;
+- excellent information hierarchy;
 - iOS-native spacing;
 - lots of white/light neutral space;
 - blue accent;
@@ -1663,7 +1659,7 @@ Create an original icon:
 - partial yellow sun;
 - no text;
 - no “Я” symbol;
-- no Yandex branding.
+- original branding.
 
 Generate required PNG sizes automatically during build or via script.
 
@@ -1943,7 +1939,7 @@ The work is complete only when all of these are true:
 - [ ] Service Worker scope is correct under the repository subpath.
 - [ ] Custom-domain mode can run from `/`.
 - [ ] VPS fallback requires only a static web server.
-- [ ] No proprietary Yandex image/font/code assets are present.
+- [ ] No proprietary image/font/code assets are present.
 - [ ] Lighthouse PWA checks have no major errors.
 - [ ] Mobile UI visually matches the supplied concept.
 
@@ -1995,7 +1991,7 @@ While implementing:
 3. Do not add a backend merely to hide public API calls.
 4. Do not add a database.
 5. Do not add authentication.
-6. Do not use Yandex proprietary assets.
+6. Do not use proprietary assets.
 7. Do not use giant dependencies for trivial functionality.
 8. Do not stop after creating wireframes.
 9. Do not leave critical screens as TODO.
@@ -2045,7 +2041,7 @@ Target visual composition:
 └─────────────────────────────┘
 ```
 
-The key idea is not literal pixel-copying of Yandex Weather. The key idea is to reproduce its strengths: forecast hierarchy, quick scanning, friendly icons, compact horizontal hourly data, simple daily rows, and uncluttered weather cards.
+The key idea is to focus on core strengths: excellent forecast hierarchy, quick scanning, friendly icons, compact horizontal hourly data, simple daily rows, and uncluttered weather cards.
 
 ---
 

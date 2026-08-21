@@ -4,6 +4,7 @@
 	import { getAlertsStoreContext, getForecastStore } from '$lib/stores/context';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { SECTIONS_METADATA } from '$lib/weather/sections';
 	import { t } from '$lib/i18n';
 
 	const INSTALL_HINT_KEY = 'weather:installHintSeen';
@@ -336,6 +337,67 @@
 	</div>
 
 	<div class="card group">
+		<div class="group-header">
+			<span class="group-title">{t('settings.customizeSectionsTitle', lang)}</span>
+			<span class="group-desc">{t('settings.customizeSectionsDesc', lang)}</span>
+		</div>
+		<div class="sections-list">
+			{#each settings.sectionOrder as secId, idx (secId)}
+				{@const meta = SECTIONS_METADATA.find((s) => s.id === secId)}
+				{#if meta}
+					{@const isLocked = meta.locked}
+					{@const isVisible = isLocked || settings.visibleSections[secId] !== false}
+					{@const title = t(meta.titleKey, lang)}
+					<div class="section-item" class:locked={isLocked}>
+						<label class="section-left">
+							<input
+								type="checkbox"
+								class="section-checkbox"
+								checked={isVisible}
+								disabled={isLocked}
+								onchange={(e) => settings.setSectionVisible(secId, e.currentTarget.checked)}
+							/>
+							<span class="section-name" class:dimmed={!isVisible}>{title}</span>
+						</label>
+
+						{#if !isLocked}
+							<div class="section-actions">
+								<button
+									type="button"
+									class="move-btn"
+									disabled={idx <= 2}
+									aria-label={t('settings.moveUpAria', lang, { name: title })}
+									onclick={() => settings.moveSection(secId, 'up')}
+								>
+									▲
+								</button>
+								<button
+									type="button"
+									class="move-btn"
+									disabled={idx === settings.sectionOrder.length - 1}
+									aria-label={t('settings.moveDownAria', lang, { name: title })}
+									onclick={() => settings.moveSection(secId, 'down')}
+								>
+									▼
+								</button>
+							</div>
+						{/if}
+					</div>
+				{/if}
+			{/each}
+		</div>
+		<div class="row">
+			<button
+				type="button"
+				class="reset-sections-btn"
+				onclick={() => settings.resetSections()}
+			>
+				{t('settings.resetSections', lang)}
+			</button>
+		</div>
+	</div>
+
+	<div class="card group">
 		<div class="row">
 			<span class="row-label">{t('settings.lastUpdated', lang)}</span>
 			{#if mounted && settings.lastUpdated !== null}
@@ -345,20 +407,6 @@
 			{:else}
 				<span class="row-value">—</span>
 			{/if}
-		</div>
-		<div class="row">
-			<button
-				class="refresh-btn"
-				type="button"
-				disabled={refreshing}
-				aria-busy={refreshing}
-				onclick={refresh}
-			>
-				{#if refreshing}
-					<span class="spinner" aria-hidden="true"></span>
-				{/if}
-				{refreshing ? t('settings.updating', lang) : t('settings.update', lang)}
-			</button>
 		</div>
 	</div>
 
@@ -580,30 +628,6 @@
 		cursor: not-allowed;
 	}
 
-	/* ---------- refresh ---------- */
-	.refresh-btn {
-		width: 100%;
-		min-height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
-		border: none;
-		border-radius: var(--radius-control);
-		background: var(--accent);
-		color: #fff;
-		font-size: 14px;
-		font-weight: 600;
-	}
-
-	.refresh-btn:active {
-		opacity: 0.85;
-	}
-
-	.refresh-btn:disabled {
-		opacity: 0.6;
-	}
-
 	.spinner {
 		width: 12px;
 		height: 12px;
@@ -665,6 +689,113 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: var(--text-secondary);
+	}
+
+	.group-desc {
+		display: block;
+		font-size: 12px;
+		color: var(--text-secondary);
+		margin-top: 2px;
+	}
+
+	/* ---------- sections customizer ---------- */
+	.sections-list {
+		display: flex;
+		flex-direction: column;
+		padding: var(--space-1) 0;
+	}
+
+	.section-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		min-height: 44px;
+		padding: 4px 0;
+		border-bottom: 1px solid var(--divider);
+	}
+
+	.section-item:last-child {
+		border-bottom: none;
+	}
+
+	.section-left {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		cursor: pointer;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.section-checkbox {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--accent);
+		cursor: pointer;
+	}
+
+	.section-checkbox:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.section-name {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	.section-name.dimmed {
+		color: var(--text-secondary);
+		text-decoration: line-through;
+		opacity: 0.7;
+	}
+
+	.section-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.move-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.move-btn:hover:not(:disabled) {
+		background: var(--divider);
+	}
+
+	.move-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+
+	.reset-sections-btn {
+		width: 100%;
+		border: none;
+		background: none;
+		color: var(--accent-strong);
+		font-size: 13px;
+		font-weight: 600;
+		padding: var(--space-2) 0;
+		cursor: pointer;
+		text-align: center;
+	}
+
+	.reset-sections-btn:hover {
+		text-decoration: underline;
 	}
 
 	.toggle-switch {

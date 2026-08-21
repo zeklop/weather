@@ -4,11 +4,22 @@
 	import { getAlertsStoreContext, getForecastStore } from '$lib/stores/context';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
-	import { getAirQuality } from '$lib/api/airQuality';
+	import { getDetailedAirQuality } from '$lib/api/airQuality';
 	import { t } from '$lib/i18n';
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import WeatherAlertCard from '$lib/components/WeatherAlertCard.svelte';
 	import PrecipitationChart from '$lib/components/PrecipitationChart.svelte';
+	import AstronomyCard from '$lib/components/AstronomyCard.svelte';
+	import AirQualityCard from '$lib/components/AirQualityCard.svelte';
+	import MarineBadge from '$lib/components/MarineBadge.svelte';
+	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+	import type { AirQualityData, MarineData } from '$lib/types';
+	import { getMarineData } from '$lib/api/marine';
+	import {
+		createInitialPtrState,
+		reducePtrState,
+		type PtrMachineState
+	} from '$lib/weather/pullToRefresh';
 	import { getWeatherVisual, type WeatherVisual } from '$lib/weather/wmo';
 	import {
 		formatDayShort,
@@ -42,11 +53,102 @@
 	// Minute ticker keeps «Сейчас»/current-hour highlight honest while the SPA
 	// stays open across an hour boundary.
 	let nowMs = $state(Date.now());
+
+	// Pull-to-Refresh state machine
+	let ptr = $state<PtrMachineState>(createInitialPtrState());
+	let touchStartX = 0;
+	let touchStartY = 0;
+
 	onMount(() => {
-		const id = setInterval(() => {
+		const ticker = setInterval(() => {
 			nowMs = Date.now();
 		}, 60_000);
-		return () => clearInterval(id);
+
+		function handleTouchStart(e: TouchEvent) {
+			if (e.touches.length !== 1) {
+				ptr = reducePtrState(ptr, {
+					type: 'TOUCH_START',
+					scrollY: window.scrollY,
+					targetHasNoPtr: false,
+					isMultiTouch: true
+				});
+				return;
+			}
+			const target = e.target as Element | null;
+			const targetHasNoPtr = !!target?.closest('[data-no-ptr]');
+			touchStartX = e.touches[0].clientX;
+			touchStartY = e.touches[0].clientY;
+
+			ptr = reducePtrState(ptr, {
+				type: 'TOUCH_START',
+				scrollY: window.scrollY,
+				targetHasNoPtr,
+				isMultiTouch: false
+			});
+		}
+
+		function handleTouchMove(e: TouchEvent) {
+			if (ptr.state === 'loading') return;
+			if (ptr.isLockedAngle === false) return;
+			if (e.touches.length !== 1) return;
+
+			const touch = e.touches[0];
+			const deltaX = touch.clientX - touchStartX;
+			const deltaY = touch.clientY - touchStartY;
+
+			const next = reducePtrState(ptr, {
+				type: 'TOUCH_MOVE',
+				deltaX,
+				deltaY
+			});
+
+			if (next.state === 'pulling' || next.state === 'ready') {
+				if (e.cancelable) e.preventDefault();
+			}
+
+			if (ptr.state !== 'ready' && next.state === 'ready') {
+				if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+					try {
+						navigator.vibrate(12);
+					} catch {}
+				}
+			}
+
+			ptr = next;
+		}
+
+		async function handleTouchEnd() {
+			if (ptr.state === 'ready') {
+				ptr = reducePtrState(ptr, { type: 'TOUCH_END' });
+				try {
+					await store.refresh();
+					ptr = reducePtrState(ptr, { type: 'REFRESH_SUCCESS' });
+					setTimeout(() => {
+						ptr = reducePtrState(ptr, { type: 'RESET' });
+					}, 400);
+				} catch {
+					ptr = reducePtrState(ptr, { type: 'REFRESH_ERROR' });
+					setTimeout(() => {
+						ptr = reducePtrState(ptr, { type: 'RESET' });
+					}, 1200);
+				}
+			} else if (ptr.state !== 'loading') {
+				ptr = reducePtrState(ptr, { type: 'TOUCH_END' });
+			}
+		}
+
+		window.addEventListener('touchstart', handleTouchStart, { passive: true });
+		window.addEventListener('touchmove', handleTouchMove, { passive: false });
+		window.addEventListener('touchend', handleTouchEnd, { passive: true });
+		window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+		return () => {
+			clearInterval(ticker);
+			window.removeEventListener('touchstart', handleTouchStart);
+			window.removeEventListener('touchmove', handleTouchMove);
+			window.removeEventListener('touchend', handleTouchEnd);
+			window.removeEventListener('touchcancel', handleTouchEnd);
+		};
 	});
 
 	const nowIso = $derived(payload ? getWallNow(payload.timezone, nowMs) : null);
@@ -103,21 +205,72 @@
 	}
 
 	// Best-effort AQI per active location; stays "—" on any failure.
-	let aqi = $state<number | null>(null);
+	let airQualityData = $state<AirQualityData | null>(null);
 	$effect(() => {
 		const loc = location.current;
 		const controller = new AbortController();
-		getAirQuality(loc.latitude, loc.longitude, controller.signal).then((value) => {
-			if (!controller.signal.aborted) aqi = value;
+		getDetailedAirQuality(loc.latitude, loc.longitude, controller.signal).then((value) => {
+			if (!controller.signal.aborted) airQualityData = value;
 		});
 		return () => controller.abort();
 	});
 
+	// Best-effort Marine data (sea temp/waves) for coastal locations
+	let marineData = $state<MarineData | null>(null);
+	$effect(() => {
+		const loc = location.current;
+		const controller = new AbortController();
+		getMarineData(loc.latitude, loc.longitude, controller.signal).then((value) => {
+			if (!controller.signal.aborted) marineData = value;
+		});
+		return () => controller.abort();
+	});
+
+	const aqi = $derived(airQualityData?.aqi ?? null);
 	const uvToday = $derived(todayDay?.uvIndexMax ?? null);
 
 	function dayNightFor(isoTime: string): boolean {
 		const d = dayByDate.get(isoTime.slice(0, 10));
 		return isDay(isoTime, d?.sunrise ?? null, d?.sunset ?? null).isDay;
+	}
+
+	// Hour Scrubber state
+	let selectedHourTime = $state<string | null>(null);
+	let lastLocId = $state<string>(location.current.id);
+
+	$effect(() => {
+		if (location.current.id !== lastLocId) {
+			lastLocId = location.current.id;
+			selectedHourTime = null;
+		}
+	});
+
+	const selectedHour = $derived(
+		selectedHourTime && payload
+			? (payload.hourly.find((h) => h.time === selectedHourTime) ?? null)
+			: null
+	);
+
+	$effect(() => {
+		if (selectedHourTime && payload && !selectedHour) {
+			selectedHourTime = null;
+		}
+	});
+
+	let pointerDownPos = { x: 0, y: 0 };
+	function onCellPointerDown(e: PointerEvent) {
+		pointerDownPos = { x: e.clientX, y: e.clientY };
+	}
+	function handleCellSelect(hTime: string, isCurrent: boolean, e: MouseEvent) {
+		const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+		if (dist > 10) return; // ignore horizontal swipe gesture
+		if (selectedHourTime === hTime) {
+			selectedHourTime = null;
+		} else if (isCurrent && selectedHourTime === null) {
+			// already showing now
+		} else {
+			selectedHourTime = hTime;
+		}
 	}
 </script>
 
@@ -163,8 +316,18 @@
 	</div>
 {:else if payload}
 	{@const heroVisual = getWeatherVisual(payload.current.weatherCode, lang)}
+	{@const activeHour = selectedHour}
+	{@const activeVisual = activeHour ? getWeatherVisual(activeHour.weatherCode, lang) : heroVisual}
+	{@const activeTemp = activeHour ? activeHour.temperature : payload.current.temperature}
+	{@const activeApparent = activeHour ? activeHour.apparentTemperature : payload.current.apparentTemperature}
+	{@const activeWindSpeed = activeHour ? activeHour.windSpeed : payload.current.windSpeed}
+	{@const activeWindDir = activeHour ? activeHour.windDirection : payload.current.windDirection}
+	{@const activeTime = activeHour ? activeHour.time : payload.current.time}
+	{@const activeDayNight = dayNightFor(activeTime)}
 	<div class="home">
-		{#if refreshing}
+		<PullToRefresh state={ptr.state} distance={ptr.distance} {lang} />
+
+		{#if refreshing && ptr.state !== 'loading'}
 			<div class="refresh-note">
 				<span class="spinner" aria-hidden="true"></span>
 				{t('home.refreshing', lang)}
@@ -187,154 +350,199 @@
 			</div>
 		{/if}
 
-		{#if activeAlert}
-			<WeatherAlertCard
-				alert={activeAlert}
-				ondismiss={() => alertsStore.dismissAlert(activeAlert.id)}
-			/>
-		{/if}
-
 		<h1 class="sr-only">{t('home.weatherNowSr', lang)}</h1>
 
-		<div class="hero">
-			<div class="hero-main">
-				<div class="hero-left">
-					<div class="hero-temp">{formatTemp(payload.current.temperature)}</div>
-					<div class="hero-label">{heroVisual.label}</div>
-					<div class="hero-feels">{t('home.feelsLike', lang, { temp: formatTemp(payload.current.apparentTemperature) })}</div>
-				</div>
-				<div class="hero-icon">
-					<WeatherIcon name={iconName(heroVisual, dayNightFor(payload.current.time))} size={84} />
-					<span class="sr-only">{heroVisual.label}</span>
-				</div>
-			</div>
-			<div class="hero-secondary">
-				<span>{t('home.wind', lang, { speed: formatWindSpeed(payload.current.windSpeed, lang), dir: formatWindDirection(payload.current.windDirection, lang) })}</span>
-				<span>{t('home.pressure', lang, { pressure: formatMmhg(hpaToMmhg(payload.current.pressureHpa), lang) })}</span>
-			</div>
-		</div>
-
-		{#if precipCard}
-			<a class="card precip" href={base + '/map/'}>
-				<div class="precip-header">
-					<div class="precip-title">{t('home.next2Hours', lang)}</div>
-					<div class="precip-map-link">{t('home.showOnMap', lang)}</div>
-				</div>
-				<div class="precip-text">{precipCard}</div>
-			</a>
-		{/if}
-
-		<div class="card metrics" role="group" aria-label={t('home.metricsTitle', lang)}>
-			<div class="metric">
-				<span class="metric-label">{t('home.uvIndex', lang)}</span>
-				<span class="metric-value">{uvToday != null ? Math.round(uvToday) : '—'}</span>
-			</div>
-			<div class="metric">
-				<span class="metric-label">{t('home.humidity', lang)}</span>
-				<span class="metric-value">{payload.current.humidity}%</span>
-			</div>
-			<div class="metric">
-				<span class="metric-label">{t('home.dewPoint', lang)}</span>
-				<span class="metric-value">
-					{payload.current.dewPoint != null ? formatTemp(payload.current.dewPoint) : '—'}
-				</span>
-			</div>
-			<div class="metric">
-				<span class="metric-label">{t('home.airQuality', lang)}</span>
-				<span class="metric-value">{aqi != null ? Math.round(aqi) : '—'}</span>
-			</div>
-		</div>
-
-		{#if !isExpired && railHours.length > 0}
-			<div class="card rail">
-				<div class="rail-scroll" role="group" aria-label={t('home.hourlyForecast', lang)}>
-					{#each railHours as h, i}
-						{@const current = isCurrentHour && i === 0}
-						{@const v = current ? heroVisual : getWeatherVisual(h.weatherCode, lang)}
-						{@const prob = current ? currentProb : h.precipitationProbability}
-						{@const day = current ? dayNightFor(payload.current.time) : dayNightFor(h.time)}
-						{@const isNewDay = i > 0 && h.time.slice(0, 10) !== railHours[i - 1].time.slice(0, 10)}
-						{#if isNewDay}
-							<div class="rail-date-divider" role="separator" aria-label={formatRailDateBadge(h.time.slice(0, 10), nowIso, lang)}>
-								<span class="date-divider-badge">{formatRailDateBadge(h.time.slice(0, 10), nowIso, lang)}</span>
+		{#each settings.sectionOrder as secId (secId)}
+			{#if settings.visibleSections[secId] !== false}
+				{#if secId === 'hero'}
+					<div class="hero">
+						{#if activeHour && nowIso}
+							{@const isTomorrow = activeHour.time.slice(0, 10) !== nowIso.slice(0, 10)}
+							<div class="scrubber-badge">
+								<span class="scrubber-label">
+									{isTomorrow
+										? t('scrubber.forecastForTomorrow', lang, { time: formatHour(activeHour.time) })
+										: t('scrubber.forecastFor', lang, { time: formatHour(activeHour.time) })}
+								</span>
+								<button
+									type="button"
+									class="scrubber-reset-btn"
+									onclick={() => (selectedHourTime = null)}
+								>
+									{t('scrubber.resetNow', lang)}
+								</button>
 							</div>
 						{/if}
-						<div class="rail-cell" class:current>
-							<span class="cell-time">{current ? t('home.now', lang) : formatHour(h.time)}</span>
-							<WeatherIcon name={iconName(v, day)} size={30} />
-							<span class="sr-only">{v.label}</span>
-							<span class="cell-temp">{formatTemp(current ? payload.current.temperature : h.temperature)}</span>
-							{#if prob != null && prob >= 10}
-								<span class="cell-precip">{prob}%<span class="sr-only"> {t('home.precipProbability', lang)}</span></span>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			</div>
-		{/if}
 
-		{#if !isExpired && railHours.length > 0 && hasPrecipData}
-			<PrecipitationChart hours={railHours} {lang} />
-		{/if}
-
-		{#if todayDay}
-			{@const todayVisual = getWeatherVisual(todayDay.weatherCode, lang)}
-			<div class="card today">
-				<div class="today-main">
-					<div class="today-text">
-						<div class="today-title">{t('home.today', lang)}</div>
-						<div class="today-temps">
-							{t('home.dayAndNight', lang, { day: formatTemp(todayDay.temperatureMax), night: formatTemp(todayDay.temperatureMin) })}
-						</div>
-						{#if todayDay.precipitationSum < 1}
-							<div class="today-note">{t('home.noSignificantPrecip', lang)}</div>
-						{/if}
-						{#if todayDay.sunrise || todayDay.sunset}
-							<div class="today-sun">
-								{#if todayDay.sunrise}
-									<span>{t('home.sunrise', lang, { time: formatHour(todayDay.sunrise) })}</span>
-								{/if}
-								{#if todayDay.sunset}
-									<span>{t('home.sunset', lang, { time: formatHour(todayDay.sunset) })}</span>
-								{/if}
+						<div class="hero-main">
+							<div class="hero-left">
+								<div class="hero-temp">{formatTemp(activeTemp)}</div>
+								<div class="hero-label">{activeVisual.label}</div>
+								<div class="hero-feels">{t('home.feelsLike', lang, { temp: formatTemp(activeApparent) })}</div>
 							</div>
-						{/if}
-					</div>
-					<div class="today-icon">
-						<WeatherIcon name={todayVisual.iconDay} size={44} />
-						<span class="sr-only">{todayVisual.label}</span>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		{#if previewDays.length > 0}
-			<div class="card daily">
-				{#each previewDays as d}
-					{@const dv = getWeatherVisual(d.weatherCode, lang)}
-					<div class="day-row">
-						<span class="day-label">{formatDayShort(d.date, lang)}</span>
-						<div class="day-icon">
-							<WeatherIcon name={dv.iconDay} size={26} />
-							<span class="sr-only">{dv.label}</span>
+							<div class="hero-icon">
+								<WeatherIcon name={iconName(activeVisual, activeDayNight)} size={108} />
+								<span class="sr-only">{activeVisual.label}</span>
+							</div>
 						</div>
-						<span class="day-precip">
-							{#if d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10}
-								{d.precipitationProbabilityMax}%<span class="sr-only"> {t('home.precipProbability', lang)}</span>
+						<div class="hero-secondary">
+							<span>{t('home.wind', lang, { speed: formatWindSpeed(activeWindSpeed, lang), dir: formatWindDirection(activeWindDir, lang) })}</span>
+							{#if !activeHour}
+								<span>{t('home.pressure', lang, { pressure: formatMmhg(hpaToMmhg(payload.current.pressureHpa), lang) })}</span>
+							{:else if activeHour.precipitationProbability != null}
+								<span>{t('home.precipProbability', lang)}: {activeHour.precipitationProbability}%</span>
 							{/if}
-						</span>
-						<span class="day-high">{formatTemp(d.temperatureMax)}</span>
-						<span class="day-low">{formatTemp(d.temperatureMin)}</span>
+						</div>
 					</div>
-				{/each}
-				<a class="daily-link" href={base + '/forecast/'}>{t('home.forecast10Days', lang)}</a>
-			</div>
-		{/if}
+				{:else if secId === 'alerts'}
+					{#if activeAlert}
+						<WeatherAlertCard
+							alert={activeAlert}
+							ondismiss={() => alertsStore.dismissAlert(activeAlert.id)}
+						/>
+					{/if}
+				{:else if secId === 'marine'}
+					{#if !activeHour && marineData?.seaTemperature !== null && marineData?.seaTemperature !== undefined}
+						<div class="marine-section">
+							<MarineBadge marine={marineData} {lang} />
+						</div>
+					{/if}
+				{:else if secId === 'precipHeuristic'}
+					{#if precipCard}
+						<a class="card precip" href={base + '/map/'}>
+							<div class="precip-header">
+								<div class="precip-title">{t('home.next2Hours', lang)}</div>
+								<div class="precip-map-link">{t('home.showOnMap', lang)}</div>
+							</div>
+							<div class="precip-text">{precipCard}</div>
+						</a>
+					{/if}
+				{:else if secId === 'metrics'}
+					<div class="card metrics" role="group" aria-label={t('home.metricsTitle', lang)}>
+						<div class="metric">
+							<span class="metric-label">{t('home.uvIndex', lang)}</span>
+							<span class="metric-value">{uvToday != null ? Math.round(uvToday) : '—'}</span>
+						</div>
+						<div class="metric">
+							<span class="metric-label">{t('home.humidity', lang)}</span>
+							<span class="metric-value">{payload.current.humidity}%</span>
+						</div>
+						<div class="metric">
+							<span class="metric-label">{t('home.dewPoint', lang)}</span>
+							<span class="metric-value">
+								{payload.current.dewPoint != null ? formatTemp(payload.current.dewPoint) : '—'}
+							</span>
+						</div>
+						<div class="metric">
+							<span class="metric-label">{t('home.airQuality', lang)}</span>
+							<span class="metric-value">{aqi != null ? Math.round(aqi) : '—'}</span>
+						</div>
+					</div>
+				{:else if secId === 'hourlyRail'}
+					{#if !isExpired && railHours.length > 0}
+						<div class="card rail">
+							<div class="rail-scroll" role="group" aria-label={t('home.hourlyForecast', lang)}>
+								{#each railHours as h, i}
+									{@const current = isCurrentHour && i === 0}
+									{@const v = current ? heroVisual : getWeatherVisual(h.weatherCode, lang)}
+									{@const prob = current ? currentProb : h.precipitationProbability}
+									{@const day = current ? dayNightFor(payload.current.time) : dayNightFor(h.time)}
+									{@const isNewDay = i > 0 && h.time.slice(0, 10) !== railHours[i - 1].time.slice(0, 10)}
+									{#if isNewDay}
+										<div class="rail-date-divider" role="separator" aria-label={formatRailDateBadge(h.time.slice(0, 10), nowIso, lang)}>
+											<span class="date-divider-badge">{formatRailDateBadge(h.time.slice(0, 10), nowIso, lang)}</span>
+										</div>
+									{/if}
+									<button
+										type="button"
+										class="rail-cell"
+										class:current={current && !selectedHourTime}
+										class:selected={selectedHourTime === h.time}
+										aria-pressed={selectedHourTime === h.time}
+										onpointerdown={onCellPointerDown}
+										onclick={(e) => handleCellSelect(h.time, current, e)}
+									>
+										<span class="cell-time">{current ? t('home.now', lang) : formatHour(h.time)}</span>
+										<WeatherIcon name={iconName(v, day)} size={36} />
+										<span class="sr-only">{v.label}</span>
+										<span class="cell-temp">{formatTemp(current && !selectedHourTime ? payload.current.temperature : h.temperature)}</span>
+										{#if prob != null && prob >= 10}
+											<span class="cell-precip">{prob}%<span class="sr-only"> {t('home.precipProbability', lang)}</span></span>
+										{/if}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{:else if secId === 'precipChart'}
+					{#if !isExpired && railHours.length > 0 && hasPrecipData}
+						<PrecipitationChart hours={railHours} {lang} />
+					{/if}
+				{:else if secId === 'airQuality'}
+					<AirQualityCard data={airQualityData} {lang} />
+				{:else if secId === 'astronomy'}
+					{#if todayDay}
+						<AstronomyCard
+							sunrise={todayDay.sunrise}
+							sunset={todayDay.sunset}
+							timezone={payload.timezone}
+							latitude={location.current.latitude}
+							{lang}
+						/>
+					{/if}
+				{:else if secId === 'today'}
+					{#if todayDay}
+						{@const todayVisual = getWeatherVisual(todayDay.weatherCode, lang)}
+						<div class="card today">
+							<div class="today-main">
+								<div class="today-text">
+									<div class="today-title">{t('home.today', lang)}</div>
+									<div class="today-temps">
+										{t('home.dayAndNight', lang, { day: formatTemp(todayDay.temperatureMax), night: formatTemp(todayDay.temperatureMin) })}
+									</div>
+									{#if todayDay.precipitationSum < 1}
+										<div class="today-note">{t('home.noSignificantPrecip', lang)}</div>
+									{/if}
+								</div>
+								<div class="today-icon">
+									<WeatherIcon name={todayVisual.iconDay} size={56} />
+									<span class="sr-only">{todayVisual.label}</span>
+								</div>
+							</div>
+						</div>
+					{/if}
+				{:else if secId === 'dailyForecast'}
+					{#if previewDays.length > 0}
+						<div class="card daily">
+							{#each previewDays as d}
+								{@const dv = getWeatherVisual(d.weatherCode, lang)}
+								<div class="day-row">
+									<span class="day-label">{formatDayShort(d.date, lang)}</span>
+									<div class="day-icon">
+										<WeatherIcon name={dv.iconDay} size={32} />
+										<span class="sr-only">{dv.label}</span>
+									</div>
+									<span class="day-precip">
+										{#if d.precipitationProbabilityMax != null && d.precipitationProbabilityMax >= 10}
+											{d.precipitationProbabilityMax}%<span class="sr-only"> {t('home.precipProbability', lang)}</span>
+										{/if}
+									</span>
+									<span class="day-high">{formatTemp(d.temperatureMax)}</span>
+									<span class="day-low">{formatTemp(d.temperatureMin)}</span>
+								</div>
+							{/each}
+							<a class="daily-link" href={base + '/forecast/'}>{t('home.forecast10Days', lang)}</a>
+						</div>
+					{/if}
+				{/if}
+			{/if}
+		{/each}
 	</div>
 {/if}
 
 <style>
 	.home {
+		position: relative;
 		display: grid;
 		gap: var(--space-4);
 		max-width: 100%;
@@ -505,6 +713,57 @@
 		min-width: 0;
 	}
 
+	.scrubber-badge {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		background: rgba(59, 130, 246, 0.12);
+		border: 1px solid var(--accent);
+		border-radius: var(--radius-control);
+		padding: 4px 12px;
+		margin-bottom: var(--space-3);
+		animation: fadeIn 0.2s ease;
+	}
+
+	:global([data-theme='dark']) .scrubber-badge {
+		background: rgba(59, 130, 246, 0.2);
+		border-color: var(--accent-strong);
+	}
+
+	.scrubber-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--accent-strong);
+	}
+
+	.scrubber-reset-btn {
+		background: none;
+		border: none;
+		color: var(--accent-strong);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		padding: 2px 6px;
+		border-radius: 6px;
+		transition: background 0.15s ease;
+	}
+
+	.scrubber-reset-btn:hover {
+		background: rgba(59, 130, 246, 0.15);
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
 	.hero-main {
 		display: flex;
 		align-items: center;
@@ -561,6 +820,10 @@
 		font-size: 14px;
 		margin-top: var(--space-4);
 		min-width: 0;
+	}
+
+	.marine-section {
+		display: flex;
 	}
 
 	/* ---------- near-term precipitation card ---------- */
@@ -687,10 +950,22 @@
 		padding: var(--space-2) 0;
 		border-radius: var(--radius-control);
 		scroll-snap-align: start;
+		background: none;
+		border: 1px solid transparent;
+		color: inherit;
+		cursor: pointer;
+		font: inherit;
+		transition: background 0.15s ease, border-color 0.15s ease;
 	}
 
 	.rail-cell.current {
 		background: rgba(59, 130, 246, 0.1);
+	}
+
+	.rail-cell.selected {
+		background: var(--accent);
+		color: #ffffff;
+		border-color: var(--accent-strong);
 	}
 
 	.cell-time {
@@ -703,6 +978,11 @@
 		font-weight: 600;
 	}
 
+	.rail-cell.selected .cell-time {
+		color: #ffffff;
+		font-weight: 600;
+	}
+
 	.cell-temp {
 		font-size: 15px;
 		font-weight: 600;
@@ -711,6 +991,11 @@
 	.cell-precip {
 		font-size: 12px;
 		color: var(--accent-strong);
+	}
+
+	.rail-cell.selected .cell-precip {
+		color: #ffffff;
+		font-weight: 600;
 	}
 
 	/* ---------- today card ---------- */
@@ -745,15 +1030,6 @@
 		font-size: 13px;
 		color: var(--text-secondary);
 		margin-top: 2px;
-	}
-
-	.today-sun {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2) var(--space-4);
-		font-size: 13px;
-		color: var(--text-secondary);
-		margin-top: var(--space-1);
 	}
 
 	/* ---------- daily preview ---------- */

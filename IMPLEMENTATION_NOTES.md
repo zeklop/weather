@@ -188,3 +188,32 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - Verify `https://zeklop.github.io/weather/` after deploy; with `registerType: 'autoUpdate'` the new Service Worker activates automatically on the next app visit (no manual confirmation required).
 
 6. **Post-review hardening (pre-deploy pass):** notification icon/badge paths now respect `paths.base`; RainViewer fetch has an 8 s timeout; the map page guards against late `maplibre-gl` import after unmount and starts the radar animation on the newest past frame; Open-Meteo forecast fetch retries once on 429/5xx; alert dismissals persist across reloads (`weather:alerts:dismissed`, capped at 50 ids); install banner dismissal key renamed to `weather:installBannerDismissedUntil` per spec.
+
+7. **Mobile map layout fix (post-deploy hotfix):** on the `/map/` route the app shell is locked to the viewport (`height: 100vh` + `100dvh` override) so the flex chain shell → main → map card gets definite heights on mobile engines, and the MapLibre container is sized with `position: absolute; inset: 0` instead of `height: 100%`. The percentage resolved against an indefinite flex height in Android Chrome/Edge (map canvas collapsed to a thin strip at the top of the card) and let the radar player card fall out of the visible area on iOS Safari. MapLibre's built-in `ResizeObserver` keeps the canvas in sync with later container changes (browser toolbars, install banner, rotation). Verified via DOM measurements at 390×844 and 360×800: map fills the card, player fully visible above the bottom nav, no page scroll.
+
+---
+
+## 9. Advanced Atmospheric, Astronomy & Customization Features
+
+1. **Detailed Air Quality & Pollen (`AirQualityCard.svelte`):**
+   - European AQI evaluation with color-coded scale and descriptive sub-labels.
+   - Individual pollutant gauges: PM2.5, PM10, NO₂, SO₂, O₃, CO with WHO 24h air quality guideline targets.
+   - Collapsible pollen accordion detailing 6 allergen species: Alder, Birch, Grass, Mugwort, Olive, and Ragweed.
+
+2. **Astronomy Card (`AstronomyCard.svelte`):**
+   - Dynamic SVG Sun Arc calculating live solar elevation (`sunX`, `sunY`), daylight duration, and countdown to sunset/sunrise.
+   - Polar day and polar night inference based on latitude and seasonal heuristics (`inferPolarStatus`).
+   - Moon Phase tracking: illumination percentage, hemisphere-aware lunar orientation (`isSouthern`), and countdown to next Full Moon and New Moon.
+
+3. **Marine Forecast (`MarineBadge.svelte`, `marine.ts`):**
+   - Sea surface temperature and wave height powered by Open-Meteo Marine API.
+   - Negative caching for inland coordinates: HTTP 400 responses are cached for 7 days in runtime memory and `localStorage` to avoid redundant requests. Transient errors (5xx, 429) are not negatively cached.
+
+4. **Native Pull-to-Refresh (`PullToRefresh.svelte`, `pullToRefresh.ts`):**
+   - Touch gesture state machine with damping resistance, threshold snap, haptic vibration feedback, and animated status indicator.
+   - Prevents scroll interference on interactive cards via `data-no-ptr`.
+
+5. **Home Screen Customization & Settings:**
+   - Section reordering (up/down arrow controls) with immutable locking for top Hero/Alerts.
+   - Section visibility toggles saved in `localStorage` with defensive schema normalization and fallback defaults.
+

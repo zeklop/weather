@@ -243,4 +243,64 @@ describe('createSettingsStore', () => {
 		expect(store.lastUpdated).toBe(NOW);
 		expect(store.theme).toBe('system');
 	});
+
+	describe('sections customization & ordering', () => {
+		it('initializes with default section order and all visible', () => {
+			const store = createSettingsStore(makeMemoryStorage());
+			expect(store.sectionOrder[0]).toBe('hero');
+			expect(store.sectionOrder[1]).toBe('alerts');
+			expect(store.visibleSections.hero).toBe(true);
+			expect(store.visibleSections.astronomy).toBe(true);
+		});
+
+		it('moveSection shifts order up and down without moving hero and alerts', () => {
+			const storage = makeMemoryStorage();
+			const store = createSettingsStore(storage);
+
+			// Trying to move hero or alerts does nothing
+			store.moveSection('hero', 'down');
+			expect(store.sectionOrder[0]).toBe('hero');
+			store.moveSection('alerts', 'up');
+			expect(store.sectionOrder[1]).toBe('alerts');
+
+			// Move index 2 (precipHeuristic) down
+			const initialThird = store.sectionOrder[2];
+			const initialFourth = store.sectionOrder[3];
+			store.moveSection(initialThird, 'down');
+
+			expect(store.sectionOrder[2]).toBe(initialFourth);
+			expect(store.sectionOrder[3]).toBe(initialThird);
+
+			// Move it back up
+			store.moveSection(initialThird, 'up');
+			expect(store.sectionOrder[2]).toBe(initialThird);
+		});
+
+		it('setSectionVisible toggles visibility but keeps locked sections true', () => {
+			const storage = makeMemoryStorage();
+			const store = createSettingsStore(storage);
+
+			store.setSectionVisible('hero', false); // locked
+			expect(store.visibleSections.hero).toBe(true);
+
+			store.setSectionVisible('astronomy', false);
+			expect(store.visibleSections.astronomy).toBe(false);
+
+			store.setSectionVisible('astronomy', true);
+			expect(store.visibleSections.astronomy).toBe(true);
+		});
+
+		it('resetSections restores defaults', () => {
+			const storage = makeMemoryStorage();
+			const store = createSettingsStore(storage);
+
+			store.setSectionVisible('astronomy', false);
+			store.moveSection('metrics', 'up');
+
+			store.resetSections();
+			expect(store.visibleSections.astronomy).toBe(true);
+			expect(store.sectionOrder[0]).toBe('hero');
+			expect(store.sectionOrder[1]).toBe('alerts');
+		});
+	});
 });

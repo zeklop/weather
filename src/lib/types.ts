@@ -65,6 +65,36 @@ export type DayResult = {
 	source: 'calculated' | 'fallback';
 };
 
+export type PollenLevels = {
+	alder: number | null;
+	birch: number | null;
+	grass: number | null;
+	mugwort: number | null;
+	olive: number | null;
+	ragweed: number | null;
+};
+
+export type Pollutants = {
+	pm2_5: number | null;
+	pm10: number | null;
+	nitrogenDioxide: number | null;
+	sulphurDioxide: number | null;
+	ozone: number | null;
+	carbonMonoxide: number | null; // stored in µg/m³ from API
+};
+
+export type AirQualityData = {
+	aqi: number | null;
+	pollutants: Pollutants;
+	pollen: PollenLevels;
+	hasPollenCoverage: boolean;
+};
+
+export type MarineData = {
+	seaTemperature: number | null;
+	waveHeight: number | null;
+};
+
 export type CachedForecast = {
 	fetchedAt: number;
 	location: Location;

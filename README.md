@@ -8,20 +8,26 @@
 
 A lightweight, high-performance, offline-capable Progressive Web Application (PWA) for weather forecasts inspired by the clean visual density and information hierarchy of modern weather apps. Built with **SvelteKit** (Svelte 5 runes), the open **Open-Meteo API**, and vector **Meteocons**.
 
-Engineered mobile-first for **iOS Safari** (standalone PWA mode) and modern desktop browsers, completely static (zero server-side runtime footprint), with resilient offline caching, and deployable to **GitHub Pages** or any static web server.
+Engineered as a cross-platform Progressive Web Application (PWA). It provides an excellent standalone experience on **iOS Safari**, **Android (Chrome)**, and **Desktop environments (Mac, Windows)** via Chrome, where it can be installed as a native-like app. It is completely static (zero server-side runtime footprint), with resilient offline caching, and deployable to **GitHub Pages** or any static web server.
 
 ---
 
 ## Features
 
 - **Home Screen Hero:** Large temperature display in °C with Unicode minus (`−`), weather conditions, feels-like temperature, wind speed in m/s with 8-point compass direction, and atmospheric pressure in mmHg.
-- **Expanded Weather Metrics:** UV index, humidity, dew point, and air quality index (Open-Meteo Air Quality API) in a dedicated details card.
+- **Interactive Hour Scrubber:** Select any hour on the hourly rail to temporarily preview conditions in the hero block with an instant `✕ Now` reset button.
+- **Native Mobile Pull-to-Refresh:** Smooth gesture with resistance, haptic feedback (`vibrate`), and animated status pill to refresh forecasts on the fly.
+- **Astronomy (Sun & Moon):** Dynamic SVG sun arc with sunset/sunrise countdown and polar day/night handling, plus Moon Phase with illumination % and days to next full/new moon (hemisphere-aware).
+- **Detailed Air Quality & Pollen:** European AQI score, individual pollutant gauges (PM2.5, PM10, NO₂, SO₂, O₃, CO) with WHO 24h targets, and 6 pollen species under a collapsible accordion.
+- **Coastal Water Temperature:** Sea surface temperature and wave height for coastal cities (Open-Meteo Marine API with negative caching for inland locations).
+- **Home Screen Layout Customization:** Rearrange sections using up/down controls or toggle visibility in Settings.
+- **Expanded Weather Metrics:** UV index, humidity, dew point, and air quality index in a dedicated details card.
 - **Near-Term Precipitation Heuristic:** Deterministic 2-hour rain/snow probability heuristic based on hourly data with direct map link, plus an interactive 24-hour precipitation SVG chart.
 - **Hourly Forecast Rail:** Smooth horizontal scrolling forecast («Now» + 24+ hours) with current-hour highlighting, day/night weather icons, and precipitation probability badges.
 - **10-Day Forecast:** Daily summary on Home and detailed breakdown on the `/forecast/` page.
 - **City Search & Geocoding:** Powered by Open-Meteo Geocoding API (300 ms debounce, queries starting at 2 characters, up to 8 results with region/country, automatic request cancellation, localized queries).
 - **Favorites:** Fast local storage of favourite locations (`localStorage`), quick switching, and cached temperature previews on `/favorites/`.
-- **Settings:** City selection, GPS geolocation request, last updated status with manual refresh trigger, theme (System / Light / Dark), language switcher (English / Russian), weather alerts configuration, and iOS installation guidance.
+- **Settings:** City selection, GPS geolocation request, last updated status, theme (System / Light / Dark), language switcher (English / Russian), section customizer, weather alerts configuration, and iOS installation guidance.
 - **Bilingual Interface (i18n):** English by default with instant Russian switch; localized WMO descriptions, units, compass points, and date/time formatting.
 - **Smart Weather Alerts:** In-app and system notifications for approaching precipitation, severe weather, frost, and sudden temperature drops, with quiet hours and rate limiting.
 - **Dynamic Favicon & App Badging:** Live temperature rendered in the browser tab favicon (Canvas API) and Home Screen icon badge via `navigator.setAppBadge` (iOS 16.4+ standalone / Android).
@@ -74,7 +80,7 @@ npm run dev -- --open
 # Typecheck TypeScript and Svelte diagnostics
 npm run check
 
-# Run Vitest test suites (26 suites, 300+ tests)
+# Run Vitest test suites (37 suites, 360+ tests)
 npm test
 
 # Verify PWA icon dimensions and maskable safe-zone invariant (radius <= 0.4 * size)
@@ -137,6 +143,15 @@ Since the app is 100% static, no Node.js runtime is required on the server. A pr
 2. Tap the menu button (**⋮**) and choose **“Add to Home screen”** / **“Install app”** — or tap the install banner that appears at the top of the app.
 3. Confirm the installation.
 4. Launch the app from your Home Screen — the icon is named **«Weather»** — for a native standalone fullscreen experience with offline support and a live temperature badge on the icon (badge rendering also depends on your launcher).
+
+---
+
+## Installing PWA on Desktop (Mac / Windows via Chrome)
+
+1. Open **`https://zeklop.github.io/weather/`** in Google Chrome on your Mac or Windows PC.
+2. In the right side of the address bar, click the install icon (looks like a screen with a down arrow) or select **"Install Weather..."** from the Chrome menu.
+3. Confirm the installation in the dialog box.
+4. The application will be added to your system (Launchpad on Mac, or Start Menu on Windows) and run in its own dedicated window without browser UI.
 
 ---
 

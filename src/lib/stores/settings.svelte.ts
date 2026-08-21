@@ -1,6 +1,14 @@
 import { DEFAULT_LANGUAGE, type Language } from '../i18n';
+import {
+	DEFAULT_SECTION_ORDER,
+	DEFAULT_VISIBLE_SECTIONS,
+	normalizeSectionOrder,
+	normalizeVisibleSections,
+	type SectionId
+} from '../weather/sections';
 
 export const STORAGE_KEY = 'weather:settings';
+export const CURRENT_SCHEMA_VERSION = 1;
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -14,6 +22,9 @@ export type SettingsStore = {
 	readonly freezeAlerts: boolean;
 	readonly quietHoursEnabled: boolean;
 	readonly badgeEnabled: boolean;
+	readonly schemaVersion: number;
+	readonly sectionOrder: SectionId[];
+	readonly visibleSections: Record<SectionId, boolean>;
 	setTheme(theme: Theme): void;
 	setLanguage(lang: Language): void;
 	touchLastUpdated(now?: number): void;
@@ -23,9 +34,14 @@ export type SettingsStore = {
 	setFreezeAlerts(enabled: boolean): void;
 	setQuietHoursEnabled(enabled: boolean): void;
 	setBadgeEnabled(enabled: boolean): void;
+	setSectionOrder(order: SectionId[]): void;
+	setSectionVisible(id: SectionId, visible: boolean): void;
+	moveSection(id: SectionId, direction: 'up' | 'down'): void;
+	resetSections(): void;
 };
 
 type SettingsData = {
+	schemaVersion: number;
 	theme: Theme;
 	language: Language;
 	lastUpdated: number | null;
@@ -35,9 +51,12 @@ type SettingsData = {
 	freezeAlerts: boolean;
 	quietHoursEnabled: boolean;
 	badgeEnabled: boolean;
+	sectionOrder: SectionId[];
+	visibleSections: Record<SectionId, boolean>;
 };
 
 const DEFAULT_SETTINGS: SettingsData = {
+	schemaVersion: CURRENT_SCHEMA_VERSION,
 	theme: 'system',
 	language: DEFAULT_LANGUAGE,
 	lastUpdated: null,
@@ -46,7 +65,9 @@ const DEFAULT_SETTINGS: SettingsData = {
 	severeAlerts: true,
 	freezeAlerts: true,
 	quietHoursEnabled: true,
-	badgeEnabled: true
+	badgeEnabled: true,
+	sectionOrder: DEFAULT_SECTION_ORDER,
+	visibleSections: DEFAULT_VISIBLE_SECTIONS
 };
 
 function defaultStorage(): Storage | null {
@@ -69,7 +90,7 @@ function removeItem(storage: Storage, key: string): void {
 	}
 }
 
-function readSettings(storage: Storage | null): SettingsData | null {
+export function readSettings(storage: Storage | null): SettingsData | null {
 	if (storage === null) return null;
 	let raw: string | null;
 	try {
@@ -129,7 +150,16 @@ function readSettings(storage: Storage | null): SettingsData | null {
 			? entry['badgeEnabled']
 			: DEFAULT_SETTINGS.badgeEnabled;
 
+	const schemaVersion =
+		typeof entry['schemaVersion'] === 'number' && Number.isFinite(entry['schemaVersion'])
+			? (entry['schemaVersion'] as number)
+			: CURRENT_SCHEMA_VERSION;
+
+	const sectionOrder = normalizeSectionOrder(entry['sectionOrder']);
+	const visibleSections = normalizeVisibleSections(entry['visibleSections']);
+
 	return {
+		schemaVersion,
 		theme,
 		language,
 		lastUpdated: lastUpdated as number | null,
@@ -138,7 +168,9 @@ function readSettings(storage: Storage | null): SettingsData | null {
 		severeAlerts,
 		freezeAlerts,
 		quietHoursEnabled,
-		badgeEnabled
+		badgeEnabled,
+		sectionOrder,
+		visibleSections
 	};
 }
 
@@ -159,6 +191,12 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	let badgeEnabled = $state<boolean>(
 		persisted?.badgeEnabled ?? DEFAULT_SETTINGS.badgeEnabled
 	);
+	let sectionOrder = $state<SectionId[]>(
+		persisted?.sectionOrder ?? [...DEFAULT_SETTINGS.sectionOrder]
+	);
+	let visibleSections = $state<Record<SectionId, boolean>>({
+		...(persisted?.visibleSections ?? DEFAULT_SETTINGS.visibleSections)
+	});
 
 	function persist(): void {
 		if (storage === null) return;
@@ -166,6 +204,7 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 			storage.setItem(
 				STORAGE_KEY,
 				JSON.stringify({
+					schemaVersion: CURRENT_SCHEMA_VERSION,
 					theme,
 					language,
 					lastUpdated,
@@ -174,7 +213,9 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 					severeAlerts,
 					freezeAlerts,
 					quietHoursEnabled,
-					badgeEnabled
+					badgeEnabled,
+					sectionOrder: $state.snapshot(sectionOrder),
+					visibleSections: $state.snapshot(visibleSections)
 				} satisfies SettingsData)
 			);
 		} catch {
@@ -227,6 +268,41 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		persist();
 	}
 
+	function setSectionOrder(order: SectionId[]): void {
+		sectionOrder = normalizeSectionOrder(order);
+		persist();
+	}
+
+	function setSectionVisible(id: SectionId, visible: boolean): void {
+		if (id === 'hero' || id === 'alerts') return; // locked
+		visibleSections[id] = visible;
+		persist();
+	}
+
+	function moveSection(id: SectionId, direction: 'up' | 'down'): void {
+		if (id === 'hero' || id === 'alerts') return; // locked at top
+
+		const current = [...sectionOrder];
+		const idx = current.indexOf(id);
+		if (idx <= 2 && direction === 'up') return; // cannot move before index 2 (after hero & alerts)
+		if (idx === current.length - 1 && direction === 'down') return;
+		if (idx === -1) return;
+
+		const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+		const temp = current[idx];
+		current[idx] = current[targetIdx];
+		current[targetIdx] = temp;
+
+		sectionOrder = normalizeSectionOrder(current);
+		persist();
+	}
+
+	function resetSections(): void {
+		sectionOrder = [...DEFAULT_SECTION_ORDER];
+		visibleSections = { ...DEFAULT_VISIBLE_SECTIONS };
+		persist();
+	}
+
 	return {
 		get theme() {
 			return theme;
@@ -255,6 +331,15 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get badgeEnabled() {
 			return badgeEnabled;
 		},
+		get schemaVersion() {
+			return CURRENT_SCHEMA_VERSION;
+		},
+		get sectionOrder() {
+			return sectionOrder;
+		},
+		get visibleSections() {
+			return visibleSections;
+		},
 		setTheme,
 		setLanguage,
 		touchLastUpdated,
@@ -263,7 +348,11 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		setSevereAlerts,
 		setFreezeAlerts,
 		setQuietHoursEnabled,
-		setBadgeEnabled
+		setBadgeEnabled,
+		setSectionOrder,
+		setSectionVisible,
+		moveSection,
+		resetSections
 	};
 }
 

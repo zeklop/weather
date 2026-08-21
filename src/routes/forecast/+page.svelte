@@ -156,7 +156,7 @@
 				<div class="hour-row" class:current={isCurrentHour && i === 0}>
 					<span class="hour-time">{isCurrentHour && i === 0 ? t('home.now', lang) : formatHour(h.time)}</span>
 					<div class="hour-icon">
-						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={24} />
+						<WeatherIcon name={iconName(v, dayNightFor(h.time))} size={32} />
 						<span class="sr-only">{v.shortLabel}</span>
 					</div>
 					<span class="hour-temp">{formatTemp(h.temperature)}</span>
@@ -191,7 +191,7 @@
 						{today ? `${t('home.today', lang)}, ${formatDateShort(d.date, lang)}` : formatDayAndDate(d.date, lang)}
 					</span>
 					<div class="day-icon">
-						<WeatherIcon name={iconName(dv, dayIsDay(d))} size={26} />
+						<WeatherIcon name={iconName(dv, dayIsDay(d))} size={32} />
 						<span class="sr-only">{dv.shortLabel}</span>
 					</div>
 					<div class="day-precip">

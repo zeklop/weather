@@ -134,6 +134,12 @@ export interface Translations {
 		freezeAlerts: string;
 		quietHours: string;
 		quietHoursDesc: string;
+		customizeSectionsTitle: string;
+		customizeSectionsDesc: string;
+		moveUpAria: string;
+		moveDownAria: string;
+		resetSections: string;
+		resetSectionsSuccess: string;
 	};
 	map: {
 		title: string;
@@ -200,6 +206,96 @@ export interface Translations {
 		severeTitle: string;
 		freezeTitle: string;
 		dismiss: string;
+	};
+	sections: {
+		hero: string;
+		alerts: string;
+		precipHeuristic: string;
+		hourlyRail: string;
+		precipChart: string;
+		metrics: string;
+		airQuality: string;
+		astronomy: string;
+		marine: string;
+		today: string;
+		dailyForecast: string;
+	};
+	astronomy: {
+		title: string;
+		sunAndMoon: string;
+		sunrise: string;
+		sunset: string;
+		daylight: string;
+		untilSunset: string;
+		untilSunrise: string;
+		polarDay: string;
+		polarNight: string;
+		moonPhase: string;
+		illumination: string;
+		new_moon: string;
+		waxing_crescent: string;
+		first_quarter: string;
+		waxing_gibbous: string;
+		full_moon: string;
+		waning_gibbous: string;
+		last_quarter: string;
+		waning_crescent: string;
+		daysToFullMoon: string;
+		daysToNewMoon: string;
+		todayFullMoon: string;
+		todayNewMoon: string;
+	};
+	scrubber: {
+		forecastFor: string;
+		forecastForTomorrow: string;
+		resetNow: string;
+		srSelected: string;
+	};
+	airQualityDetails: {
+		title: string;
+		subtitle: string;
+		detailsBtn: string;
+		hideDetailsBtn: string;
+		who24hNote: string;
+		pollenTitle: string;
+		noAllergens: string;
+		noPollenCoverage: string;
+		dominantAllergen: string;
+		good: string;
+		fair: string;
+		moderate: string;
+		poor: string;
+		very_poor: string;
+		hazardous: string;
+		low: string;
+		high: string;
+		very_high: string;
+		none: string;
+		pm2_5: string;
+		pm10: string;
+		nitrogenDioxide: string;
+		sulphurDioxide: string;
+		ozone: string;
+		carbonMonoxide: string;
+		alder: string;
+		birch: string;
+		grass: string;
+		mugwort: string;
+		olive: string;
+		ragweed: string;
+	};
+	ptr: {
+		pull: string;
+		release: string;
+		loading: string;
+		success: string;
+		error: string;
+	};
+	marineInfo: {
+		title: string;
+		waterTemp: string;
+		waves: string;
+		coastal: string;
 	};
 }
 
@@ -333,7 +429,13 @@ export const translations: Record<Language, Translations> = {
 			severeAlerts: 'Severe weather warnings',
 			freezeAlerts: 'Frost & temperature drop',
 			quietHours: 'Quiet hours (23:00 – 07:00)',
-			quietHoursDesc: 'Suppresses non-critical alerts at night'
+			quietHoursDesc: 'Suppresses non-critical alerts at night',
+			customizeSectionsTitle: 'Home Screen Layout',
+			customizeSectionsDesc: 'Rearrange or hide forecast sections',
+			moveUpAria: 'Move section {name} up',
+			moveDownAria: 'Move section {name} down',
+			resetSections: 'Reset sections to default',
+			resetSectionsSuccess: 'Sections layout reset to default'
 		},
 		map: {
 			title: 'Map',
@@ -400,6 +502,96 @@ export const translations: Record<Language, Translations> = {
 			severeTitle: 'Severe Weather Alert',
 			freezeTitle: 'Freeze Warning',
 			dismiss: 'Dismiss alert'
+		},
+		sections: {
+			hero: 'Current weather',
+			alerts: 'Weather alerts',
+			precipHeuristic: 'Next 2 hours precipitation',
+			hourlyRail: 'Hourly forecast',
+			precipChart: '24-hour precipitation chart',
+			metrics: 'Weather parameters',
+			airQuality: 'Air quality & Pollen',
+			astronomy: 'Sun & Moon',
+			marine: 'Water temperature',
+			today: 'Today summary',
+			dailyForecast: '7-day forecast'
+		},
+		astronomy: {
+			title: 'Sun & Moon',
+			sunAndMoon: 'Sun & Moon',
+			sunrise: 'Sunrise',
+			sunset: 'Sunset',
+			daylight: 'Daylight',
+			untilSunset: 'Sunset in {time}',
+			untilSunrise: 'Sunrise in {time}',
+			polarDay: 'Polar day (sun does not set)',
+			polarNight: 'Polar night (sun does not rise)',
+			moonPhase: 'Moon Phase',
+			illumination: 'Illumination',
+			new_moon: 'New Moon',
+			waxing_crescent: 'Waxing Crescent',
+			first_quarter: 'First Quarter',
+			waxing_gibbous: 'Waxing Gibbous',
+			full_moon: 'Full Moon',
+			waning_gibbous: 'Waning Gibbous',
+			last_quarter: 'Last Quarter',
+			waning_crescent: 'Waning Crescent',
+			daysToFullMoon: 'Full moon in ~{days} d.',
+			daysToNewMoon: 'New moon in ~{days} d.',
+			todayFullMoon: 'Full moon today',
+			todayNewMoon: 'New moon today'
+		},
+		scrubber: {
+			forecastFor: 'Forecast for {time}',
+			forecastForTomorrow: 'Forecast for tomorrow, {time}',
+			resetNow: '✕ Now',
+			srSelected: 'Selected forecast for {time}: {temp}, {condition}'
+		},
+		airQualityDetails: {
+			title: 'Air Quality & Pollen',
+			subtitle: 'European AQI index & WHO standards',
+			detailsBtn: 'Detailed breakdown',
+			hideDetailsBtn: 'Hide details',
+			who24hNote: 'Thresholds based on WHO 2021 24h guidelines',
+			pollenTitle: 'Pollen & Allergens',
+			noAllergens: 'No active allergens detected',
+			noPollenCoverage: 'Pollen data unavailable for this region',
+			dominantAllergen: 'Main allergen: {name} ({level})',
+			good: 'Good',
+			fair: 'Fair',
+			moderate: 'Moderate',
+			poor: 'Poor',
+			very_poor: 'Very Poor',
+			hazardous: 'Hazardous',
+			low: 'Low',
+			high: 'High',
+			very_high: 'Very High',
+			none: 'None',
+			pm2_5: 'Fine particles (PM2.5)',
+			pm10: 'Inhalable particles (PM10)',
+			nitrogenDioxide: 'Nitrogen dioxide (NO₂)',
+			sulphurDioxide: 'Sulphur dioxide (SO₂)',
+			ozone: 'Ozone (O₃)',
+			carbonMonoxide: 'Carbon monoxide (CO)',
+			alder: 'Alder',
+			birch: 'Birch',
+			grass: 'Grasses',
+			mugwort: 'Mugwort',
+			olive: 'Olive',
+			ragweed: 'Ragweed'
+		},
+		ptr: {
+			pull: 'Pull down to refresh',
+			release: 'Release to update',
+			loading: 'Updating forecast…',
+			success: 'Forecast updated',
+			error: 'Failed to update'
+		},
+		marineInfo: {
+			title: 'Water Temperature',
+			waterTemp: 'Sea water: {temp}',
+			waves: 'Waves: {height}',
+			coastal: 'Coastal water'
 		}
 	},
 	ru: {
@@ -531,7 +723,13 @@ export const translations: Record<Language, Translations> = {
 			severeAlerts: 'Штормовые предупреждения',
 			freezeAlerts: 'Гололёд и перепады температуры',
 			quietHours: 'Тихие часы (23:00 – 07:00)',
-			quietHoursDesc: 'Заглушает обычные оповещения ночью'
+			quietHoursDesc: 'Заглушает обычные оповещения ночью',
+			customizeSectionsTitle: 'Порядок и видимость блоков',
+			customizeSectionsDesc: 'Настройка порядка и видимости секций на Главной',
+			moveUpAria: 'Переместить блок «{name}» выше',
+			moveDownAria: 'Переместить блок «{name}» ниже',
+			resetSections: 'Сбросить порядок по умолчанию',
+			resetSectionsSuccess: 'Порядок блоков сброшен'
 		},
 		map: {
 			title: 'Карта',
@@ -598,6 +796,96 @@ export const translations: Record<Language, Translations> = {
 			severeTitle: 'Штормовое предупреждение',
 			freezeTitle: 'Предупреждение о заморозках',
 			dismiss: 'Закрыть оповещение'
+		},
+		sections: {
+			hero: 'Текущая погода',
+			alerts: 'Погодные оповещения',
+			precipHeuristic: 'Осадки в ближайшие 2 часа',
+			hourlyRail: 'Почасовой прогноз',
+			precipChart: 'График осадков на 24 часа',
+			metrics: 'Параметры погоды',
+			airQuality: 'Качество воздуха и пыльца',
+			astronomy: 'Солнце и Луна',
+			marine: 'Температура воды',
+			today: 'Сводка на сегодня',
+			dailyForecast: 'Прогноз на 7 дней'
+		},
+		astronomy: {
+			title: 'Солнце и Луна',
+			sunAndMoon: 'Солнце и Луна',
+			sunrise: 'Восход',
+			sunset: 'Закат',
+			daylight: 'Световой день',
+			untilSunset: 'Закат через {time}',
+			untilSunrise: 'Рассвет через {time}',
+			polarDay: 'Полярный день (солнце не заходит)',
+			polarNight: 'Полярная ночь (солнце не восходит)',
+			moonPhase: 'Фаза Луны',
+			illumination: 'Освещённость',
+			new_moon: 'Новолуние',
+			waxing_crescent: 'Молодая луна',
+			first_quarter: 'Первая четверть',
+			waxing_gibbous: 'Растущая луна',
+			full_moon: 'Полнолуние',
+			waning_gibbous: 'Убывающая луна',
+			last_quarter: 'Последняя четверть',
+			waning_crescent: 'Старая луна',
+			daysToFullMoon: 'Полнолуние через ~{days} дн.',
+			daysToNewMoon: 'Новолуние через ~{days} дн.',
+			todayFullMoon: 'Полнолуние сегодня',
+			todayNewMoon: 'Новолуние сегодня'
+		},
+		scrubber: {
+			forecastFor: 'Прогноз на {time}',
+			forecastForTomorrow: 'Прогноз на завтра, {time}',
+			resetNow: '✕ Сейчас',
+			srSelected: 'Выбран прогноз на {time}: {temp}, {condition}'
+		},
+		airQualityDetails: {
+			title: 'Качество воздуха и пыльца',
+			subtitle: 'Индекс European AQI и нормативы ВОЗ',
+			detailsBtn: 'Подробный состав воздуха',
+			hideDetailsBtn: 'Скрыть подробности',
+			who24hNote: 'Пороги рассчитаны по 24-часовым нормам ВОЗ 2021',
+			pollenTitle: 'Пыльца и аллергены',
+			noAllergens: 'Активных аллергенов не обнаружено',
+			noPollenCoverage: 'Данные о пыльце недоступны для этого региона',
+			dominantAllergen: 'Основной аллерген: {name} ({level})',
+			good: 'Отличное',
+			fair: 'Хорошее',
+			moderate: 'Умеренное',
+			poor: 'Плохое',
+			very_poor: 'Очень плохое',
+			hazardous: 'Опасное',
+			low: 'Низкий',
+			high: 'Высокий',
+			very_high: 'Очень высокий',
+			none: 'Отсутствует',
+			pm2_5: 'Мелкодисперсная пыль (PM2.5)',
+			pm10: 'Взвешенные частицы (PM10)',
+			nitrogenDioxide: 'Диоксид азота (NO₂)',
+			sulphurDioxide: 'Диоксид серы (SO₂)',
+			ozone: 'Озон (O₃)',
+			carbonMonoxide: 'Угарный газ (CO)',
+			alder: 'Ольха',
+			birch: 'Берёза',
+			grass: 'Злаковые травы',
+			mugwort: 'Полынь',
+			olive: 'Олива',
+			ragweed: 'Амброзия'
+		},
+		ptr: {
+			pull: 'Потяните вниз для обновления',
+			release: 'Отпустите для обновления',
+			loading: 'Обновляем прогноз…',
+			success: 'Прогноз обновлён',
+			error: 'Не удалось обновить'
+		},
+		marineInfo: {
+			title: 'Температура воды',
+			waterTemp: 'Вода в море: {temp}',
+			waves: 'Волны: {height}',
+			coastal: 'У побережья'
 		}
 	}
 };
