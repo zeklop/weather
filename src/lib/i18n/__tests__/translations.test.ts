@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	DEFAULT_LANGUAGE,
 	SUPPORTED_LANGUAGES,
+	detectBrowserLanguage,
 	getTranslations,
 	t,
 	translations,
@@ -21,6 +22,40 @@ describe('i18n core configuration', () => {
 	it('provides complete translations for both en and ru', () => {
 		expect(translations.en).toBeDefined();
 		expect(translations.ru).toBeDefined();
+	});
+});
+
+describe('detectBrowserLanguage', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('maps a Russian browser locale to ru', () => {
+		vi.stubGlobal('navigator', { language: 'ru-RU' });
+		expect(detectBrowserLanguage()).toBe('ru');
+	});
+
+	it('maps an English browser locale to en', () => {
+		vi.stubGlobal('navigator', { language: 'en-US' });
+		expect(detectBrowserLanguage()).toBe('en');
+	});
+
+	it('falls back to en for an unsupported locale', () => {
+		vi.stubGlobal('navigator', { language: 'fr-FR' });
+		expect(detectBrowserLanguage()).toBe('en');
+	});
+
+	it('walks navigator.languages candidates in order', () => {
+		vi.stubGlobal('navigator', { language: 'de-DE', languages: ['de-DE', 'ru', 'en'] });
+		expect(detectBrowserLanguage()).toBe('ru');
+
+		vi.stubGlobal('navigator', { language: 'de-DE', languages: ['de-DE', 'en-US'] });
+		expect(detectBrowserLanguage()).toBe('en');
+	});
+
+	it('returns the default language outside the browser', () => {
+		vi.stubGlobal('navigator', undefined);
+		expect(detectBrowserLanguage()).toBe(DEFAULT_LANGUAGE);
 	});
 });
 

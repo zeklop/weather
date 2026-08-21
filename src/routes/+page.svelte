@@ -48,7 +48,6 @@
 	const lang = $derived(settings.language);
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
-	const refreshing = $derived(store.refreshing);
 	const activeAlert = $derived(alertsStore.activeAlert);
 	const radarSupported = $derived(isRadarSupported(location.current));
 
@@ -328,13 +327,6 @@
 	{@const activeDayNight = dayNightFor(activeTime)}
 	<div class="home">
 		<PullToRefresh state={ptr.state} distance={ptr.distance} {lang} />
-
-		{#if refreshing && ptr.state !== 'loading'}
-			<div class="refresh-note">
-				<span class="spinner" aria-hidden="true"></span>
-				{t('home.refreshing', lang)}
-			</div>
-		{/if}
 
 		{#if isExpired}
 			<div class="banner" role="status">
@@ -657,29 +649,6 @@
 
 	.state .retry-btn {
 		margin-top: var(--space-5);
-	}
-
-	.refresh-note {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-size: 12px;
-		color: var(--text-secondary);
-	}
-
-	.spinner {
-		width: 12px;
-		height: 12px;
-		border: 2px solid var(--divider);
-		border-top-color: var(--accent);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	.banner {

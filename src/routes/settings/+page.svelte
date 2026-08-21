@@ -197,7 +197,7 @@
 		<button
 			class="row row-btn"
 			type="button"
-			onclick={openSearch}
+			onclick={() => openSearch()}
 			aria-label={t('settings.changeCityAria', lang, { city: cityName })}
 		>
 			<span class="row-label">{t('settings.city', lang)}</span>

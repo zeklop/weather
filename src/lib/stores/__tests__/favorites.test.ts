@@ -157,3 +157,44 @@ describe('createFavoritesStore', () => {
 		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual([MOSCOW]);
 	});
 });
+
+describe('createFavoritesStore.addFavorite', () => {
+	it('adds a location as favorite without removing existing ones', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+
+		store.toggleFavorite(MOSCOW);
+		store.addFavorite(SPB);
+
+		expect(store.list).toEqual([MOSCOW, SPB]);
+		expect(store.isFavorite(SPB)).toBe(true);
+	});
+
+	it('does not duplicate an already favorited location', () => {
+		const storage = makeMemoryStorage();
+		const store = createFavoritesStore(storage);
+
+		store.addFavorite(MOSCOW);
+		store.addFavorite(MOSCOW);
+
+		expect(store.list).toEqual([MOSCOW]);
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual([MOSCOW]);
+	});
+
+	it('matches duplicates by coordinates even when id differs', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+
+		store.addFavorite(MOSCOW);
+		store.addFavorite({ ...MOSCOW, id: 'custom-moscow-id' });
+
+		expect(store.list).toEqual([MOSCOW]);
+	});
+
+	it('ignores unnamed geolocation markers (FV-3)', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+
+		store.addFavorite(UNNAMED_LOCATION);
+
+		expect(store.list).toEqual([]);
+		expect(store.isFavorite(UNNAMED_LOCATION)).toBe(false);
+	});
+});

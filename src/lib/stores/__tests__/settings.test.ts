@@ -6,14 +6,16 @@ const NOW = 1_752_000_000_000;
 
 afterEach(() => {
 	vi.useRealTimers();
+	vi.unstubAllGlobals();
 });
 
 describe('createSettingsStore', () => {
-	it('defaults to system theme, en language, badgeEnabled true, and no last update', () => {
+	it('defaults theme/system, badgeEnabled true, no last update, and language from the browser (ru-RU → ru)', () => {
+		vi.stubGlobal('navigator', { language: 'ru-RU' });
 		const store = createSettingsStore(makeMemoryStorage());
 
 		expect(store.theme).toBe('system');
-		expect(store.language).toBe('en');
+		expect(store.language).toBe('ru');
 		expect(store.badgeEnabled).toBe(true);
 		expect(store.lastUpdated).toBeNull();
 		expect(store.alertsEnabled).toBe(false);
@@ -21,6 +23,13 @@ describe('createSettingsStore', () => {
 		expect(store.severeAlerts).toBe(true);
 		expect(store.freezeAlerts).toBe(true);
 		expect(store.quietHoursEnabled).toBe(true);
+	});
+
+	it('falls back to en when the browser locale is unsupported', () => {
+		vi.stubGlobal('navigator', { language: 'de-DE' });
+		const store = createSettingsStore(makeMemoryStorage());
+
+		expect(store.language).toBe('en');
 	});
 
 	it('setBadgeEnabled updates badgeEnabled and persists it', () => {

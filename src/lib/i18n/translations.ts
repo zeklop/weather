@@ -4,6 +4,19 @@ export const DEFAULT_LANGUAGE: Language = 'en';
 
 export const SUPPORTED_LANGUAGES: readonly Language[] = ['en', 'ru'] as const;
 
+// First-run language: follow the browser when the user hasn't chosen one yet.
+// Outside the browser (SSR/prerender) there is nothing to detect → DEFAULT_LANGUAGE.
+export function detectBrowserLanguage(): Language {
+	if (typeof navigator === 'undefined') return DEFAULT_LANGUAGE;
+	const candidates = [navigator.language, ...(navigator.languages ?? [])];
+	for (const tag of candidates) {
+		if (!tag) continue;
+		const base = tag.toLowerCase().split('-')[0];
+		if ((SUPPORTED_LANGUAGES as readonly string[]).includes(base)) return base as Language;
+	}
+	return DEFAULT_LANGUAGE;
+}
+
 export interface Translations {
 	app: {
 		name: string;
@@ -29,7 +42,6 @@ export interface Translations {
 	};
 	home: {
 		loading: string;
-		refreshing: string;
 		errorTitle: string;
 		offlineTitle: string;
 		offlineText: string;
@@ -355,7 +367,6 @@ export const translations: Record<Language, Translations> = {
 		},
 		home: {
 			loading: 'Loading forecast',
-			refreshing: 'Updating…',
 			errorTitle: 'Failed to load forecast',
 			offlineTitle: 'No connection',
 			offlineText: 'Check your internet connection and try again.',
@@ -679,7 +690,6 @@ export const translations: Record<Language, Translations> = {
 		},
 		home: {
 			loading: 'Загрузка прогноза',
-			refreshing: 'Обновляем…',
 			errorTitle: 'Не удалось обновить прогноз',
 			offlineTitle: 'Нет соединения',
 			offlineText: 'Проверьте подключение к интернету и попробуйте ещё раз.',

@@ -217,7 +217,7 @@
 	<header class="app-header">
 		<div class="container">
 			<div class="header-row">
-				<div class="app-title">{mounted ? displayName : '…'}</div>
+				<a class="app-title" href="{base}/favorites/">{mounted ? displayName : '…'}</a>
 				<div class="header-actions">
 					<button
 						class="icon-btn"
@@ -243,7 +243,7 @@
 							<path d="M21 21v-5h-5" />
 						</svg>
 					</button>
-					<button class="icon-btn" type="button" aria-label={t('header.search', lang)} onclick={openSearch}>
+					<button class="icon-btn" type="button" aria-label={t('header.search', lang)} onclick={() => openSearch()}>
 						<svg
 							class="icon"
 							viewBox="0 0 24 24"
@@ -434,6 +434,8 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		min-width: 0;
+		color: inherit;
+		text-decoration: none;
 	}
 
 	:global(:root) {

@@ -218,7 +218,7 @@
 		</div>
 		<div class="state-title">{t('favorites.emptyTitle', lang)}</div>
 		<div class="state-text">{t('favorites.emptyHint', lang)}</div>
-		<button class="primary-btn" type="button" onclick={openSearch}>{t('favorites.addCity', lang)}</button>
+		<button class="primary-btn" type="button" onclick={() => openSearch({ addToFavorites: true })}>{t('favorites.addCity', lang)}</button>
 	</div>
 {:else}
 	<div class="card list" aria-busy={busy}>
@@ -283,7 +283,7 @@
 	</div>
 
 	<div class="actions-wrapper">
-		<button class="add-city-btn" type="button" onclick={openSearch}>
+		<button class="add-city-btn" type="button" onclick={() => openSearch({ addToFavorites: true })}>
 			<svg
 				class="icon-plus"
 				viewBox="0 0 24 24"

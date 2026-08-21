@@ -3,12 +3,16 @@
 	// openSearch(); the sheet renders itself while open. One place owns the
 	// search UI state, no store file needed.
 	let open = $state(false);
+	// When opened from the Favorites screen ("add city"), picking a result adds
+	// it to favorites instead of switching the current location.
+	let selectAddsFavorite = $state(false);
 	let previousActiveElement: HTMLElement | null = null;
 
-	export function openSearch(): void {
+	export function openSearch(options?: { addToFavorites?: boolean }): void {
 		if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
 			previousActiveElement = document.activeElement;
 		}
+		selectAddsFavorite = options?.addToFavorites ?? false;
 		open = true;
 	}
 
@@ -28,6 +32,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { searchLocations } from '$lib/api/geocoding';
+	import { getFavoritesStore } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { t, type Language } from '$lib/i18n';
@@ -59,6 +64,9 @@
 	let seq = 0;
 
 	function select(loc: Location): void {
+		if (selectAddsFavorite) {
+			getFavoritesStore().addFavorite(loc);
+		}
 		location.setLocation(loc);
 		closeSearch();
 		goto(base + '/');

@@ -25,7 +25,6 @@
 	const lang = $derived(settings.language);
 	const payload = $derived(store.payload);
 	const status = $derived(store.status);
-	const refreshing = $derived(store.refreshing);
 
 	// Minute ticker keeps «Сейчас»/current-hour highlight honest while the SPA
 	// stays open across an hour boundary.
@@ -115,13 +114,6 @@
 	</div>
 {:else if payload}
 	<div class="forecast">
-		{#if refreshing}
-			<div class="refresh-note">
-				<span class="spinner" aria-hidden="true"></span>
-				{t('home.refreshing', lang)}
-			</div>
-		{/if}
-
 		{#if status === 'error' || status === 'offline'}
 			<div class="banner" role="status">
 				<span>
@@ -304,29 +296,6 @@
 
 	.state .retry-btn {
 		margin-top: var(--space-5);
-	}
-
-	.refresh-note {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-size: 12px;
-		color: var(--text-secondary);
-	}
-
-	.spinner {
-		width: 12px;
-		height: 12px;
-		border: 2px solid var(--divider);
-		border-top-color: var(--accent);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	.banner {

@@ -13,6 +13,7 @@ export function isUnnamedLocation(location: Location): boolean {
 export type FavoritesStore = {
 	readonly list: Location[];
 	toggleFavorite(location: Location): void;
+	addFavorite(location: Location): void;
 	isFavorite(location: Location): boolean;
 	removeFavorite(id: string): void;
 };
@@ -129,11 +130,20 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 		}
 	}
 
+	// Add-only variant used by the "add city" flow on the Favorites screen:
+	// the city must land in favorites immediately instead of toggling.
+	function addFavorite(location: Location): void {
+		if (isUnnamedLocation(location) || isFavorite(location)) return;
+		list = [...list, location];
+		persist();
+	}
+
 	return {
 		get list() {
 			return list;
 		},
 		toggleFavorite,
+		addFavorite,
 		isFavorite,
 		removeFavorite
 	};

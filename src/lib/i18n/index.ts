@@ -1,6 +1,7 @@
 export {
 	DEFAULT_LANGUAGE,
 	SUPPORTED_LANGUAGES,
+	detectBrowserLanguage,
 	getTranslations,
 	t,
 	translations,

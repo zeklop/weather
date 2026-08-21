@@ -1,4 +1,4 @@
-import { DEFAULT_LANGUAGE, type Language } from '../i18n';
+import { DEFAULT_LANGUAGE, detectBrowserLanguage, type Language } from '../i18n';
 import {
 	DEFAULT_SECTION_ORDER,
 	DEFAULT_VISIBLE_SECTIONS,
@@ -177,7 +177,7 @@ export function readSettings(storage: Storage | null): SettingsData | null {
 export function createSettingsStore(storage: Storage | null = defaultStorage()): SettingsStore {
 	const persisted = readSettings(storage);
 	let theme = $state<Theme>(persisted?.theme ?? DEFAULT_SETTINGS.theme);
-	let language = $state<Language>(persisted?.language ?? DEFAULT_SETTINGS.language);
+	let language = $state<Language>(persisted?.language ?? detectBrowserLanguage());
 	let lastUpdated = $state<number | null>(persisted?.lastUpdated ?? DEFAULT_SETTINGS.lastUpdated);
 	let alertsEnabled = $state<boolean>(persisted?.alertsEnabled ?? DEFAULT_SETTINGS.alertsEnabled);
 	let precipitationAlerts = $state<boolean>(
