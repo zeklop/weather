@@ -232,6 +232,7 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - Push gateway allowlist (`*.push.apple.com`, `fcm.googleapis.com`, `*.notify.windows.com`, `*.push.services.mozilla.com`) for SSRF protection.
    - Self-cleaning database on `410 Gone` / `404 Not Found` gateway responses.
    - Rate limits (per-IP request windows, 24 h ping throttle) are per-isolate in-memory: Cloudflare evicts isolates on deploys and low load, so they are best-effort abuse protection, not hard guarantees.
+   - Retention: cron prunes `analytics_events` older than 90 days and `alert_history` older than 30 days.
 
 3. **Alert Deduplication & Cooldown:**
    - State-transition detection («Dry → Upcoming Rain/Snow within 1–2 hours», severe thunderstorm/gale, frost transition across 0°C).

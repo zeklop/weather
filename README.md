@@ -27,7 +27,7 @@ Engineered as a cross-platform Progressive Web Application (PWA). It provides an
 - **10-Day Forecast:** Daily summary on Home and detailed breakdown on the `/forecast/` page.
 - **City Search & Geocoding:** Powered by Open-Meteo Geocoding API (300 ms debounce, queries starting at 2 characters, up to 8 results with region/country, automatic request cancellation, localized queries).
 - **Favorites:** Fast local storage of favourite locations (`localStorage`), quick switching, and cached temperature previews on `/favorites/`.
-- **Settings:** City selection, GPS geolocation request, last updated status, theme (System / Light / Dark), language switcher (English / Russian), section customizer, weather alerts configuration, and iOS installation guidance.
+- **Settings:** City selection, GPS geolocation request, last updated status, theme (System / Light / Dark), language switcher (English / Russian), section customizer, weather alerts configuration, server push alerts toggle, and iOS installation guidance.
 - **Bilingual Interface (i18n):** English by default with instant Russian switch; localized WMO descriptions, units, compass points, and date/time formatting.
 - **Smart Weather Alerts & Background Web Push:** In-app alerts when the tab is active, plus autonomous background Web Push delivery via lightweight Cloudflare Workers + D1 for locked/closed devices (iOS 16.4+ standalone / Android / Desktop) with quiet hours, rate limiting, and 3-hour cooldown.
 - **Privacy-First Analytics Dashboard (`/stats/`):** 100% anonymous telemetry (device platform breakdown, active installations over 7 days, top subscriber cities, and alert history) with token-protected management.
