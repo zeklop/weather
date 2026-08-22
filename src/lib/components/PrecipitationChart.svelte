@@ -4,6 +4,7 @@
 	import { t } from '$lib/i18n';
 	import { formatHour } from '$lib/weather/format';
 	import { formatPrecipMm } from '$lib/weather/units';
+	import { activeUnits } from '$lib/weather/unitsState.svelte';
 	import {
 		buildChartData,
 		findNearestIndex,
@@ -109,7 +110,7 @@
 				{#if chartData.maxMm > 0}
 					<span class="legend-item mm">
 						<span class="legend-dot mm-dot"></span>
-						<span>{t('home.precipitationVolume', lang)} ({lang === 'ru' ? 'мм' : 'mm'})</span>
+						<span>{t('home.precipitationVolume', lang)} ({activeUnits.precip === 'in' ? t('units.in', lang) : t('units.mm', lang)})</span>
 					</span>
 				{/if}
 			</div>

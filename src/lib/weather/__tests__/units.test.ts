@@ -9,12 +9,14 @@ import {
 	formatTemp,
 	formatWindSpeed,
 	hpaToInhg,
-	hpaToMmhg
+	hpaToMmhg,
+	mmToInch,
+	msToMph
 } from '../units';
 
 beforeEach(() => {
 	// Reset module-level unit state so tests don't leak into each other.
-	configureUnits({ temperature: 'celsius', pressure: 'mmhg' });
+	configureUnits({ temperature: 'celsius', pressure: 'mmhg', wind: 'ms', precip: 'mm' });
 });
 
 describe('celsiusToFahrenheit', () => {
@@ -32,26 +34,60 @@ describe('hpaToInhg', () => {
 	});
 });
 
+describe('msToMph / mmToInch', () => {
+	it('converts wind and precipitation to imperial units', () => {
+		expect(msToMph(1)).toBeCloseTo(2.23694, 4);
+		expect(mmToInch(25.4)).toBeCloseTo(1, 5);
+	});
+});
+
 describe('detectDefaultUnits', () => {
-	it('US locale gets fahrenheit + inHg', () => {
-		expect(detectDefaultUnits('en-US')).toEqual({ temperature: 'fahrenheit', pressure: 'inhg' });
+	it('US locale gets fahrenheit + inHg + mph + inches', () => {
+		expect(detectDefaultUnits('en-US')).toEqual({
+			temperature: 'fahrenheit',
+			pressure: 'inhg',
+			wind: 'mph',
+			precip: 'in'
+		});
 	});
 
-	it('ru locale gets celsius + mmHg', () => {
-		expect(detectDefaultUnits('ru-RU')).toEqual({ temperature: 'celsius', pressure: 'mmhg' });
+	it('ru locale gets metric with mmHg', () => {
+		expect(detectDefaultUnits('ru-RU')).toEqual({
+			temperature: 'celsius',
+			pressure: 'mmhg',
+			wind: 'ms',
+			precip: 'mm'
+		});
 	});
 
-	it('other locales get celsius + hPa', () => {
-		expect(detectDefaultUnits('en-GB')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
-		expect(detectDefaultUnits('de')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
+	it('other locales get metric with hPa', () => {
+		expect(detectDefaultUnits('en-GB')).toEqual({
+			temperature: 'celsius',
+			pressure: 'hpa',
+			wind: 'ms',
+			precip: 'mm'
+		});
+		expect(detectDefaultUnits('de')).toEqual({
+			temperature: 'celsius',
+			pressure: 'hpa',
+			wind: 'ms',
+			precip: 'mm'
+		});
 	});
 
-	it('falls back to celsius + hPa on invalid input', () => {
+	it('falls back to metric on invalid input', () => {
 		expect(detectDefaultUnits(undefined as unknown as string)).toEqual({
 			temperature: 'celsius',
-			pressure: 'hpa'
+			pressure: 'hpa',
+			wind: 'ms',
+			precip: 'mm'
 		});
-		expect(detectDefaultUnits('')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
+		expect(detectDefaultUnits('')).toEqual({
+			temperature: 'celsius',
+			pressure: 'hpa',
+			wind: 'ms',
+			precip: 'mm'
+		});
 	});
 });
 
@@ -109,6 +145,13 @@ describe('formatWindSpeed', () => {
 		expect(formatWindSpeed(0.0, 'ru')).toBe('0,0 м/с');
 		expect(formatWindSpeed(20, 'ru')).toBe('20,0 м/с');
 	});
+
+	it('formats mph after configureUnits', () => {
+		configureUnits({ wind: 'mph' });
+		expect(formatWindSpeed(0)).toBe('0.0 mph');
+		expect(formatWindSpeed(10)).toBe('22.4 mph');
+		expect(formatWindSpeed(10, 'ru')).toBe('22,4 миль/ч');
+	});
 });
 
 describe('formatPressure & formatMmhg', () => {
@@ -157,5 +200,12 @@ describe('formatPrecipMm', () => {
 		expect(formatPrecipMm(12.34, 'ru')).toBe('12,3 мм');
 		expect(formatPrecipMm(1, 'ru')).toBe('1 мм');
 		expect(formatPrecipMm(5.0, 'ru')).toBe('5 мм');
+	});
+
+	it('formats inches after configureUnits with two decimals', () => {
+		configureUnits({ precip: 'in' });
+		expect(formatPrecipMm(25.4)).toBe('1.00 in');
+		expect(formatPrecipMm(2)).toBe('0.08 in');
+		expect(formatPrecipMm(2, 'ru')).toBe('0,08 дюйм');
 	});
 });

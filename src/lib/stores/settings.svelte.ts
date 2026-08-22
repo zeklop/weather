@@ -2,8 +2,10 @@ import { DEFAULT_LANGUAGE, detectBrowserLanguage, type Language } from '../i18n'
 import {
 	configureUnits,
 	detectDefaultUnits,
+	type PrecipUnit,
 	type PressureUnit,
-	type TemperatureUnit
+	type TemperatureUnit,
+	type WindUnit
 } from '../weather/units';
 import {
 	DEFAULT_SECTION_ORDER,
@@ -23,6 +25,8 @@ export type SettingsStore = {
 	readonly language: Language;
 	readonly tempUnit: TemperatureUnit;
 	readonly pressureUnit: PressureUnit;
+	readonly windUnit: WindUnit;
+	readonly precipUnit: PrecipUnit;
 	readonly lastUpdated: number | null;
 	readonly alertsEnabled: boolean;
 	readonly precipitationAlerts: boolean;
@@ -37,6 +41,8 @@ export type SettingsStore = {
 	setLanguage(lang: Language): void;
 	setTempUnit(unit: TemperatureUnit): void;
 	setPressureUnit(unit: PressureUnit): void;
+	setWindUnit(unit: WindUnit): void;
+	setPrecipUnit(unit: PrecipUnit): void;
 	touchLastUpdated(now?: number): void;
 	setAlertsEnabled(enabled: boolean): void;
 	setPrecipitationAlerts(enabled: boolean): void;
@@ -56,6 +62,8 @@ type SettingsData = {
 	language: Language;
 	tempUnit: TemperatureUnit;
 	pressureUnit: PressureUnit;
+	windUnit: WindUnit;
+	precipUnit: PrecipUnit;
 	lastUpdated: number | null;
 	alertsEnabled: boolean;
 	precipitationAlerts: boolean;
@@ -75,6 +83,8 @@ const DEFAULT_SETTINGS: SettingsData = {
 	// defaultUnits() at read/init time.
 	tempUnit: 'celsius',
 	pressureUnit: 'mmhg',
+	windUnit: 'ms',
+	precipUnit: 'mm',
 	lastUpdated: null,
 	alertsEnabled: false,
 	precipitationAlerts: true,
@@ -98,8 +108,15 @@ function isLanguage(value: unknown): value is Language {
 	return value === 'en' || value === 'ru';
 }
 
-function defaultUnits(): { temperature: TemperatureUnit; pressure: PressureUnit } {
-	if (typeof navigator === 'undefined') return { temperature: 'celsius', pressure: 'mmhg' };
+function defaultUnits(): {
+	temperature: TemperatureUnit;
+	pressure: PressureUnit;
+	wind: WindUnit;
+	precip: PrecipUnit;
+} {
+	if (typeof navigator === 'undefined') {
+		return { temperature: 'celsius', pressure: 'mmhg', wind: 'ms', precip: 'mm' };
+	}
 	return detectDefaultUnits(navigator.language);
 }
 
@@ -109,6 +126,14 @@ function isTempUnit(value: unknown): value is TemperatureUnit {
 
 function isPressureUnit(value: unknown): value is PressureUnit {
 	return value === 'mmhg' || value === 'inhg' || value === 'hpa';
+}
+
+function isWindUnit(value: unknown): value is WindUnit {
+	return value === 'ms' || value === 'mph';
+}
+
+function isPrecipUnit(value: unknown): value is PrecipUnit {
+	return value === 'mm' || value === 'in';
 }
 
 function removeItem(storage: Storage, key: string): void {
@@ -163,6 +188,10 @@ export function readSettings(storage: Storage | null): SettingsData | null {
 	const pressureUnit: PressureUnit = isPressureUnit(entry['pressureUnit'])
 		? entry['pressureUnit']
 		: detected.pressure;
+	const windUnit: WindUnit = isWindUnit(entry['windUnit']) ? entry['windUnit'] : detected.wind;
+	const precipUnit: PrecipUnit = isPrecipUnit(entry['precipUnit'])
+		? entry['precipUnit']
+		: detected.precip;
 
 	const alertsEnabled =
 		typeof entry['alertsEnabled'] === 'boolean'
@@ -203,6 +232,8 @@ export function readSettings(storage: Storage | null): SettingsData | null {
 		language,
 		tempUnit,
 		pressureUnit,
+		windUnit,
+		precipUnit,
 		lastUpdated: lastUpdated as number | null,
 		alertsEnabled,
 		precipitationAlerts,
@@ -220,10 +251,17 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	let theme = $state<Theme>(persisted?.theme ?? DEFAULT_SETTINGS.theme);
 	let language = $state<Language>(persisted?.language ?? detectBrowserLanguage());
 	const initialUnits = persisted
-		? { temperature: persisted.tempUnit, pressure: persisted.pressureUnit }
+		? {
+				temperature: persisted.tempUnit,
+				pressure: persisted.pressureUnit,
+				wind: persisted.windUnit,
+				precip: persisted.precipUnit
+			}
 		: defaultUnits();
 	let tempUnit = $state<TemperatureUnit>(initialUnits.temperature);
 	let pressureUnit = $state<PressureUnit>(initialUnits.pressure);
+	let windUnit = $state<WindUnit>(initialUnits.wind);
+	let precipUnit = $state<PrecipUnit>(initialUnits.precip);
 	// Sync the formatter module once at startup so every screen renders with
 	// the persisted/derived units from the very first frame.
 	configureUnits(initialUnits);
@@ -258,6 +296,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 					language,
 					tempUnit,
 					pressureUnit,
+					windUnit,
+					precipUnit,
 					lastUpdated,
 					alertsEnabled,
 					precipitationAlerts,
@@ -293,6 +333,18 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	function setPressureUnit(unit: PressureUnit): void {
 		pressureUnit = unit;
 		configureUnits({ pressure: unit });
+		persist();
+	}
+
+	function setWindUnit(unit: WindUnit): void {
+		windUnit = unit;
+		configureUnits({ wind: unit });
+		persist();
+	}
+
+	function setPrecipUnit(unit: PrecipUnit): void {
+		precipUnit = unit;
+		configureUnits({ precip: unit });
 		persist();
 	}
 
@@ -379,6 +431,12 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get pressureUnit() {
 			return pressureUnit;
 		},
+		get windUnit() {
+			return windUnit;
+		},
+		get precipUnit() {
+			return precipUnit;
+		},
 		get lastUpdated() {
 			return lastUpdated;
 		},
@@ -413,6 +471,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		setLanguage,
 		setTempUnit,
 		setPressureUnit,
+		setWindUnit,
+		setPrecipUnit,
 		touchLastUpdated,
 		setAlertsEnabled,
 		setPrecipitationAlerts,

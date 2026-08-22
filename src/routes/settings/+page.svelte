@@ -257,6 +257,48 @@
 				</button>
 			</div>
 		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.unitsWind', lang)}</span>
+			<div class="lang-selector" role="group" aria-label={t('settings.unitsWind', lang)}>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.windUnit === 'ms'}
+					type="button"
+					onclick={() => settings.setWindUnit('ms')}
+				>
+					{t('units.ms', lang)}
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.windUnit === 'mph'}
+					type="button"
+					onclick={() => settings.setWindUnit('mph')}
+				>
+					{t('units.mph', lang)}
+				</button>
+			</div>
+		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.unitsPrecipitation', lang)}</span>
+			<div class="lang-selector" role="group" aria-label={t('settings.unitsPrecipitation', lang)}>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.precipUnit === 'mm'}
+					type="button"
+					onclick={() => settings.setPrecipUnit('mm')}
+				>
+					{t('units.mm', lang)}
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.precipUnit === 'in'}
+					type="button"
+					onclick={() => settings.setPrecipUnit('in')}
+				>
+					{t('units.in', lang)}
+				</button>
+			</div>
+		</div>
 		<button
 			class="row row-btn"
 			type="button"

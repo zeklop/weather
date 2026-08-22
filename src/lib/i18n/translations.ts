@@ -145,6 +145,8 @@ export interface Translations {
 		pushNotifications: string;
 		unitsTemperature: string;
 		unitsPressure: string;
+		unitsWind: string;
+		unitsPrecipitation: string;
 		precipitationAlerts: string;
 		severeAlerts: string;
 		freezeAlerts: string;
@@ -211,10 +213,12 @@ export interface Translations {
 	};
 	units: {
 		ms: string;
+		mph: string;
 		mmhg: string;
 		inhg: string;
 		hpa: string;
 		mm: string;
+		in: string;
 		km: string;
 		celsius: string;
 	};
@@ -509,6 +513,8 @@ export const translations: Record<Language, Translations> = {
 			pushNotifications: 'Server push alerts',
 			unitsTemperature: 'Temperature',
 			unitsPressure: 'Pressure',
+			unitsWind: 'Wind speed',
+			unitsPrecipitation: 'Precipitation',
 			precipitationAlerts: 'Precipitation (rain/snow)',
 			severeAlerts: 'Severe weather warnings',
 			freezeAlerts: 'Frost & temperature drop',
@@ -575,10 +581,12 @@ export const translations: Record<Language, Translations> = {
 		},
 		units: {
 			ms: 'm/s',
+			mph: 'mph',
 			mmhg: 'mmHg',
 			inhg: 'inHg',
 			hpa: 'hPa',
 			mm: 'mm',
+			in: 'in',
 			km: 'km',
 			celsius: '°C'
 		},
@@ -871,6 +879,8 @@ export const translations: Record<Language, Translations> = {
 			pushNotifications: 'Серверные push-уведомления',
 			unitsTemperature: 'Температура',
 			unitsPressure: 'Давление',
+			unitsWind: 'Скорость ветра',
+			unitsPrecipitation: 'Осадки',
 			precipitationAlerts: 'Осадки (дождь/снег)',
 			severeAlerts: 'Штормовые предупреждения',
 			freezeAlerts: 'Гололёд и перепады температуры',
@@ -937,10 +947,12 @@ export const translations: Record<Language, Translations> = {
 		},
 		units: {
 			ms: 'м/с',
+			mph: 'миль/ч',
 			mmhg: 'мм рт. ст.',
 			inhg: 'дюйм рт. ст.',
 			hpa: 'гПа',
 			mm: 'мм',
+			in: 'дюйм',
 			km: 'км',
 			celsius: '°C'
 		},
