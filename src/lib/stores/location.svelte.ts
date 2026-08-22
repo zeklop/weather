@@ -1,4 +1,5 @@
 import { geoId } from '../api/geocoding';
+import { lookupCityByIp } from '../api/ipLocation';
 import { reverseGeocode } from '../api/reverseGeocode';
 import { DEFAULT_LANGUAGE, type Language } from '../i18n';
 import type { Location } from '../types';
@@ -48,6 +49,7 @@ export type LocationStore = {
 	setLocation(location: Location): void;
 	requestGeolocation(lang?: Language): void;
 	syncPermission(): Promise<void>;
+	resolveInitialByIp(lang?: Language): Promise<void>;
 };
 
 function defaultStorage(): Storage | null {
@@ -203,6 +205,30 @@ export function createLocationStore(
 		setLocation({ ...located, ...resolved });
 	}
 
+	// First-launch fallback: resolve the user's city by IP when nothing is
+	// stored yet. Silent no-op on any failure or lost race.
+	async function resolveInitialByIp(lang: Language = DEFAULT_LANGUAGE): Promise<void> {
+		if (readLocation(storage) !== null) return; // saved city exists
+		const found = await lookupCityByIp();
+		if (!found) return;
+		// Re-check after the await: the user may have picked a city or the
+		// browser geolocation may have answered while the request was in flight.
+		if (readLocation(storage) !== null) return;
+		if (current.id !== fallbackLocation.id) return;
+		const lat = Number(found.latitude.toFixed(2));
+		const lon = Number(found.longitude.toFixed(2));
+		const located: Location = {
+			id: geoId(lat, lon),
+			name: found.city,
+			countryCode: found.countryCode,
+			latitude: lat,
+			longitude: lon,
+			timezone: found.timezone || deviceTimezone()
+		};
+		setLocation(located);
+		void refineName(located, lang); // localized name best-effort
+	}
+
 	async function syncPermission(): Promise<void> {
 		if (typeof navigator === 'undefined' || !navigator.permissions?.query) return;
 		try {
@@ -235,7 +261,8 @@ export function createLocationStore(
 		},
 		setLocation,
 		requestGeolocation,
-		syncPermission
+		syncPermission,
+		resolveInitialByIp
 	};
 }
 

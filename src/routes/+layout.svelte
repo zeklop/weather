@@ -6,7 +6,7 @@
 	import { onMount } from 'svelte';
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { getFavoritesStore, isUnnamedLocation } from '$lib/stores/favorites.svelte';
-	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { getLocationStore, STORAGE_KEY as LOCATION_KEY } from '$lib/stores/location.svelte';
 	import { relocalizeStoredNames } from '$lib/stores/localizeNames';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { createForecastStore } from '$lib/stores/forecast.svelte';
@@ -30,6 +30,15 @@
 
 	onMount(async () => {
 		mounted = true;
+		// First launch only (nothing stored yet): resolve the user's city by
+		// IP as a better default; the store itself guards against races.
+		try {
+			if (localStorage.getItem(LOCATION_KEY) === null) {
+				void location.resolveInitialByIp(lang);
+			}
+		} catch {
+			/* storage unavailable — keep the default location */
+		}
 		if (pwaInfo) {
 			// registerType: 'autoUpdate' — new SW activates silently without user action
 			const { registerSW } = await import('virtual:pwa-register');

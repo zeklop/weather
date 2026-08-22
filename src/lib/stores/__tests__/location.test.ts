@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Location } from '../../types';
+// Mocked at the top of the file; the imported symbol is the mock.
+import { lookupCityByIp } from '../../api/ipLocation';
 import {
 	DEFAULT_LOCATION,
 	DEFAULT_LOCATIONS,
@@ -10,6 +12,20 @@ import {
 	getLocationStore
 } from '../location.svelte';
 import { makeMemoryStorage } from './memoryStorage';
+
+vi.mock('../../api/ipLocation', () => ({ lookupCityByIp: vi.fn() }));
+
+const CHEBOKSARY_IP = {
+	latitude: 56.1322,
+	longitude: 47.2519,
+	city: 'Cheboksary',
+	countryCode: 'RU',
+	timezone: 'Europe/Moscow'
+};
+
+function mockIpLookup(value: unknown): void {
+	vi.mocked(lookupCityByIp).mockResolvedValue(value as never);
+}
 
 const SPB: Location = {
 	id: '59.9386,30.3141',
@@ -420,6 +436,75 @@ describe('createLocationStore', () => {
 
 			await expect(store.syncPermission()).resolves.toBeUndefined();
 		});
+	});
+});
+
+describe('resolveInitialByIp', () => {
+	it('applies the IP-resolved city on first launch (no stored location)', async () => {
+		mockIpLookup(CHEBOKSARY_IP);
+		const storage = makeMemoryStorage();
+		const store = createLocationStore(storage);
+		expect(store.current.name).toBe('Moscow');
+
+		await store.resolveInitialByIp('en');
+
+		expect(store.current.name).toBe('Cheboksary');
+		expect(store.current.latitude).toBe(56.13);
+		expect(store.current.longitude).toBe(47.25);
+		expect(store.current.countryCode).toBe('RU');
+		expect(store.current.timezone).toBe('Europe/Moscow');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!).name).toBe('Cheboksary');
+	});
+
+	it('uses the device timezone when the provider omits it', async () => {
+		mockIpLookup({ ...CHEBOKSARY_IP, timezone: '' });
+		vi.stubGlobal('Intl', {
+			...globalThis.Intl,
+			DateTimeFormat: vi.fn(() => ({ resolvedOptions: () => ({ timeZone: 'Europe/Berlin' }) }))
+		});
+		const store = createLocationStore(makeMemoryStorage());
+
+		await store.resolveInitialByIp('en');
+
+		expect(store.current.timezone).toBe('Europe/Berlin');
+	});
+
+	it('keeps the stored city untouched when one exists', async () => {
+		mockIpLookup(CHEBOKSARY_IP);
+		const storage = makeMemoryStorage({ [STORAGE_KEY]: JSON.stringify(SPB) });
+		const store = createLocationStore(storage);
+
+		await store.resolveInitialByIp('en');
+
+		expect(store.current).toEqual(SPB);
+	});
+
+	it('keeps the default location when the lookup fails', async () => {
+		mockIpLookup(null);
+		const store = createLocationStore(makeMemoryStorage());
+
+		await store.resolveInitialByIp('ru');
+
+		expect(store.current).toEqual(DEFAULT_LOCATION);
+	});
+
+	it('does not override a city the user picked while the lookup was in flight', async () => {
+		let resolveLookup!: (value: unknown) => void;
+		vi.mocked(lookupCityByIp).mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					resolveLookup = resolve;
+				}) as never
+		);
+		const store = createLocationStore(makeMemoryStorage());
+
+		const pending = store.resolveInitialByIp('en');
+		store.setLocation(SPB); // user wins the race
+		resolveLookup(CHEBOKSARY_IP);
+		for (let i = 0; i < 6; i++) await Promise.resolve();
+		await pending;
+
+		expect(store.current).toEqual(SPB);
 	});
 });
 
