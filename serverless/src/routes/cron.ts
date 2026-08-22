@@ -1,4 +1,4 @@
-import type { Env, SubscriptionRecord, WeatherAlertMessage } from '../types';
+import type { Env, SubscriptionRecord, PushPayload } from '../types';
 import { evaluateWeatherConditions, type OpenMeteoForecastResponse } from '../alerts/evaluator';
 import { shouldSendAlertToSubscriber } from '../alerts/dedup';
 import { encryptWebPushPayload } from '../crypto/webpush';
@@ -173,7 +173,7 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
  */
 export async function sendWebPush(
 	sub: SubscriptionRecord,
-	alert: WeatherAlertMessage,
+	alert: PushPayload,
 	publicVapidKey: string,
 	privateKey: CryptoKey,
 	basePath = ''

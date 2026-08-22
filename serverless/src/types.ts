@@ -164,6 +164,14 @@ export interface StatsSummary {
 	}>;
 }
 
+export interface PushPayload {
+	id: string;
+	type: string;
+	severity: string;
+	title: string;
+	message: string;
+}
+
 export interface WeatherAlertMessage {
 	id: string;
 	type: 'precipitation' | 'frost' | 'severe_wind' | 'thunderstorm';
