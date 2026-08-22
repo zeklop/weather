@@ -31,3 +31,6 @@ static/icons-comparison.*
 
 # Agent tooling cache
 .qoder/
+
+# Worker build artifact
+serverless/.svelte-kit/

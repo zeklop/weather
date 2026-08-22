@@ -89,6 +89,7 @@ function buildSubscribeBody(
 		timezone: location.timezone || 'UTC',
 		language: lang,
 		platform: detectPlatform(),
+		base_path: (import.meta as unknown as { env?: Record<string, string> }).env?.PUBLIC_BASE_PATH || '',
 		...(alertTypes ? { alert_types: alertTypes } : {})
 	};
 }

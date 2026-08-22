@@ -16,6 +16,6 @@ PUBLIC_VAPID_KEY = "BF3yPCN7QaK2_vhIVyGna10aU0jfHBCFwkufLxsA5FGzzdMOImAs97Hz3QzT
 # Base path of the deployed frontend ("/weather" on GitHub Pages, "" for root deploys)
 APP_BASE_PATH = "/weather"
 # Comma-separated browser origins allowed by CORS; localhost entries serve local dev/preview
-APP_ORIGIN = "https://zeklop.github.io,http://localhost:5173,http://localhost:4173"
+APP_ORIGIN = "https://zeklop.github.io,https://gradus.website,http://localhost:5173,http://localhost:4173"
 # VAPID_PRIVATE_KEY should be set via `wrangler secret put VAPID_PRIVATE_KEY`
 # ADMIN_TOKEN should be set via `wrangler secret put ADMIN_TOKEN`

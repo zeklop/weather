@@ -68,13 +68,22 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 		severe: body.alert_types?.severe ?? true,
 		quietHours: body.alert_types?.quietHours ?? true
 	});
+	// Per-subscription URL base path so push icon/click URLs resolve on the
+	// subscriber's own deployment ("" root or "/weather" GitHub Pages subpath)
+	const basePath = body.base_path ?? '';
+	if (basePath !== '' && (!/^\/[a-zA-Z0-9._~-]*$/.test(basePath) || basePath.length > 64)) {
+		return new Response(JSON.stringify({ error: 'Invalid base path' }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
 
 	try {
 		await env.DB.prepare(`
 			INSERT INTO subscriptions (
 				endpoint_hash, endpoint, p256dh, auth, city_name, latitude, longitude,
-				timezone, language, platform, alert_types, created_at, last_seen_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				timezone, language, platform, alert_types, base_path, created_at, last_seen_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(endpoint_hash) DO UPDATE SET
 				city_name = excluded.city_name,
 				latitude = excluded.latitude,
@@ -83,6 +92,7 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 				language = excluded.language,
 				platform = excluded.platform,
 				alert_types = excluded.alert_types,
+				base_path = excluded.base_path,
 				last_seen_at = excluded.last_seen_at
 		`).bind(
 			endpointHash,
@@ -96,6 +106,7 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 			lang,
 			platform,
 			alertTypes,
+			basePath,
 			now,
 			now
 		).run();

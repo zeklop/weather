@@ -117,7 +117,10 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
 
 				// 5. Send push if VAPID is configured
 				if (vapidPrivateKey && publicVapidKey) {
-					const pushResult = await sendWebPush(sub, targetAlert, publicVapidKey, vapidPrivateKey, env.APP_BASE_PATH || '');
+					// Per-subscription base path (set at subscribe time). Legacy rows are
+					// backfilled to APP_BASE_PATH by the one-off migration, so no fallback
+					// here: '' is a legitimate root-domain path and must be preserved.
+					const pushResult = await sendWebPush(sub, targetAlert, publicVapidKey, vapidPrivateKey, sub.base_path ?? '');
 					if (pushResult.success) {
 						cityAlertsSent++;
 						pushesSent++;

@@ -1,4 +1,4 @@
-# AGENTS.md — Weather PWA
+# AGENTS.md — Gradus (Weather PWA)
 
 > Глобальный профиль читается из `~/.codex/AGENTS.md` (или эквивалента).
 > Проектные `CLAUDE.md` и `GEMINI.md` — симлинки на этот файл.
@@ -26,7 +26,8 @@ PWA-приложение погоды (SvelteKit 2 + Svelte 5 runes), депло
 - Тесты:         `npm test` (vitest run)
 - Линт/типы:     `npm run check` (svelte-check)
 - Сборка:        `npm run build` (в CI — с `PUBLIC_BASE_PATH=/weather`)
-- Деплой фронта: автоматом при push в `main`
+- Деплой фронта: автоматом при push в `main` — GitHub Pages (`/weather`) и Cloudflare Pages (`gradus.website`, job `deploy-cloudflare-pages`, секреты `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`)
+- Второй домен: ранбук `docs/deploy-second-domain.md`
 - Деплой воркера: `npx wrangler deploy` в `serverless/`
 
 ## Секреты
@@ -40,6 +41,9 @@ PWA-приложение погоды (SvelteKit 2 + Svelte 5 runes), депло
 - Перед коммитом: `npm run check && npm test` должны быть зелёными.
 
 ## Недавние доработки (2026-08-22, часть не закоммичена)
+- Второй домен: PWA живёт на `https://gradus.website/` (Cloudflare Pages, проект `weather`, direct-upload) и на GitHub Pages (`/weather`) одновременно; оба деплоятся из одного workflow при пуше в main (`deploy-cloudflare-pages`, секреты `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`).
+- Пуш-воркер: base path иконки/клика теперь хранится в подписке (колонка `base_path` в D1, миграция применена) — пуш резолвится против домена подписчика; легаси-подписки покрыты бэкфиллом `/weather` из ранбука (cron фолбэка не делает: `''` — легитимный root-домен). CORS: `APP_ORIGIN` содержит оба origin.
+- Ранбук второго домена: `docs/deploy-second-domain.md`.
 - Дашборд `/stats` v2: языки подписок, график активности 30 дней (открытия vs алерты), воронка пушей (установки → согласия → живые подписки), типы алертов, здоровье базы (мёртвые >90д / автоудалены 7д / без алертов). Cron пишет событие `push_unsubscribed` при автоудалении 410/404.
 - Токен админа `/stats` хранится в `localStorage`, кнопка блокировки — иконка замка.
 - Топ городов в статистике группируется по координатам (канонический ключ): город сохраняется в языке момента подписки («Cheboksary»/«Чебоксары»), отдаётся оба имени, фронт показывает по языку дашборда.

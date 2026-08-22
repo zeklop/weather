@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     language TEXT NOT NULL DEFAULT 'en',
     platform TEXT NOT NULL DEFAULT 'desktop',
     alert_types TEXT NOT NULL DEFAULT '{"rain":true,"freeze":true,"severe":true,"quietHours":true}',
+    base_path TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
     last_seen_at INTEGER NOT NULL,
     last_alert_sent_at INTEGER DEFAULT NULL

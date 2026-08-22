@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: 'npm'
@@ -45,10 +45,10 @@ jobs:
           PUBLIC_VAPID_KEY: BF3yPCN7QaK2_vhIVyGna10aU0jfHBCFwkufLxsA5FGzzdMOImAs97Hz3QzTFzYq1Qn5kQgDRtQQsz5THfGOx9c
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: build
 
@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
       - name: Smoke check deployed site
         run: |
@@ -78,4 +78,50 @@ jobs:
             sleep 15
           done
           echo "Deployed site did not respond at $url" >&2
+          exit 1
+
+  deploy-cloudflare-pages:
+    # Same commit, second target: root-domain build -> Cloudflare Pages (gradus.website)
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: "cloudflare-pages"
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static PWA for custom domain root
+        run: PUBLIC_BASE_PATH='' npm run build
+        env:
+          PUBLIC_PUSH_WORKER_URL: https://weather-pwa-push.zeklop-cloudflare.workers.dev
+          PUBLIC_VAPID_KEY: BF3yPCN7QaK2_vhIVyGna10aU0jfHBCFwkufLxsA5FGzzdMOImAs97Hz3QzTFzYq1Qn5kQgDRtQQsz5THfGOx9c
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build --project-name=weather --branch=main
+
+      - name: Smoke check deployed site
+        run: |
+          for i in $(seq 1 6); do
+            if curl -fsS -o /dev/null https://gradus.website/; then
+              echo "Site is up: https://gradus.website/"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
+          echo "Deployed site did not respond at https://gradus.website/" >&2
           exit 1

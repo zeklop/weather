@@ -1,4 +1,4 @@
-weather.example.com {
+gradus.website {
     root * /var/www/weather
     encode zstd gzip
     try_files {path} {path}/ /index.html

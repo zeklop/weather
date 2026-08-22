@@ -65,6 +65,8 @@ export interface SubscribeRequestBody {
 	timezone: string;
 	language?: 'en' | 'ru';
 	platform?: 'ios' | 'android' | 'desktop';
+	/** URL base path of the frontend that made the subscription ("" or "/weather") */
+	base_path?: string;
 	alert_types?: Partial<SubscriptionAlertFlags>;
 }
 
@@ -91,6 +93,8 @@ export interface SubscriptionRecord {
 	language: string;
 	platform: string;
 	alert_types: string;
+	/** NOT NULL in D1; legacy rows are backfilled by the one-off migration */
+	base_path: string;
 	created_at: number;
 	last_seen_at: number;
 	last_alert_sent_at: number | null;
