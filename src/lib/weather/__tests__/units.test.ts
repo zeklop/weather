@@ -1,13 +1,59 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-	DEFAULT_UNITS,
+	configureUnits,
+	celsiusToFahrenheit,
+	detectDefaultUnits,
 	formatMmhg,
 	formatPrecipMm,
 	formatPressure,
 	formatTemp,
 	formatWindSpeed,
+	hpaToInhg,
 	hpaToMmhg
 } from '../units';
+
+beforeEach(() => {
+	// Reset module-level unit state so tests don't leak into each other.
+	configureUnits({ temperature: 'celsius', pressure: 'mmhg' });
+});
+
+describe('celsiusToFahrenheit', () => {
+	it('converts celsius to fahrenheit', () => {
+		expect(celsiusToFahrenheit(0)).toBe(32);
+		expect(celsiusToFahrenheit(100)).toBe(212);
+		expect(celsiusToFahrenheit(-40)).toBe(-40);
+		expect(celsiusToFahrenheit(18)).toBeCloseTo(64.4);
+	});
+});
+
+describe('hpaToInhg', () => {
+	it('converts standard pressure to ~29.92 inHg', () => {
+		expect(hpaToInhg(1013.25)).toBeCloseTo(29.92, 2);
+	});
+});
+
+describe('detectDefaultUnits', () => {
+	it('US locale gets fahrenheit + inHg', () => {
+		expect(detectDefaultUnits('en-US')).toEqual({ temperature: 'fahrenheit', pressure: 'inhg' });
+	});
+
+	it('ru locale gets celsius + mmHg', () => {
+		expect(detectDefaultUnits('ru-RU')).toEqual({ temperature: 'celsius', pressure: 'mmhg' });
+	});
+
+	it('other locales get celsius + hPa', () => {
+		expect(detectDefaultUnits('en-GB')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
+		expect(detectDefaultUnits('de')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
+	});
+
+	it('falls back to celsius + hPa on invalid input', () => {
+		expect(detectDefaultUnits(undefined as unknown as string)).toEqual({
+			temperature: 'celsius',
+			pressure: 'hpa'
+		});
+		expect(detectDefaultUnits('')).toEqual({ temperature: 'celsius', pressure: 'hpa' });
+	});
+});
 
 describe('hpaToMmhg', () => {
 	it('converts standard pressure 1013.25 hPa to ~760 mmHg', () => {
@@ -39,6 +85,15 @@ describe('formatTemp', () => {
 
 	it('rounds small positive values to zero without sign', () => {
 		expect(formatTemp(0.4)).toBe('0°');
+	});
+
+	it('formats fahrenheit after configureUnits', () => {
+		configureUnits({ temperature: 'fahrenheit' });
+		expect(formatTemp(0)).toBe('+32°');
+		expect(formatTemp(100)).toBe('+212°');
+		// -18°C = -0.4°F, Math.round(-0.4) === -0, and -0 === 0 in JS —
+		// same zero special case as formatTemp(0.4)
+		expect(formatTemp(-18)).toBe('0°');
 	});
 });
 
@@ -72,6 +127,17 @@ describe('formatPressure & formatMmhg', () => {
 		expect(formatPressure(1013.25, 'ru')).toBe('760 мм рт. ст.');
 		expect(formatPressure(1000, 'en')).toBe('750 mmHg');
 	});
+
+	it('formats inHg after configureUnits with two decimals', () => {
+		configureUnits({ pressure: 'inhg' });
+		expect(formatPressure(1013.25, 'en')).toBe('29.92 inHg');
+	});
+
+	it('formats hPa without conversion', () => {
+		configureUnits({ pressure: 'hpa' });
+		expect(formatPressure(1013, 'en')).toBe('1013 hPa');
+		expect(formatPressure(1013, 'ru')).toBe('1013 гПа');
+	});
 });
 
 describe('formatPrecipMm', () => {
@@ -91,15 +157,5 @@ describe('formatPrecipMm', () => {
 		expect(formatPrecipMm(12.34, 'ru')).toBe('12,3 мм');
 		expect(formatPrecipMm(1, 'ru')).toBe('1 мм');
 		expect(formatPrecipMm(5.0, 'ru')).toBe('5 мм');
-	});
-});
-
-describe('DEFAULT_UNITS', () => {
-	it('exposes fixed defaults for future configurability', () => {
-		expect(DEFAULT_UNITS).toEqual({
-			temperature: 'celsius',
-			wind: 'ms',
-			pressure: 'mmhg'
-		});
 	});
 });

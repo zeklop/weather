@@ -1,5 +1,11 @@
 import { DEFAULT_LANGUAGE, detectBrowserLanguage, type Language } from '../i18n';
 import {
+	configureUnits,
+	detectDefaultUnits,
+	type PressureUnit,
+	type TemperatureUnit
+} from '../weather/units';
+import {
 	DEFAULT_SECTION_ORDER,
 	DEFAULT_VISIBLE_SECTIONS,
 	normalizeSectionOrder,
@@ -15,6 +21,8 @@ export type Theme = 'system' | 'light' | 'dark';
 export type SettingsStore = {
 	readonly theme: Theme;
 	readonly language: Language;
+	readonly tempUnit: TemperatureUnit;
+	readonly pressureUnit: PressureUnit;
 	readonly lastUpdated: number | null;
 	readonly alertsEnabled: boolean;
 	readonly precipitationAlerts: boolean;
@@ -27,6 +35,8 @@ export type SettingsStore = {
 	readonly visibleSections: Record<SectionId, boolean>;
 	setTheme(theme: Theme): void;
 	setLanguage(lang: Language): void;
+	setTempUnit(unit: TemperatureUnit): void;
+	setPressureUnit(unit: PressureUnit): void;
 	touchLastUpdated(now?: number): void;
 	setAlertsEnabled(enabled: boolean): void;
 	setPrecipitationAlerts(enabled: boolean): void;
@@ -44,6 +54,8 @@ type SettingsData = {
 	schemaVersion: number;
 	theme: Theme;
 	language: Language;
+	tempUnit: TemperatureUnit;
+	pressureUnit: PressureUnit;
 	lastUpdated: number | null;
 	alertsEnabled: boolean;
 	precipitationAlerts: boolean;
@@ -59,6 +71,10 @@ const DEFAULT_SETTINGS: SettingsData = {
 	schemaVersion: CURRENT_SCHEMA_VERSION,
 	theme: 'system',
 	language: DEFAULT_LANGUAGE,
+	// Placeholder defaults; the real default is locale-detected via
+	// defaultUnits() at read/init time.
+	tempUnit: 'celsius',
+	pressureUnit: 'mmhg',
 	lastUpdated: null,
 	alertsEnabled: false,
 	precipitationAlerts: true,
@@ -80,6 +96,19 @@ function isTheme(value: unknown): value is Theme {
 
 function isLanguage(value: unknown): value is Language {
 	return value === 'en' || value === 'ru';
+}
+
+function defaultUnits(): { temperature: TemperatureUnit; pressure: PressureUnit } {
+	if (typeof navigator === 'undefined') return { temperature: 'celsius', pressure: 'mmhg' };
+	return detectDefaultUnits(navigator.language);
+}
+
+function isTempUnit(value: unknown): value is TemperatureUnit {
+	return value === 'celsius' || value === 'fahrenheit';
+}
+
+function isPressureUnit(value: unknown): value is PressureUnit {
+	return value === 'mmhg' || value === 'inhg' || value === 'hpa';
 }
 
 function removeItem(storage: Storage, key: string): void {
@@ -125,6 +154,16 @@ export function readSettings(storage: Storage | null): SettingsData | null {
 		? entry['language']
 		: DEFAULT_SETTINGS.language;
 
+	// Missing keys fall back to locale detection, not fixed placeholders, so
+	// users with pre-units settings get the right units for their region.
+	const detected = defaultUnits();
+	const tempUnit: TemperatureUnit = isTempUnit(entry['tempUnit'])
+		? entry['tempUnit']
+		: detected.temperature;
+	const pressureUnit: PressureUnit = isPressureUnit(entry['pressureUnit'])
+		? entry['pressureUnit']
+		: detected.pressure;
+
 	const alertsEnabled =
 		typeof entry['alertsEnabled'] === 'boolean'
 			? entry['alertsEnabled']
@@ -162,6 +201,8 @@ export function readSettings(storage: Storage | null): SettingsData | null {
 		schemaVersion,
 		theme,
 		language,
+		tempUnit,
+		pressureUnit,
 		lastUpdated: lastUpdated as number | null,
 		alertsEnabled,
 		precipitationAlerts,
@@ -178,6 +219,14 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 	const persisted = readSettings(storage);
 	let theme = $state<Theme>(persisted?.theme ?? DEFAULT_SETTINGS.theme);
 	let language = $state<Language>(persisted?.language ?? detectBrowserLanguage());
+	const initialUnits = persisted
+		? { temperature: persisted.tempUnit, pressure: persisted.pressureUnit }
+		: defaultUnits();
+	let tempUnit = $state<TemperatureUnit>(initialUnits.temperature);
+	let pressureUnit = $state<PressureUnit>(initialUnits.pressure);
+	// Sync the formatter module once at startup so every screen renders with
+	// the persisted/derived units from the very first frame.
+	configureUnits(initialUnits);
 	let lastUpdated = $state<number | null>(persisted?.lastUpdated ?? DEFAULT_SETTINGS.lastUpdated);
 	let alertsEnabled = $state<boolean>(persisted?.alertsEnabled ?? DEFAULT_SETTINGS.alertsEnabled);
 	let precipitationAlerts = $state<boolean>(
@@ -207,6 +256,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 					schemaVersion: CURRENT_SCHEMA_VERSION,
 					theme,
 					language,
+					tempUnit,
+					pressureUnit,
 					lastUpdated,
 					alertsEnabled,
 					precipitationAlerts,
@@ -230,6 +281,18 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 
 	function setLanguage(lang: Language): void {
 		language = lang;
+		persist();
+	}
+
+	function setTempUnit(unit: TemperatureUnit): void {
+		tempUnit = unit;
+		configureUnits({ temperature: unit });
+		persist();
+	}
+
+	function setPressureUnit(unit: PressureUnit): void {
+		pressureUnit = unit;
+		configureUnits({ pressure: unit });
 		persist();
 	}
 
@@ -310,6 +373,12 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		get language() {
 			return language;
 		},
+		get tempUnit() {
+			return tempUnit;
+		},
+		get pressureUnit() {
+			return pressureUnit;
+		},
 		get lastUpdated() {
 			return lastUpdated;
 		},
@@ -342,6 +411,8 @@ export function createSettingsStore(storage: Storage | null = defaultStorage()):
 		},
 		setTheme,
 		setLanguage,
+		setTempUnit,
+		setPressureUnit,
 		touchLastUpdated,
 		setAlertsEnabled,
 		setPrecipitationAlerts,

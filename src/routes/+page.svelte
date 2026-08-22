@@ -34,7 +34,7 @@
 		getWallNow,
 		wallMinutesBetween
 	} from '$lib/weather/now';
-	import { formatMmhg, formatTemp, formatWindSpeed, hpaToMmhg } from '$lib/weather/units';
+	import { formatPressure, formatTemp, formatWindSpeed } from '$lib/weather/units';
 	import { formatWindDirection } from '$lib/weather/direction';
 	import { isDay } from '$lib/weather/dayNight';
 	import { hasMeaningfulPrecipitation } from '$lib/weather/chart';
@@ -382,7 +382,7 @@
 						<div class="hero-secondary">
 							<span>{t('home.wind', lang, { speed: formatWindSpeed(activeWindSpeed, lang), dir: formatWindDirection(activeWindDir, lang) })}</span>
 							{#if !activeHour}
-								<span>{t('home.pressure', lang, { pressure: formatMmhg(hpaToMmhg(payload.current.pressureHpa), lang) })}</span>
+								<span>{t('home.pressure', lang, { pressure: formatPressure(payload.current.pressureHpa, lang) })}</span>
 							{:else if activeHour.precipitationProbability != null}
 								<span>{t('home.precipProbability', lang)}: {activeHour.precipitationProbability}%</span>
 							{/if}

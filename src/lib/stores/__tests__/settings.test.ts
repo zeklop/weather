@@ -32,6 +32,54 @@ describe('createSettingsStore', () => {
 		expect(store.language).toBe('en');
 	});
 
+	it('defaults units from browser locale (en-US → fahrenheit/inhg)', () => {
+		vi.stubGlobal('navigator', { language: 'en-US' });
+		const store = createSettingsStore(makeMemoryStorage());
+
+		expect(store.tempUnit).toBe('fahrenheit');
+		expect(store.pressureUnit).toBe('inhg');
+	});
+
+	it('defaults units from ru locale (ru-RU → celsius/mmhg)', () => {
+		vi.stubGlobal('navigator', { language: 'ru-RU' });
+		const store = createSettingsStore(makeMemoryStorage());
+
+		expect(store.tempUnit).toBe('celsius');
+		expect(store.pressureUnit).toBe('mmhg');
+	});
+
+	it('setTempUnit/setPressureUnit update, persist, and reload', () => {
+		vi.stubGlobal('navigator', { language: 'en-US' });
+		const storage = makeMemoryStorage();
+		const store = createSettingsStore(storage);
+
+		store.setTempUnit('celsius');
+		store.setPressureUnit('hpa');
+		expect(store.tempUnit).toBe('celsius');
+		expect(store.pressureUnit).toBe('hpa');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({
+			tempUnit: 'celsius',
+			pressureUnit: 'hpa'
+		});
+
+		const fresh = createSettingsStore(storage);
+		expect(fresh.tempUnit).toBe('celsius');
+		expect(fresh.pressureUnit).toBe('hpa');
+	});
+
+	it('falls back to locale-detected units when persisted settings lack unit keys', () => {
+		vi.stubGlobal('navigator', { language: 'en-US' });
+		const storage = makeMemoryStorage();
+		storage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({ schemaVersion: 1, theme: 'system', lastUpdated: null })
+		);
+
+		const store = createSettingsStore(storage);
+		expect(store.tempUnit).toBe('fahrenheit');
+		expect(store.pressureUnit).toBe('inhg');
+	});
+
 	it('setBadgeEnabled updates badgeEnabled and persists it', () => {
 		const storage = makeMemoryStorage();
 		const store = createSettingsStore(storage);

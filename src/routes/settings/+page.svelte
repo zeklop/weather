@@ -207,6 +207,56 @@
 				</button>
 			</div>
 		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.unitsTemperature', lang)}</span>
+			<div class="lang-selector" role="group" aria-label={t('settings.unitsTemperature', lang)}>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.tempUnit === 'celsius'}
+					type="button"
+					onclick={() => settings.setTempUnit('celsius')}
+				>
+					°C
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.tempUnit === 'fahrenheit'}
+					type="button"
+					onclick={() => settings.setTempUnit('fahrenheit')}
+				>
+					°F
+				</button>
+			</div>
+		</div>
+		<div class="row">
+			<span class="row-label">{t('settings.unitsPressure', lang)}</span>
+			<div class="lang-selector" role="group" aria-label={t('settings.unitsPressure', lang)}>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.pressureUnit === 'mmhg'}
+					type="button"
+					onclick={() => settings.setPressureUnit('mmhg')}
+				>
+					{t('units.mmhg', lang)}
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.pressureUnit === 'inhg'}
+					type="button"
+					onclick={() => settings.setPressureUnit('inhg')}
+				>
+					{t('units.inhg', lang)}
+				</button>
+				<button
+					class="lang-btn"
+					class:active={mounted && settings.pressureUnit === 'hpa'}
+					type="button"
+					onclick={() => settings.setPressureUnit('hpa')}
+				>
+					{t('units.hpa', lang)}
+				</button>
+			</div>
+		</div>
 		<button
 			class="row row-btn"
 			type="button"

@@ -143,6 +143,8 @@ export interface Translations {
 		alertsSection: string;
 		alertsEnabled: string;
 		pushNotifications: string;
+		unitsTemperature: string;
+		unitsPressure: string;
 		precipitationAlerts: string;
 		severeAlerts: string;
 		freezeAlerts: string;
@@ -210,6 +212,7 @@ export interface Translations {
 	units: {
 		ms: string;
 		mmhg: string;
+		inhg: string;
 		hpa: string;
 		mm: string;
 		km: string;
@@ -504,6 +507,8 @@ export const translations: Record<Language, Translations> = {
 			alertsSection: 'Weather Alerts',
 			alertsEnabled: 'Allow notifications',
 			pushNotifications: 'Server push alerts',
+			unitsTemperature: 'Temperature',
+			unitsPressure: 'Pressure',
 			precipitationAlerts: 'Precipitation (rain/snow)',
 			severeAlerts: 'Severe weather warnings',
 			freezeAlerts: 'Frost & temperature drop',
@@ -571,6 +576,7 @@ export const translations: Record<Language, Translations> = {
 		units: {
 			ms: 'm/s',
 			mmhg: 'mmHg',
+			inhg: 'inHg',
 			hpa: 'hPa',
 			mm: 'mm',
 			km: 'km',
@@ -863,6 +869,8 @@ export const translations: Record<Language, Translations> = {
 			alertsSection: 'Погодные оповещения',
 			alertsEnabled: 'Разрешить оповещения',
 			pushNotifications: 'Серверные push-уведомления',
+			unitsTemperature: 'Температура',
+			unitsPressure: 'Давление',
 			precipitationAlerts: 'Осадки (дождь/снег)',
 			severeAlerts: 'Штормовые предупреждения',
 			freezeAlerts: 'Гололёд и перепады температуры',
@@ -930,6 +938,7 @@ export const translations: Record<Language, Translations> = {
 		units: {
 			ms: 'м/с',
 			mmhg: 'мм рт. ст.',
+			inhg: 'дюйм рт. ст.',
 			hpa: 'гПа',
 			mm: 'мм',
 			km: 'км',
