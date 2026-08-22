@@ -74,6 +74,14 @@ export interface UnsubscribeRequestBody {
 	endpoint: string;
 }
 
+export interface BroadcastRequestBody {
+	title?: string;
+	body: string;
+	language?: 'all' | 'ru' | 'en';
+	latitude?: number;
+	longitude?: number;
+}
+
 export interface PingRequestBody {
 	install_id: string;
 	platform: 'ios' | 'android' | 'desktop';

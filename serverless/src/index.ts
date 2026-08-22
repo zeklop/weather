@@ -2,6 +2,7 @@ import type { Env } from './types';
 import { handleSubscribe, handleUnsubscribe } from './routes/subscribe';
 import { handlePing, handleStatsSummary } from './routes/stats';
 import { handleScheduled } from './routes/cron';
+import { handleBroadcast } from './routes/broadcast';
 
 function corsHeaders(request: Request, env: Env): Headers {
 	const headers = new Headers();
@@ -39,6 +40,8 @@ export default {
 			response = await handleSubscribe(request, env);
 		} else if (request.method === 'POST' && path === '/api/push/unsubscribe') {
 			response = await handleUnsubscribe(request, env);
+		} else if (request.method === 'POST' && path === '/api/push/broadcast') {
+			response = await handleBroadcast(request, env);
 		} else if (request.method === 'POST' && path === '/api/stats/ping') {
 			response = await handlePing(request, env);
 		} else if (request.method === 'GET' && path === '/api/stats/summary') {
