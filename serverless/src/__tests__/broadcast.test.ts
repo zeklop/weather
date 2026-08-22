@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildTargetQuery, validateBroadcastBody } from '../routes/broadcast';
+import { buildTargetQuery, validateBroadcastBody, handleBroadcast } from '../routes/broadcast';
+import type { Env } from '../types';
 
 describe('buildTargetQuery', () => {
 	it('returns no WHERE clause when there are no filters', () => {
@@ -36,6 +37,28 @@ describe('buildTargetQuery', () => {
 		const { sql, binds } = buildTargetQuery({ language: 'ru', latitude: 56.13, longitude: 47.25 });
 		expect(sql).toBe('SELECT * FROM subscriptions WHERE language = ? AND latitude = ? AND longitude = ?');
 		expect(binds).toEqual(['ru', 56.13, 47.25]);
+	});
+});
+
+describe('handleBroadcast auth', () => {
+	const request = (auth?: string) =>
+		new Request('https://worker/api/push/broadcast', {
+			method: 'POST',
+			headers: auth ? { Authorization: auth } : {},
+			body: JSON.stringify({ body: 'hi' })
+		});
+
+	it('returns 503 when ADMIN_TOKEN is not configured', async () => {
+		const res = await handleBroadcast(request(), {} as Env);
+		expect(res.status).toBe(503);
+		const json = await res.json() as { error: string };
+		expect(json.error).toContain('ADMIN_TOKEN');
+	});
+
+	it('returns 401 on wrong bearer token', async () => {
+		const env = { ADMIN_TOKEN: 'secret' } as Env;
+		const res = await handleBroadcast(request('Bearer wrong'), env);
+		expect(res.status).toBe(401);
 	});
 });
 
