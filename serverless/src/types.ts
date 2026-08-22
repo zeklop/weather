@@ -162,6 +162,8 @@ export interface StatsSummary {
 		cityName: string;
 		nameRu: string | null;
 		nameEn: string | null;
+		latitude: number;
+		longitude: number;
 		subscribers: number;
 	}>;
 	recentAlerts: Array<{

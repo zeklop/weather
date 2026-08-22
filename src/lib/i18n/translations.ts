@@ -262,6 +262,24 @@ export interface Translations {
 		loading: string;
 		subscribersCount: string;
 		recipients: string;
+		broadcast: {
+			title: string;
+			description: string;
+			titleLabel: string;
+			titlePlaceholder: string;
+			bodyLabel: string;
+			bodyPlaceholder: string;
+			languageLabel: string;
+			langAll: string;
+			langRu: string;
+			langEn: string;
+			cityLabel: string;
+			cityAll: string;
+			sendBtn: string;
+			confirmText: string;
+			resultLine: string;
+			sendError: string;
+		};
 	};
 	sections: {
 		hero: string;
@@ -600,7 +618,25 @@ export const translations: Record<Language, Translations> = {
 			unauthorized: 'Invalid admin token or unauthorized access.',
 			loading: 'Loading analytics data...',
 			subscribersCount: 'subscribers',
-			recipients: 'recipients'
+			recipients: 'recipients',
+			broadcast: {
+				title: 'Manual Broadcast',
+				description: 'Send a push notification to matching subscribers immediately.',
+				titleLabel: 'Title (optional)',
+				titlePlaceholder: 'Notification title',
+				bodyLabel: 'Message',
+				bodyPlaceholder: 'Notification text (max 500 characters)',
+				languageLabel: 'Language',
+				langAll: 'All languages',
+				langRu: 'Russian',
+				langEn: 'English',
+				cityLabel: 'City',
+				cityAll: 'All cities',
+				sendBtn: 'Send Broadcast',
+				confirmText: 'Send broadcast to {target}? Message length: {length} characters.',
+				resultLine: 'Targeted: {targeted}, sent: {sent}, failed: {failed}, removed: {removed}',
+				sendError: 'Broadcast failed'
+			}
 		},
 		sections: {
 			hero: 'Current weather',
@@ -937,7 +973,25 @@ export const translations: Record<Language, Translations> = {
 			unauthorized: 'Неверный токен администратора или доступ запрещен.',
 			loading: 'Загрузка аналитики...',
 			subscribersCount: 'подписчиков',
-			recipients: 'получателей'
+			recipients: 'получателей',
+			broadcast: {
+				title: 'Ручная рассылка',
+				description: 'Отправить push-уведомление подходящим подписчикам немедленно.',
+				titleLabel: 'Заголовок (необязательно)',
+				titlePlaceholder: 'Заголовок уведомления',
+				bodyLabel: 'Сообщение',
+				bodyPlaceholder: 'Текст уведомления (до 500 символов)',
+				languageLabel: 'Язык',
+				langAll: 'Все языки',
+				langRu: 'Русский',
+				langEn: 'Английский',
+				cityLabel: 'Город',
+				cityAll: 'Все города',
+				sendBtn: 'Отправить рассылку',
+				confirmText: 'Отправить рассылку на {target}? Длина сообщения: {length} символов.',
+				resultLine: 'Целей: {targeted}, отправлено: {sent}, ошибок: {failed}, удалено: {removed}',
+				sendError: 'Ошибка рассылки'
+			}
 		},
 		sections: {
 			hero: 'Текущая погода',

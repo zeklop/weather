@@ -157,12 +157,14 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 				COALESCE(MAX(CASE WHEN language = 'en' THEN city_name END), MIN(city_name)) as cityName,
 				MAX(CASE WHEN language = 'ru' THEN city_name END) as nameRu,
 				MAX(CASE WHEN language = 'en' THEN city_name END) as nameEn,
+				latitude,
+				longitude,
 				COUNT(*) as subscribers
 			FROM subscriptions
 			GROUP BY latitude, longitude
 			ORDER BY subscribers DESC
 			LIMIT 10
-		`).all<{ cityName: string; nameRu: string | null; nameEn: string | null; subscribers: number }>();
+		`).all<{ cityName: string; nameRu: string | null; nameEn: string | null; latitude: number; longitude: number; subscribers: number }>();
 
 		// 7. Recent alert history
 		const recentAlertsRows = await env.DB.prepare(`

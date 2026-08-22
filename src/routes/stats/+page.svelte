@@ -16,7 +16,7 @@
 		funnel: { totalInstalls: number; pushOptIns: number };
 		alertTypes: { alertType: string; count: number; recipients: number }[];
 		health: { deadSubscriptions: number; autoRemovedLast7Days: number; neverAlerted: number };
-		topCities: { cityName: string; nameRu: string | null; nameEn: string | null; subscribers: number }[];
+		topCities: { cityName: string; nameRu: string | null; nameEn: string | null; latitude: number; longitude: number; subscribers: number }[];
 		recentAlerts: { alertType: string; cityName: string; recipientsCount: number; timestamp: number }[];
 	}
 
@@ -28,6 +28,14 @@
 	let loading = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let statsData = $state<StatsSummary | null>(null);
+
+	let bcTitle = $state('');
+	let bcBody = $state('');
+	let bcLanguage = $state<'all' | 'ru' | 'en'>('all');
+	let bcCity = $state('');
+	let sending = $state(false);
+	let broadcastResult = $state<{ targeted: number; sent: number; failed: number; removed: number } | null>(null);
+	let broadcastError = $state<string | null>(null);
 
 	const STORAGE_TOKEN_KEY = 'weather:stats_admin_token';
 
@@ -84,6 +92,62 @@
 		isUnlocked = false;
 		statsData = null;
 		localStorage.removeItem(STORAGE_TOKEN_KEY);
+		bcTitle = '';
+		bcBody = '';
+		bcLanguage = 'all';
+		bcCity = '';
+		broadcastResult = null;
+		broadcastError = null;
+	}
+
+	async function handleBroadcast(): Promise<void> {
+		if (!bcBody.trim() || sending || !pushClient.isConfigured) return;
+
+		const city = statsData?.topCities.find((c) => `${c.latitude},${c.longitude}` === bcCity);
+		const target = city ? cityDisplayName(city) : t('stats.broadcast.cityAll', lang);
+		if (
+			!confirm(
+				t('stats.broadcast.confirmText', lang, { target, length: bcBody.length })
+			)
+		) {
+			return;
+		}
+
+		sending = true;
+		broadcastError = null;
+		broadcastResult = null;
+
+		try {
+			const payload: Record<string, unknown> = { body: bcBody.trim() };
+			if (bcTitle.trim()) payload.title = bcTitle.trim();
+			if (bcLanguage !== 'all') payload.language = bcLanguage;
+			if (city) {
+				payload.latitude = city.latitude;
+				payload.longitude = city.longitude;
+			}
+
+			const res = await fetch(`${pushClient.baseUrl}/api/push/broadcast`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${adminToken}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(payload)
+			});
+
+			if (!res.ok) {
+				broadcastError = `${t('stats.broadcast.sendError', lang)} (${res.status})`;
+				return;
+			}
+			broadcastResult = await res.json();
+			bcTitle = '';
+			bcBody = '';
+			await loadStats(adminToken);
+		} catch (err: unknown) {
+			broadcastError = err instanceof Error ? err.message : String(err);
+		} finally {
+			sending = false;
+		}
 	}
 
 	function formatTimestamp(ts: number): string {
@@ -401,6 +465,51 @@
 						{/each}
 					</div>
 				{/if}
+			</div>
+			<!-- Broadcast -->
+			<div class="section-card card">
+				<h2 class="section-title">{t('stats.broadcast.title', lang)}</h2>
+				<p class="broadcast-hint">{t('stats.broadcast.description', lang)}</p>
+				<div class="broadcast-form">
+					<label class="broadcast-field">
+						<span class="broadcast-label">{t('stats.broadcast.titleLabel', lang)}</span>
+						<input type="text" maxlength={100} bind:value={bcTitle} placeholder={t('stats.broadcast.titlePlaceholder', lang)} />
+					</label>
+					<label class="broadcast-field">
+						<span class="broadcast-label">{t('stats.broadcast.bodyLabel', lang)}</span>
+						<textarea maxlength={500} rows={3} bind:value={bcBody} placeholder={t('stats.broadcast.bodyPlaceholder', lang)}></textarea>
+					</label>
+					<div class="broadcast-row">
+						<label class="broadcast-field">
+							<span class="broadcast-label">{t('stats.broadcast.languageLabel', lang)}</span>
+							<select bind:value={bcLanguage}>
+								<option value="all">{t('stats.broadcast.langAll', lang)}</option>
+								<option value="ru">{t('stats.broadcast.langRu', lang)}</option>
+								<option value="en">{t('stats.broadcast.langEn', lang)}</option>
+							</select>
+						</label>
+						<label class="broadcast-field">
+							<span class="broadcast-label">{t('stats.broadcast.cityLabel', lang)}</span>
+							<select bind:value={bcCity}>
+								<option value="">{t('stats.broadcast.cityAll', lang)}</option>
+								{#each statsData.topCities as city (city.latitude + ',' + city.longitude)}
+									<option value="{city.latitude},{city.longitude}">{cityDisplayName(city)} ({city.subscribers})</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+					<button class="unlock-btn broadcast-send" type="button" disabled={sending || !bcBody.trim()} onclick={handleBroadcast}>
+						{t('stats.broadcast.sendBtn', lang)}
+					</button>
+					{#if broadcastResult}
+						<div class="broadcast-result">
+							{t('stats.broadcast.resultLine', lang, broadcastResult)}
+						</div>
+					{/if}
+					{#if broadcastError}
+						<div class="error-banner">{broadcastError}</div>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	{/if}
@@ -852,5 +961,62 @@
 		font-size: 13px;
 		color: var(--text-secondary);
 		font-style: italic;
+	}
+
+	.broadcast-hint {
+		font-size: 12px;
+		color: var(--text-secondary);
+		margin-bottom: var(--space-3);
+	}
+
+	.broadcast-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.broadcast-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.broadcast-label {
+		font-size: 12px;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.broadcast-field input,
+	.broadcast-field textarea,
+	.broadcast-field select {
+		padding: 8px var(--space-3);
+		border-radius: var(--radius-control);
+		border: 1px solid var(--divider);
+		background: var(--bg-card);
+		color: var(--text-primary);
+		font-size: 13px;
+		font-family: inherit;
+		resize: vertical;
+	}
+
+	.broadcast-row {
+		display: flex;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+	}
+
+	.broadcast-send {
+		align-self: flex-start;
+	}
+
+	.broadcast-result {
+		font-size: 13px;
+		color: var(--accent-strong);
+		background: rgba(33, 150, 243, 0.08);
+		padding: var(--space-2) var(--space-3);
+		border-radius: 8px;
 	}
 </style>
