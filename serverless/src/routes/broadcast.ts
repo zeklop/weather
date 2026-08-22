@@ -68,6 +68,9 @@ export function validateBroadcastBody(raw: unknown): ValidationResult {
 	if (hasLat && (!Number.isFinite(b.latitude) || !Number.isFinite(b.longitude))) {
 		return { ok: false, error: 'latitude and longitude must be finite numbers' };
 	}
+	if (b.dryRun !== undefined && typeof b.dryRun !== 'boolean') {
+		return { ok: false, error: 'dryRun must be a boolean' };
+	}
 	return {
 		ok: true,
 		value: {
@@ -75,7 +78,8 @@ export function validateBroadcastBody(raw: unknown): ValidationResult {
 			title: b.title as string | undefined,
 			language: b.language as BroadcastRequestBody['language'],
 			latitude: b.latitude as number | undefined,
-			longitude: b.longitude as number | undefined
+			longitude: b.longitude as number | undefined,
+			dryRun: b.dryRun as boolean | undefined
 		}
 	};
 }
@@ -120,9 +124,10 @@ export async function handleBroadcast(request: Request, env: Env): Promise<Respo
 	}
 	const requestBody = validated.value;
 
-	// Mirror the cron VAPID configuration check
+	// Mirror the cron VAPID configuration check; a dry run only counts
+	// recipients, so it works without push being configured.
 	const publicVapidKey = env.PUBLIC_VAPID_KEY && !env.PUBLIC_VAPID_KEY.includes('PLACEHOLDER') ? env.PUBLIC_VAPID_KEY : '';
-	if (!publicVapidKey || !env.VAPID_PRIVATE_KEY) {
+	if (!requestBody.dryRun && (!publicVapidKey || !env.VAPID_PRIVATE_KEY)) {
 		return new Response(JSON.stringify({ error: 'Push is not configured' }), {
 			status: 503,
 			headers: { 'Content-Type': 'application/json' }
@@ -138,6 +143,14 @@ export async function handleBroadcast(request: Request, env: Env): Promise<Respo
 		});
 		const subsResult = await env.DB.prepare(sql).bind(...binds).all<SubscriptionRecord>();
 		const subscriptions = subsResult.results || [];
+
+		if (requestBody.dryRun) {
+			return new Response(
+				JSON.stringify({ targeted: subscriptions.length, sent: 0, failed: 0, removed: 0, dryRun: true }),
+				{ status: 200, headers: { 'Content-Type': 'application/json' } }
+			);
+		}
+
 		// Per-subscription base path (set at subscribe time), same resolution as cron.
 		// ponytail: sequential fan-out hits the Workers subrequest ceiling
 		// (~50/invocation on free plan). Trigger to revisit: recipients > ~40.

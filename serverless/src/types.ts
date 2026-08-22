@@ -80,6 +80,8 @@ export interface BroadcastRequestBody {
 	language?: 'all' | 'ru' | 'en';
 	latitude?: number;
 	longitude?: number;
+	/** Count recipients only; skips VAPID requirement and sending */
+	dryRun?: boolean;
 }
 
 export interface PingRequestBody {

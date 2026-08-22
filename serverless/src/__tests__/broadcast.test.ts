@@ -40,13 +40,13 @@ describe('buildTargetQuery', () => {
 	});
 });
 
-describe('handleBroadcast auth', () => {
-	const request = (auth?: string) =>
-		new Request('https://worker/api/push/broadcast', {
-			method: 'POST',
-			headers: auth ? { Authorization: auth } : {},
-			body: JSON.stringify({ body: 'hi' })
-		});
+	describe('handleBroadcast auth', () => {
+		const request = (auth?: string, body: unknown = { body: 'hi' }) =>
+			new Request('https://worker/api/push/broadcast', {
+				method: 'POST',
+				headers: auth ? { Authorization: auth } : {},
+				body: JSON.stringify(body)
+			});
 
 	it('returns 503 when ADMIN_TOKEN is not configured', async () => {
 		const res = await handleBroadcast(request(), {} as Env);
@@ -59,6 +59,23 @@ describe('handleBroadcast auth', () => {
 		const env = { ADMIN_TOKEN: 'secret' } as Env;
 		const res = await handleBroadcast(request('Bearer wrong'), env);
 		expect(res.status).toBe(401);
+	});
+
+	it('dry run returns targeted count without VAPID config or sending', async () => {
+		const env = {
+			ADMIN_TOKEN: 'secret',
+			DB: {
+				prepare: () => ({
+					bind: () => ({
+						all: async () => ({ results: [{ endpoint_hash: 'h1' }, { endpoint_hash: 'h2' }] })
+					})
+				})
+			}
+		} as unknown as Env;
+		const res = await handleBroadcast(request('Bearer secret', { body: 'hi', dryRun: true }), env);
+		expect(res.status).toBe(200);
+		const json = await res.json() as { targeted: number; sent: number; failed: number; removed: number; dryRun: boolean };
+		expect(json).toEqual({ targeted: 2, sent: 0, failed: 0, removed: 0, dryRun: true });
 	});
 });
 
@@ -129,5 +146,15 @@ describe('validateBroadcastBody', () => {
 		const result = validateBroadcastBody(raw);
 		expect(result.ok).toBe(true);
 		if (result.ok) expect(result.value).toEqual(raw);
+	});
+
+	it('accepts dryRun flag', () => {
+		const result = validateBroadcastBody({ body: 'hi', dryRun: true });
+		expect(result.ok).toBe(true);
+	});
+
+	it('rejects non-boolean dryRun', () => {
+		const result = validateBroadcastBody({ body: 'hi', dryRun: 'yes' });
+		expect(result.ok).toBe(false);
 	});
 });
