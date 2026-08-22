@@ -7,6 +7,7 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { getFavoritesStore, isUnnamedLocation } from '$lib/stores/favorites.svelte';
 	import { getLocationStore } from '$lib/stores/location.svelte';
+	import { relocalizeStoredNames } from '$lib/stores/localizeNames';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { createForecastStore } from '$lib/stores/forecast.svelte';
 	import { createAlertsStore } from '$lib/stores/alerts.svelte';
@@ -75,6 +76,21 @@
 			pinged = true;
 			pushClient.sendPing(location.current.name, lang);
 		}
+	});
+
+	// Persisted city names keep the language of the moment they were saved.
+	// On a language switch re-resolve them best-effort so the whole UI shows
+	// cities in the active language. The initial run only records the baseline.
+	let lastLocalizedLang: typeof lang | null = null;
+	$effect(() => {
+		const current = lang;
+		if (!mounted || lastLocalizedLang === null) {
+			lastLocalizedLang = current;
+			return;
+		}
+		if (current === lastLocalizedLang) return;
+		lastLocalizedLang = current;
+		void relocalizeStoredNames(location, favorites, current);
 	});
 
 	$effect(() => {

@@ -254,6 +254,12 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - Dashboard v2 (2026-08-22) aggregates: language breakdown (`subscriptions.language`), 30-day daily activity chart (opens from `analytics_events` vs dispatched alerts from `alert_history`, UTC day buckets, zero-filled client-side), push funnel (distinct installs → distinct `push_subscribed` opt-ins → live subscriptions), alert type breakdown, and subscription health (stale >90 days by `last_seen_at`, auto-removed last 7 days via `push_unsubscribed` events, never-alerted count).
    - Cron logs a `push_unsubscribed` analytics event whenever a dead subscription is auto-deleted on gateway `410 Gone` / `404 Not Found`, so the health metric has data; it only accumulates from the deploy date onwards.
    - The admin token is stored in `localStorage` (survives browser restarts) and is cleared only by the explicit lock action (lock icon in the dashboard header).
+   - Top subscriber cities are grouped by rounded coordinates (the canonical key, same as cron), not by name: a city is stored in the subscriber's UI language («Cheboksary» / «Чебоксары») and would otherwise be double-counted. The API returns both names (`nameRu`/`nameEn`); the dashboard renders the one matching its language.
+
+7. **City Name Localization (frontend):**
+   - Search results are already localized (Open-Meteo geocoding `language` param) and reverse geocoding passes `localityLanguage`; but persisted locations keep the name of the language active at selection time.
+   - On a language switch, `relocalizeStoredNames` (`src/lib/stores/localizeNames.ts`, hooked in `+layout.svelte`) re-resolves the current city and every favorite via BigDataCloud reverse geocoding into the new language. Best-effort per city: a failed lookup leaves the old name.
+   - Favorites rename via `renameFavorite(key, resolved)` — matches by stable coordinate key (`geoId`), persists immediately. Unnamed geolocation markers are skipped (render-localized via `t('header.myLocation')`).
 
 6. **Worker Deployment Contract (pre-deploy review findings, 2026-08-21):**
    - `PUBLIC_VAPID_KEY`, `APP_BASE_PATH` (must equal `PUBLIC_BASE_PATH`), and `APP_ORIGIN` (CORS allowlist, localhost entries included for local preview) live in `wrangler.toml` `[vars]`; `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` are wrangler secrets. `database_id` must be replaced after `wrangler d1 create`, and schema migrations run with `--remote` (without it wrangler applies them to the local dev DB).

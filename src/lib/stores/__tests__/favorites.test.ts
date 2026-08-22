@@ -158,6 +158,42 @@ describe('createFavoritesStore', () => {
 	});
 });
 
+describe('createFavoritesStore.renameFavorite', () => {
+	it('renames by coordinates key and persists the change', () => {
+		const storage = makeMemoryStorage();
+		const store = createFavoritesStore(storage);
+		store.addFavorite(MOSCOW);
+
+		store.renameFavorite('55.7558,37.6173', {
+			name: 'Moscow',
+			admin1: 'Moscow',
+			country: 'Russia',
+			countryCode: 'RU'
+		});
+
+		expect(store.list[0].name).toBe('Moscow');
+		expect(store.list[0].country).toBe('Russia');
+		expect(JSON.parse(storage.getItem(STORAGE_KEY)!)[0].name).toBe('Moscow');
+	});
+
+	it('keeps other fields intact when only a name is resolved', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+		store.addFavorite(SPB);
+
+		store.renameFavorite(SPB.id, { name: 'Saint Petersburg' });
+
+		expect(store.list[0]).toEqual({ ...SPB, name: 'Saint Petersburg' });
+	});
+
+	it('tolerates unknown keys', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+		store.addFavorite(MOSCOW);
+
+		expect(() => store.renameFavorite('missing', { name: 'X' })).not.toThrow();
+		expect(store.list).toEqual([MOSCOW]);
+	});
+});
+
 describe('createFavoritesStore.addFavorite', () => {
 	it('adds a location as favorite without removing existing ones', () => {
 		const store = createFavoritesStore(makeMemoryStorage());

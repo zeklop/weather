@@ -16,7 +16,7 @@
 		funnel: { totalInstalls: number; pushOptIns: number };
 		alertTypes: { alertType: string; count: number; recipients: number }[];
 		health: { deadSubscriptions: number; autoRemovedLast7Days: number; neverAlerted: number };
-		topCities: { cityName: string; subscribers: number }[];
+		topCities: { cityName: string; nameRu: string | null; nameEn: string | null; subscribers: number }[];
 		recentAlerts: { alertType: string; cityName: string; recipientsCount: number; timestamp: number }[];
 	}
 
@@ -142,6 +142,11 @@
 		} catch {
 			return day;
 		}
+	}
+
+	function cityDisplayName(city: { cityName: string; nameRu: string | null; nameEn: string | null }): string {
+		if (lang === 'ru') return city.nameRu || city.cityName;
+		return city.nameEn || city.cityName;
 	}
 </script>
 
@@ -367,7 +372,7 @@
 						{#each statsData.topCities as city, idx}
 							<div class="city-item">
 								<span class="city-rank">#{idx + 1}</span>
-								<span class="city-name">{city.cityName}</span>
+								<span class="city-name">{cityDisplayName(city)}</span>
 								<span class="city-count">{city.subscribers} {t('stats.subscribersCount', lang)}</span>
 							</div>
 						{/each}

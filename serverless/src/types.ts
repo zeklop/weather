@@ -148,6 +148,8 @@ export interface StatsSummary {
 	};
 	topCities: Array<{
 		cityName: string;
+		nameRu: string | null;
+		nameEn: string | null;
 		subscribers: number;
 	}>;
 	recentAlerts: Array<{

@@ -1,4 +1,5 @@
 import { geoId } from '../api/geocoding';
+import type { ResolvedPlace } from '../api/reverseGeocode';
 import type { Location } from '../types';
 
 export const STORAGE_KEY = 'weather:favorites';
@@ -16,6 +17,7 @@ export type FavoritesStore = {
 	addFavorite(location: Location): void;
 	isFavorite(location: Location): boolean;
 	removeFavorite(id: string): void;
+	renameFavorite(key: string, resolved: ResolvedPlace): void;
 };
 
 function defaultStorage(): Storage | null {
@@ -138,6 +140,17 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 		persist();
 	}
 
+	// Best-effort rename used by the language-switch relocalization flow:
+	// matches by stable coordinates key, keeps unknown fields as-is.
+	function renameFavorite(key: string, resolved: ResolvedPlace): void {
+		const idx = list.findIndex(
+			(entry) => entry.id === key || geoId(entry.latitude, entry.longitude) === key
+		);
+		if (idx === -1) return;
+		list[idx] = { ...list[idx], ...resolved };
+		persist();
+	}
+
 	return {
 		get list() {
 			return list;
@@ -145,7 +158,8 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 		toggleFavorite,
 		addFavorite,
 		isFavorite,
-		removeFavorite
+		removeFavorite,
+		renameFavorite
 	};
 }
 

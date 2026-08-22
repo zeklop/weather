@@ -148,14 +148,21 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 			}
 		}
 
-		// 6. Top 10 cities
+		// 6. Top 10 cities — grouped by rounded coordinates (canonical key, same
+		// as cron), because city_name is stored in the subscriber's UI language
+		// ("Cheboksary" vs "Чебоксары"). Both names are returned so the
+		// dashboard can render the one matching its language.
 		const topCitiesRows = await env.DB.prepare(`
-			SELECT city_name as cityName, COUNT(*) as subscribers
+			SELECT
+				COALESCE(MAX(CASE WHEN language = 'en' THEN city_name END), MIN(city_name)) as cityName,
+				MAX(CASE WHEN language = 'ru' THEN city_name END) as nameRu,
+				MAX(CASE WHEN language = 'en' THEN city_name END) as nameEn,
+				COUNT(*) as subscribers
 			FROM subscriptions
-			GROUP BY city_name
+			GROUP BY latitude, longitude
 			ORDER BY subscribers DESC
 			LIMIT 10
-		`).all<{ cityName: string; subscribers: number }>();
+		`).all<{ cityName: string; nameRu: string | null; nameEn: string | null; subscribers: number }>();
 
 		// 7. Recent alert history
 		const recentAlertsRows = await env.DB.prepare(`
