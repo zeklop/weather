@@ -276,8 +276,11 @@ export interface Translations {
 			cityLabel: string;
 			cityAll: string;
 			sendBtn: string;
+			dryRunLabel: string;
+			countBtn: string;
 			confirmText: string;
 			resultLine: string;
+			dryRunResult: string;
 			sendError: string;
 		};
 	};
@@ -633,8 +636,11 @@ export const translations: Record<Language, Translations> = {
 				cityLabel: 'City',
 				cityAll: 'All cities',
 				sendBtn: 'Send Broadcast',
+				dryRunLabel: 'Dry run (no sending)',
+				countBtn: 'Count Recipients',
 				confirmText: 'Send broadcast to {target}? Message length: {length} characters.',
 				resultLine: 'Targeted: {targeted}, sent: {sent}, failed: {failed}, removed: {removed}',
+				dryRunResult: 'Dry run: {targeted} recipients match the filters',
 				sendError: 'Broadcast failed'
 			}
 		},
@@ -988,8 +994,11 @@ export const translations: Record<Language, Translations> = {
 				cityLabel: 'Город',
 				cityAll: 'Все города',
 				sendBtn: 'Отправить рассылку',
+				dryRunLabel: 'Пробный прогон (без отправки)',
+				countBtn: 'Подсчитать получателей',
 				confirmText: 'Отправить рассылку на {target}? Длина сообщения: {length} символов.',
 				resultLine: 'Целей: {targeted}, отправлено: {sent}, ошибок: {failed}, удалено: {removed}',
+				dryRunResult: 'Пробный прогон: под фильтры попадает {targeted} получателей',
 				sendError: 'Ошибка рассылки'
 			}
 		},

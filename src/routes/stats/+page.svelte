@@ -33,8 +33,9 @@
 	let bcBody = $state('');
 	let bcLanguage = $state<'all' | 'ru' | 'en'>('all');
 	let bcCity = $state('');
+	let bcDryRun = $state(false);
 	let sending = $state(false);
-	let broadcastResult = $state<{ targeted: number; sent: number; failed: number; removed: number } | null>(null);
+	let broadcastResult = $state<{ targeted: number; sent: number; failed: number; removed: number; dryRun?: boolean } | null>(null);
 	let broadcastError = $state<string | null>(null);
 
 	const STORAGE_TOKEN_KEY = 'weather:stats_admin_token';
@@ -96,6 +97,7 @@
 		bcBody = '';
 		bcLanguage = 'all';
 		bcCity = '';
+		bcDryRun = false;
 		broadcastResult = null;
 		broadcastError = null;
 	}
@@ -104,13 +106,15 @@
 		if (!bcBody.trim() || sending || !pushClient.isConfigured) return;
 
 		const city = statsData?.topCities.find((c) => `${c.latitude},${c.longitude}` === bcCity);
-		const target = city ? cityDisplayName(city) : t('stats.broadcast.cityAll', lang);
-		if (
-			!confirm(
-				t('stats.broadcast.confirmText', lang, { target, length: bcBody.length })
-			)
-		) {
-			return;
+		if (!bcDryRun) {
+			const target = city ? cityDisplayName(city) : t('stats.broadcast.cityAll', lang);
+			if (
+				!confirm(
+					t('stats.broadcast.confirmText', lang, { target, length: bcBody.length })
+				)
+			) {
+				return;
+			}
 		}
 
 		sending = true;
@@ -125,6 +129,7 @@
 				payload.latitude = city.latitude;
 				payload.longitude = city.longitude;
 			}
+			if (bcDryRun) payload.dryRun = true;
 
 			const res = await fetch(`${pushClient.baseUrl}/api/push/broadcast`, {
 				method: 'POST',
@@ -140,9 +145,11 @@
 				return;
 			}
 			broadcastResult = await res.json();
-			bcTitle = '';
-			bcBody = '';
-			await loadStats(adminToken);
+			if (!bcDryRun) {
+				bcTitle = '';
+				bcBody = '';
+				await loadStats(adminToken);
+			}
 		} catch (err: unknown) {
 			broadcastError = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -498,14 +505,25 @@
 							</select>
 						</label>
 					</div>
-					<button class="unlock-btn broadcast-send" type="button" disabled={sending || !bcBody.trim()} onclick={handleBroadcast}>
-						{t('stats.broadcast.sendBtn', lang)}
-					</button>
-					{#if broadcastResult}
-						<div class="broadcast-result">
-							{t('stats.broadcast.resultLine', lang, broadcastResult)}
-						</div>
-					{/if}
+				<label class="broadcast-dryrun">
+					<input type="checkbox" bind:checked={bcDryRun} />
+					<span>{t('stats.broadcast.dryRunLabel', lang)}</span>
+				</label>
+				<button class="unlock-btn broadcast-send" type="button" disabled={sending || !bcBody.trim()} onclick={handleBroadcast}>
+					{bcDryRun ? t('stats.broadcast.countBtn', lang) : t('stats.broadcast.sendBtn', lang)}
+				</button>
+				{#if broadcastResult}
+					<div class="broadcast-result">
+						{broadcastResult.dryRun
+							? t('stats.broadcast.dryRunResult', lang, { targeted: broadcastResult.targeted })
+							: t('stats.broadcast.resultLine', lang, {
+									targeted: broadcastResult.targeted,
+									sent: broadcastResult.sent,
+									failed: broadcastResult.failed,
+									removed: broadcastResult.removed
+								})}
+					</div>
+				{/if}
 					{#if broadcastError}
 						<div class="error-banner">{broadcastError}</div>
 					{/if}
@@ -1010,6 +1028,14 @@
 
 	.broadcast-send {
 		align-self: flex-start;
+	}
+
+	.broadcast-dryrun {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: 13px;
+		cursor: pointer;
 	}
 
 	.broadcast-result {
