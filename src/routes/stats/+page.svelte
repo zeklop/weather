@@ -11,6 +11,11 @@
 		activeLast7Days: number;
 		alertsSentLast7Days: number;
 		platforms: { ios: number; android: number; desktop: number };
+		languages: { ru: number; en: number };
+		dailyActivity: { day: string; opens: number; alerts: number }[];
+		funnel: { totalInstalls: number; pushOptIns: number };
+		alertTypes: { alertType: string; count: number; recipients: number }[];
+		health: { deadSubscriptions: number; autoRemovedLast7Days: number; neverAlerted: number };
 		topCities: { cityName: string; subscribers: number }[];
 		recentAlerts: { alertType: string; cityName: string; recipientsCount: number; timestamp: number }[];
 	}
@@ -28,7 +33,7 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
-		const saved = sessionStorage.getItem(STORAGE_TOKEN_KEY);
+		const saved = localStorage.getItem(STORAGE_TOKEN_KEY);
 		if (saved) {
 			adminToken = saved;
 			loadStats(saved);
@@ -54,13 +59,13 @@
 			if (res.status === 401) {
 				errorMessage = t('stats.unauthorized', lang);
 				isUnlocked = false;
-				sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+				localStorage.removeItem(STORAGE_TOKEN_KEY);
 			} else if (!res.ok) {
 				errorMessage = `Server error (${res.status})`;
 			} else {
 				statsData = await res.json();
 				isUnlocked = true;
-				sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
+				localStorage.setItem(STORAGE_TOKEN_KEY, token);
 			}
 		} catch (err: unknown) {
 			errorMessage = err instanceof Error ? err.message : String(err);
@@ -78,7 +83,7 @@
 		adminToken = '';
 		isUnlocked = false;
 		statsData = null;
-		sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+		localStorage.removeItem(STORAGE_TOKEN_KEY);
 	}
 
 	function formatTimestamp(ts: number): string {
@@ -105,6 +110,39 @@
 			desktop: Math.round((statsData.platforms.desktop / total) * 100)
 		};
 	});
+
+	const langPercentages = $derived.by(() => {
+		if (!statsData || statsData.totalSubscribers === 0) {
+			return { ru: 0, en: 0 };
+		}
+		const total = statsData.languages.ru + statsData.languages.en;
+		if (total === 0) return { ru: 0, en: 0 };
+		return {
+			ru: Math.round((statsData.languages.ru / total) * 100),
+			en: Math.round((statsData.languages.en / total) * 100)
+		};
+	});
+
+	const maxOpens = $derived(Math.max(1, ...(statsData?.dailyActivity ?? []).map((d) => d.opens)));
+	const maxAlerts = $derived(Math.max(1, ...(statsData?.dailyActivity ?? []).map((d) => d.alerts)));
+	const optInPercent = $derived(
+		statsData && statsData.funnel.totalInstalls > 0
+			? Math.round((statsData.funnel.pushOptIns / statsData.funnel.totalInstalls) * 100)
+			: 0
+	);
+
+	function barHeight(value: number, max: number): number {
+		if (value <= 0) return 0;
+		return Math.max(10, Math.round((value / max) * 100));
+	}
+
+	function formatDay(day: string, locale: string): string {
+		try {
+			return new Date(`${day}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+		} catch {
+			return day;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -112,9 +150,29 @@
 </svelte:head>
 
 <section class="stats-page">
-	<div class="stats-header">
-		<h1 class="page-title">{t('stats.title', lang)}</h1>
-		<p class="page-subtitle">{t('stats.subtitle', lang)}</p>
+	<div class="stats-top">
+		<div class="stats-header">
+			<h1 class="page-title">{t('stats.title', lang)}</h1>
+			<p class="page-subtitle">{t('stats.subtitle', lang)}</p>
+		</div>
+		{#if isUnlocked}
+			<div class="stats-toolbar">
+				<button class="tool-btn" type="button" onclick={() => loadStats(adminToken)} disabled={loading} aria-label={t('header.refresh', lang)}>
+					<svg class="tool-icon" class:spinning={loading} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+						<path d="M3 3v5h5" />
+						<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+						<path d="M21 21v-5h-5" />
+					</svg>
+				</button>
+				<button class="tool-btn icon-only" type="button" onclick={handleLock} aria-label={t('stats.lock', lang)} title={t('stats.lock', lang)}>
+					<svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+						<path d="M7 11V7a5 5 0 0 1 10 0v4" />
+					</svg>
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	{#if !isUnlocked}
@@ -142,21 +200,6 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="stats-toolbar">
-			<button class="tool-btn" type="button" onclick={() => loadStats(adminToken)} disabled={loading}>
-				<svg class="tool-icon" class:spinning={loading} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-					<path d="M3 3v5h5" />
-					<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-					<path d="M21 21v-5h-5" />
-				</svg>
-				{t('header.refresh', lang)}
-			</button>
-			<button class="tool-btn secondary" type="button" onclick={handleLock}>
-				{t('stats.lock', lang)}
-			</button>
-		</div>
-
 		{#if statsData}
 			<!-- Metric cards -->
 			<div class="metrics-grid">
@@ -199,6 +242,117 @@
 							<span class="legend-name">{t('stats.desktop', lang)}</span>
 							<span class="legend-val">{statsData.platforms.desktop} ({platformPercentages.desktop}%)</span>
 						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Language breakdown -->
+			<div class="section-card card">
+				<h2 class="section-title">{t('stats.languages', lang)}</h2>
+				<div class="platform-bar-wrap">
+					<div class="platform-bar-track">
+						<div class="bar-seg lang-ru" style="width: {langPercentages.ru}%" title="RU: {langPercentages.ru}%"></div>
+						<div class="bar-seg lang-en" style="width: {langPercentages.en}%" title="EN: {langPercentages.en}%"></div>
+					</div>
+					<div class="platform-legend">
+						<div class="legend-item">
+							<span class="legend-dot lang-ru"></span>
+							<span class="legend-name">Русский</span>
+							<span class="legend-val">{statsData.languages.ru} ({langPercentages.ru}%)</span>
+						</div>
+						<div class="legend-item">
+							<span class="legend-dot lang-en"></span>
+							<span class="legend-name">English</span>
+							<span class="legend-val">{statsData.languages.en} ({langPercentages.en}%)</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Activity chart (30 days) -->
+			<div class="section-card card">
+				<div class="section-head">
+					<h2 class="section-title">{t('stats.activityTitle', lang)}</h2>
+					<div class="chart-legend">
+						<span class="legend-item compact"><span class="legend-dot bar-opens"></span>{t('stats.legendOpens', lang)}</span>
+						<span class="legend-item compact"><span class="legend-dot bar-alerts"></span>{t('stats.legendAlerts', lang)}</span>
+					</div>
+				</div>
+				<div class="activity-chart" role="img" aria-label={t('stats.activityTitle', lang)}>
+					{#each statsData.dailyActivity as d (d.day)}
+						<div
+							class="chart-col"
+							title="{formatDay(d.day, lang === 'ru' ? 'ru-RU' : 'en-US')}: {d.opens} {t('stats.legendOpens', lang).toLowerCase()}, {d.alerts} {t('stats.legendAlerts', lang).toLowerCase()}"
+						>
+							<div class="chart-bars">
+								<div class="chart-bar bar-opens" style="height: {barHeight(d.opens, maxOpens)}%"></div>
+								<div class="chart-bar bar-alerts" style="height: {barHeight(d.alerts, maxAlerts)}%"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+				<div class="chart-axis">
+					<span>{formatDay(statsData.dailyActivity[0]?.day ?? '', lang === 'ru' ? 'ru-RU' : 'en-US')}</span>
+					<span>{t('stats.days', lang)}</span>
+					<span>{formatDay(statsData.dailyActivity[statsData.dailyActivity.length - 1]?.day ?? '', lang === 'ru' ? 'ru-RU' : 'en-US')}</span>
+				</div>
+			</div>
+
+			<!-- Push funnel -->
+			<div class="section-card card">
+				<h2 class="section-title">{t('stats.funnelTitle', lang)}</h2>
+				<div class="funnel-row">
+					<div class="funnel-step">
+						<div class="metric-label">{t('stats.funnelInstalls', lang)}</div>
+						<div class="funnel-value">{statsData.funnel.totalInstalls.toLocaleString()}</div>
+					</div>
+					<svg class="funnel-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+					<div class="funnel-step">
+						<div class="metric-label">{t('stats.funnelOptIns', lang)}</div>
+						<div class="funnel-value">{statsData.funnel.pushOptIns.toLocaleString()}</div>
+						<div class="funnel-pct">{optInPercent}%</div>
+					</div>
+					<svg class="funnel-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+					<div class="funnel-step">
+						<div class="metric-label">{t('stats.totalSubscribers', lang)}</div>
+						<div class="funnel-value">{statsData.totalSubscribers.toLocaleString()}</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Alert types -->
+			<div class="section-card card">
+				<h2 class="section-title">{t('stats.alertTypesTitle', lang)}</h2>
+				{#if statsData.alertTypes.length === 0}
+					<div class="empty-text">{t('stats.noAlerts', lang)}</div>
+				{:else}
+					<div class="cities-list">
+						{#each statsData.alertTypes as at}
+							<div class="city-item">
+								<span class="alert-type badge">{at.alertType}</span>
+								<span class="city-name"></span>
+								<span class="city-count">{at.count} × ({at.recipients} {t('stats.recipients', lang)})</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Subscription health -->
+			<div class="section-card card">
+				<h2 class="section-title">{t('stats.healthTitle', lang)}</h2>
+				<div class="health-row">
+					<div class="health-item">
+						<div class="health-value" class:warn={statsData.health.deadSubscriptions > 0}>{statsData.health.deadSubscriptions}</div>
+						<div class="health-label">{t('stats.healthDead', lang)}</div>
+					</div>
+					<div class="health-item">
+						<div class="health-value">{statsData.health.autoRemovedLast7Days}</div>
+						<div class="health-label">{t('stats.healthAutoRemoved', lang)}</div>
+					</div>
+					<div class="health-item">
+						<div class="health-value">{statsData.health.neverAlerted}</div>
+						<div class="health-label">{t('stats.healthNeverAlerted', lang)}</div>
 					</div>
 				</div>
 			</div>
@@ -256,20 +410,27 @@
 		margin-inline: auto;
 	}
 
+	.stats-top {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-3);
+	}
+
 	.stats-header {
-		margin-bottom: var(--space-2);
+		min-width: 0;
 	}
 
 	.page-title {
-		font-size: 24px;
+		font-size: 20px;
 		font-weight: 700;
 		color: var(--text-primary);
 		letter-spacing: -0.02em;
-		margin-bottom: 4px;
+		margin-bottom: 2px;
 	}
 
 	.page-subtitle {
-		font-size: 13px;
+		font-size: 12px;
 		color: var(--text-secondary);
 		line-height: 1.4;
 	}
@@ -344,6 +505,7 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: var(--space-2);
+		flex-shrink: 0;
 	}
 
 	.tool-btn {
@@ -361,8 +523,10 @@
 		cursor: pointer;
 	}
 
-	.tool-btn.secondary {
-		color: var(--text-secondary);
+	.tool-btn.icon-only {
+		width: 34px;
+		padding: 0;
+		justify-content: center;
 	}
 
 	.tool-icon {
@@ -421,6 +585,125 @@
 		margin-bottom: var(--space-3);
 	}
 
+	.section-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+	}
+
+	.chart-legend {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.legend-item.compact {
+		font-size: 11px;
+		color: var(--text-secondary);
+		gap: 5px;
+	}
+
+	.bar-opens { background: var(--accent-strong, #2196f3); }
+	.bar-alerts { background: #ff7043; }
+
+	.activity-chart {
+		display: flex;
+		align-items: flex-end;
+		gap: 2px;
+		height: 72px;
+		margin-bottom: var(--space-2);
+	}
+
+	.chart-col {
+		flex: 1;
+		min-width: 0;
+		height: 100%;
+		display: flex;
+		align-items: flex-end;
+	}
+
+	.chart-bars {
+		display: flex;
+		align-items: flex-end;
+		gap: 1px;
+		width: 100%;
+		height: 100%;
+	}
+
+	.chart-bar {
+		flex: 1;
+		min-height: 0;
+		border-radius: 2px 2px 0 0;
+	}
+
+	.chart-axis {
+		display: flex;
+		justify-content: space-between;
+		font-size: 10px;
+		color: var(--text-secondary);
+	}
+
+	.funnel-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.funnel-step {
+		text-align: center;
+		flex: 1;
+		min-width: 90px;
+	}
+
+	.funnel-value {
+		font-size: 22px;
+		font-weight: 700;
+		color: var(--text-primary);
+		letter-spacing: -0.02em;
+	}
+
+	.funnel-pct {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--accent-strong);
+	}
+
+	.funnel-arrow {
+		width: 16px;
+		height: 16px;
+		color: var(--text-secondary);
+		flex-shrink: 0;
+	}
+
+	.health-row {
+		display: flex;
+		gap: var(--space-4);
+		flex-wrap: wrap;
+	}
+
+	.health-item {
+		flex: 1;
+		min-width: 100px;
+	}
+
+	.health-value {
+		font-size: 22px;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+
+	.health-value.warn {
+		color: #e53935;
+	}
+
+	.health-label {
+		font-size: 12px;
+		color: var(--text-secondary);
+	}
+
 	.platform-bar-track {
 		height: 12px;
 		background: var(--divider);
@@ -433,6 +716,8 @@
 	.bar-seg.ios { background: #007aff; }
 	.bar-seg.android { background: #34a853; }
 	.bar-seg.desktop { background: #fbbc05; }
+	.bar-seg.lang-ru { background: #7c4dff; }
+	.bar-seg.lang-en { background: #00acc1; }
 
 	.platform-legend {
 		display: flex;
@@ -455,6 +740,8 @@
 	.legend-dot.ios { background: #007aff; }
 	.legend-dot.android { background: #34a853; }
 	.legend-dot.desktop { background: #fbbc05; }
+	.legend-dot.lang-ru { background: #7c4dff; }
+	.legend-dot.lang-en { background: #00acc1; }
 
 	.legend-name {
 		flex: 1;

@@ -123,6 +123,29 @@ export interface StatsSummary {
 		android: number;
 		desktop: number;
 	};
+	languages: {
+		ru: number;
+		en: number;
+	};
+	dailyActivity: Array<{
+		day: string;
+		opens: number;
+		alerts: number;
+	}>;
+	funnel: {
+		totalInstalls: number;
+		pushOptIns: number;
+	};
+	alertTypes: Array<{
+		alertType: string;
+		count: number;
+		recipients: number;
+	}>;
+	health: {
+		deadSubscriptions: number;
+		autoRemovedLast7Days: number;
+		neverAlerted: number;
+	};
 	topCities: Array<{
 		cityName: string;
 		subscribers: number;

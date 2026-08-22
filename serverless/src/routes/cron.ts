@@ -126,10 +126,14 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
 							.bind(now, sub.endpoint_hash)
 							.run();
 					} else if (pushResult.statusCode === 410 || pushResult.statusCode === 404) {
-						// Subscriber unsubscribed or app deleted -> Self clean
+						// Subscriber unsubscribed or app deleted -> Self clean + log event
 						await env.DB.prepare('DELETE FROM subscriptions WHERE endpoint_hash = ?')
 							.bind(sub.endpoint_hash)
 							.run();
+						await env.DB.prepare(`
+							INSERT INTO analytics_events (install_id, event_type, platform, city_name, lang, timestamp)
+							VALUES (?, 'push_unsubscribed', ?, ?, ?, ?)
+						`).bind('sub_' + sub.endpoint_hash.slice(0, 16), sub.platform, sub.city_name, sub.language, now).run();
 					}
 				}
 			}

@@ -99,6 +99,8 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 
 	const now = Date.now();
 	const sevenDaysAgo = now - 7 * 24 * 3600 * 1000;
+	const ninetyDaysAgo = now - 90 * 24 * 3600 * 1000;
+	const thirtyDaysAgo = now - 30 * 24 * 3600 * 1000;
 
 	try {
 		// 1. Total subscribers count
@@ -133,7 +135,20 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 			}
 		}
 
-		// 5. Top 10 cities
+		// 5. Language breakdown for subscribers
+		const langRows = await env.DB.prepare(
+			'SELECT language, COUNT(*) as count FROM subscriptions GROUP BY language'
+		).all<{ language: string; count: number }>();
+
+		const languages = { ru: 0, en: 0 };
+		if (langRows.results) {
+			for (const r of langRows.results) {
+				if (r.language === 'ru') languages.ru = r.count;
+				else if (r.language === 'en') languages.en = r.count;
+			}
+		}
+
+		// 6. Top 10 cities
 		const topCitiesRows = await env.DB.prepare(`
 			SELECT city_name as cityName, COUNT(*) as subscribers
 			FROM subscriptions
@@ -142,7 +157,7 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 			LIMIT 10
 		`).all<{ cityName: string; subscribers: number }>();
 
-		// 6. Recent alert history
+		// 7. Recent alert history
 		const recentAlertsRows = await env.DB.prepare(`
 			SELECT alert_type as alertType, city_key as cityName, recipients_count as recipientsCount, timestamp
 			FROM alert_history
@@ -150,11 +165,75 @@ export async function handleStatsSummary(request: Request, env: Env): Promise<Re
 			LIMIT 10
 		`).all<{ alertType: string; cityName: string; recipientsCount: number; timestamp: number }>();
 
+		// 7. Daily activity for the last 30 days (opens + alerts per UTC day)
+		const opensRows = await env.DB.prepare(`
+			SELECT DATE(timestamp / 1000, 'unixepoch') as day, COUNT(*) as count
+			FROM analytics_events
+			WHERE event_type = 'install_open' AND timestamp >= ?
+			GROUP BY day
+		`).bind(thirtyDaysAgo).all<{ day: string; count: number }>();
+
+		const alertsPerDayRows = await env.DB.prepare(`
+			SELECT DATE(timestamp / 1000, 'unixepoch') as day, COALESCE(SUM(recipients_count), 0) as count
+			FROM alert_history
+			WHERE timestamp >= ?
+			GROUP BY day
+		`).bind(thirtyDaysAgo).all<{ day: string; count: number }>();
+
+		const opensByDay = new Map((opensRows.results || []).map((r) => [r.day, r.count]));
+		const alertsByDay = new Map((alertsPerDayRows.results || []).map((r) => [r.day, r.count]));
+		const dailyActivity: StatsSummary['dailyActivity'] = [];
+		for (let i = 29; i >= 0; i--) {
+			const key = new Date(now - i * 24 * 3600 * 1000).toISOString().slice(0, 10);
+			dailyActivity.push({ day: key, opens: opensByDay.get(key) || 0, alerts: alertsByDay.get(key) || 0 });
+		}
+
+		// 8. Push funnel: distinct installs vs push opt-ins
+		const totalInstallsRow = await env.DB.prepare(
+			'SELECT COUNT(DISTINCT install_id) as count FROM analytics_events'
+		).first<{ count: number }>();
+		const pushOptInsRow = await env.DB.prepare(
+			"SELECT COUNT(DISTINCT install_id) as count FROM analytics_events WHERE event_type = 'push_subscribed'"
+		).first<{ count: number }>();
+		const funnel = {
+			totalInstalls: totalInstallsRow?.count || 0,
+			pushOptIns: pushOptInsRow?.count || 0
+		};
+
+		// 9. Alert types breakdown
+		const alertTypeRows = await env.DB.prepare(`
+			SELECT alert_type as alertType, COUNT(*) as count, COALESCE(SUM(recipients_count), 0) as recipients
+			FROM alert_history
+			GROUP BY alert_type
+			ORDER BY count DESC
+		`).all<{ alertType: string; count: number; recipients: number }>();
+
+		// 10. Subscription health
+		const deadRow = await env.DB.prepare(
+			'SELECT COUNT(*) as count FROM subscriptions WHERE last_seen_at < ?'
+		).bind(ninetyDaysAgo).first<{ count: number }>();
+		const autoRemovedRow = await env.DB.prepare(
+			"SELECT COUNT(DISTINCT install_id) as count FROM analytics_events WHERE event_type = 'push_unsubscribed' AND timestamp >= ?"
+		).bind(sevenDaysAgo).first<{ count: number }>();
+		const neverAlertedRow = await env.DB.prepare(
+			'SELECT COUNT(*) as count FROM subscriptions WHERE last_alert_sent_at IS NULL'
+		).first<{ count: number }>();
+		const health = {
+			deadSubscriptions: deadRow?.count || 0,
+			autoRemovedLast7Days: autoRemovedRow?.count || 0,
+			neverAlerted: neverAlertedRow?.count || 0
+		};
+
 		const summary: StatsSummary = {
 			totalSubscribers,
 			activeLast7Days,
 			alertsSentLast7Days,
 			platforms,
+			languages,
+			dailyActivity,
+			funnel,
+			alertTypes: alertTypeRows.results || [],
+			health,
 			topCities: topCitiesRows.results || [],
 			recentAlerts: recentAlertsRows.results || []
 		};

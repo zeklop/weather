@@ -234,6 +234,19 @@ export interface Translations {
 		active7Days: string;
 		alertsSent7Days: string;
 		platforms: string;
+		languages: string;
+		activityTitle: string;
+		legendOpens: string;
+		legendAlerts: string;
+		days: string;
+		funnelTitle: string;
+		funnelInstalls: string;
+		funnelOptIns: string;
+		alertTypesTitle: string;
+		healthTitle: string;
+		healthDead: string;
+		healthAutoRemoved: string;
+		healthNeverAlerted: string;
 		iosStandalone: string;
 		android: string;
 		desktop: string;
@@ -556,9 +569,22 @@ export const translations: Record<Language, Translations> = {
 			title: 'Analytics & Subscriptions',
 			subtitle: 'Privacy-first telemetry and Web Push distribution metrics',
 			totalSubscribers: 'Total Subscribers',
-			active7Days: 'Active (7 Days)',
+			active7Days: 'Active Installs (7 Days)',
 			alertsSent7Days: 'Alerts Sent (7 Days)',
 			platforms: 'Platform Distribution',
+			languages: 'Languages',
+			activityTitle: 'Activity — Last 30 Days',
+			legendOpens: 'Opens',
+			legendAlerts: 'Alerts',
+			days: '30 days',
+			funnelTitle: 'Push Funnel',
+			funnelInstalls: 'Installs',
+			funnelOptIns: 'Push Opt-ins',
+			alertTypesTitle: 'Alert Types',
+			healthTitle: 'Subscription Health',
+			healthDead: 'Stale (>90 days)',
+			healthAutoRemoved: 'Auto-removed (7 days)',
+			healthNeverAlerted: 'Never alerted',
 			iosStandalone: 'iOS (Standalone PWA)',
 			android: 'Android Chrome',
 			desktop: 'Desktop Browser',
@@ -879,9 +905,22 @@ export const translations: Record<Language, Translations> = {
 			title: 'Аналитика и подписки',
 			subtitle: 'Privacy-First телеметрия и статистика доставки фоновых Web Push алертов',
 			totalSubscribers: 'Всего подписчиков',
-			active7Days: 'Активных (7 дней)',
+			active7Days: 'Активные установки (7 дней)',
 			alertsSent7Days: 'Отправлено алертов (7 дней)',
 			platforms: 'Распределение платформ',
+			languages: 'Языки',
+			activityTitle: 'Активность за 30 дней',
+			legendOpens: 'Открытия',
+			legendAlerts: 'Алерты',
+			days: '30 дней',
+			funnelTitle: 'Воронка пушей',
+			funnelInstalls: 'Установок',
+			funnelOptIns: 'Согласились на пуши',
+			alertTypesTitle: 'Типы алертов',
+			healthTitle: 'Здоровье подписок',
+			healthDead: 'Мёртвые (>90 дней)',
+			healthAutoRemoved: 'Автоудалены (7 дней)',
+			healthNeverAlerted: 'Без единого алерта',
 			iosStandalone: 'iOS (Standalone PWA)',
 			android: 'Android Chrome',
 			desktop: 'Desktop Browser',

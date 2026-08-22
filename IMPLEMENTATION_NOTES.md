@@ -251,6 +251,9 @@ Phase 2 (spec: `plans/weather-pwa-phase2.md`, local only) shipped on top of Phas
    - 100% anonymous telemetry: random local UUID `install_id`, platform breakdown, active installations over 7 days, top subscriber cities, and alert history.
    - Zero IP addresses, cookies, or third-party tracking scripts.
    - Access to `/api/stats/summary` is secured via `ADMIN_TOKEN`. The endpoint fails closed: without a configured secret it returns 503, and token comparison is constant-time. There is no fallback token.
+   - Dashboard v2 (2026-08-22) aggregates: language breakdown (`subscriptions.language`), 30-day daily activity chart (opens from `analytics_events` vs dispatched alerts from `alert_history`, UTC day buckets, zero-filled client-side), push funnel (distinct installs → distinct `push_subscribed` opt-ins → live subscriptions), alert type breakdown, and subscription health (stale >90 days by `last_seen_at`, auto-removed last 7 days via `push_unsubscribed` events, never-alerted count).
+   - Cron logs a `push_unsubscribed` analytics event whenever a dead subscription is auto-deleted on gateway `410 Gone` / `404 Not Found`, so the health metric has data; it only accumulates from the deploy date onwards.
+   - The admin token is stored in `localStorage` (survives browser restarts) and is cleared only by the explicit lock action (lock icon in the dashboard header).
 
 6. **Worker Deployment Contract (pre-deploy review findings, 2026-08-21):**
    - `PUBLIC_VAPID_KEY`, `APP_BASE_PATH` (must equal `PUBLIC_BASE_PATH`), and `APP_ORIGIN` (CORS allowlist, localhost entries included for local preview) live in `wrangler.toml` `[vars]`; `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` are wrangler secrets. `database_id` must be replaced after `wrangler d1 create`, and schema migrations run with `--remote` (without it wrangler applies them to the local dev DB).
