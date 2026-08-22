@@ -34,3 +34,13 @@ static/icons-comparison.*
 
 # Worker build artifact
 serverless/.svelte-kit/
+
+# Working docs and agent workflows (local only)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.github/copilot-instructions.md
+TODO.md
+IMPLEMENTATION_NOTES.md
+weather_pwa_spec.md
+docs/
