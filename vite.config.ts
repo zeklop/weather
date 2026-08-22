@@ -51,8 +51,8 @@ export default defineConfig(({ mode }) => {
 				},
 
 				manifest: {
-					name: 'Weather',
-					short_name: 'Weather',
+					name: 'Gradus',
+					short_name: 'Gradus',
 					description: 'Weather and forecast up to 10 days',
 					lang: 'en',
 					display: 'standalone',

@@ -150,10 +150,10 @@ describe('PWA install utilities', () => {
 	describe('PWA i18n translation coverage for Phase 2.4', () => {
 		it('contains required Android & iOS banner strings in English', () => {
 			expect(t('pwa.bannerAndroidText', 'en')).toBe(
-				'Install Weather for quick access and offline mode'
+				'Install Gradus for quick access and offline mode'
 			);
 			expect(t('pwa.bannerIosText', 'en')).toBe(
-				'Add Weather to your Home Screen for the best experience'
+				'Add Gradus to your Home Screen for the best experience'
 			);
 			expect(t('pwa.installBtn', 'en')).toBe('Install');
 			expect(t('pwa.bannerIosAction', 'en')).toBe('How to install');
@@ -162,7 +162,7 @@ describe('PWA install utilities', () => {
 
 		it('contains required Android & iOS banner strings in Russian', () => {
 			expect(t('pwa.bannerAndroidText', 'ru')).toBe(
-				'Установите приложение Погода для быстрого доступа и оффлайн-режима'
+				'Установите приложение Градус для быстрого доступа и оффлайн-режима'
 			);
 			expect(t('pwa.bannerIosText', 'ru')).toBe(
 				'Установите на экран «Домой» для удобной работы'

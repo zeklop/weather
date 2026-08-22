@@ -1,12 +1,24 @@
-# Weather PWA
+# Gradus
 
 <p align="center">
   <strong>English</strong> &nbsp;|&nbsp; <a href="README.ru.md"><strong>Русский</strong></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/zeklop/weather/actions/workflows/deploy.yml"><img src="https://github.com/zeklop/weather/actions/workflows/deploy.yml/badge.svg" alt="Deploy" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://www.pwabuilder.com/"><img src="https://img.shields.io/badge/PWA-ready-brightgreen" alt="PWA ready" /></a>
+</p>
+
 ---
 
+**[Try it live → https://gradus.website](https://gradus.website/)**
+
 A lightweight, high-performance, offline-capable Progressive Web Application (PWA) for weather forecasts inspired by the clean visual density and information hierarchy of modern weather apps. Built with **SvelteKit** (Svelte 5 runes), the open **Open-Meteo API**, and vector **Meteocons**.
+
+| Home | Forecast | Favorites | Settings |
+| --- | --- | --- | --- |
+| ![Home screen](screenshots/gradus-main.png) | ![Forecast](screenshots/gradus-forecast.png) | ![Favorites](screenshots/gradus-favs.png) | ![Settings](screenshots/gradus-settings.png) |
 
 Engineered as a cross-platform Progressive Web Application (PWA). It provides an excellent standalone experience on **iOS Safari**, **Android (Chrome)**, and **Desktop environments (Mac, Windows)** via Chrome, where it can be installed as a native-like app. It is completely static (zero server-side runtime footprint), with resilient offline caching, and deployable to **GitHub Pages** or any static web server.
 
@@ -100,7 +112,9 @@ npm run build
 
 ### 1. GitHub Pages (Primary)
 
-Live application: **`https://zeklop.github.io/weather/`**
+Live applications: **`https://gradus.website/`** and **`https://zeklop.github.io/weather/`**
+
+Both deployments are updated automatically on every push to `main`: one workflow builds two variants (root for the custom domain, `/weather` subpath for GitHub Pages) and deploys each to its target.
 
 To build for a repository subpath deployment:
 
@@ -154,27 +168,27 @@ Then build the frontend with `PUBLIC_PUSH_WORKER_URL` and `PUBLIC_VAPID_KEY` env
 
 ## Installing PWA on iOS (Safari)
 
-1. Open **`https://zeklop.github.io/weather/`** in Safari on iPhone.
+1. Open **`https://gradus.website/`** in Safari on iPhone.
 2. Tap the **Share** button (box with an upward arrow in the bottom toolbar).
 3. Scroll down and select **«Add to Home Screen»**.
 4. Tap **«Add»** in the top right corner.
-5. Launch the app from your Home Screen — the icon is named **«Weather»** — for a native standalone fullscreen experience with offline support. On iOS 16.4+ the icon also shows a live temperature badge (enable in Settings).
+5. Launch the app from your Home Screen — the icon is named **«Gradus»** — for a native standalone fullscreen experience with offline support. On iOS 16.4+ the icon also shows a live temperature badge (enable in Settings).
 
 ---
 
 ## Installing PWA on Android (Chrome)
 
-1. Open **`https://zeklop.github.io/weather/`** in Chrome on Android.
+1. Open **`https://gradus.website/`** in Chrome on Android.
 2. Tap the menu button (**⋮**) and choose **“Add to Home screen”** / **“Install app”** — or tap the install banner that appears at the top of the app.
 3. Confirm the installation.
-4. Launch the app from your Home Screen — the icon is named **«Weather»** — for a native standalone fullscreen experience with offline support and a live temperature badge on the icon (badge rendering also depends on your launcher).
+4. Launch the app from your Home Screen — the icon is named **«Gradus»** — for a native standalone fullscreen experience with offline support and a live temperature badge on the icon (badge rendering also depends on your launcher).
 
 ---
 
 ## Installing PWA on Desktop (Mac / Windows via Chrome)
 
-1. Open **`https://zeklop.github.io/weather/`** in Google Chrome on your Mac or Windows PC.
-2. In the right side of the address bar, click the install icon (looks like a screen with a down arrow) or select **"Install Weather..."** from the Chrome menu.
+1. Open **`https://gradus.website/`** in Google Chrome on your Mac or Windows PC.
+2. In the right side of the address bar, click the install icon (looks like a screen with a down arrow) or select **"Install Gradus..."** from the Chrome menu.
 3. Confirm the installation in the dialog box.
 4. The application will be added to your system (Launchpad on Mac, or Start Menu on Windows) and run in its own dedicated window without browser UI.
 

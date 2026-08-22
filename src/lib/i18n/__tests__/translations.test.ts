@@ -117,7 +117,7 @@ describe('translations dictionary parity', () => {
 
 describe('t() translation helper', () => {
 	it('translates simple dot-notated keys in en by default', () => {
-		expect(t('app.title')).toBe('Weather');
+		expect(t('app.title')).toBe('Gradus');
 		expect(t('nav.home')).toBe('Home');
 		expect(t('nav.forecast')).toBe('Forecast');
 		expect(t('nav.favorites')).toBe('Favorites');
@@ -130,7 +130,7 @@ describe('t() translation helper', () => {
 	});
 
 	it('translates simple dot-notated keys in ru when specified', () => {
-		expect(t('app.title', 'ru')).toBe('Погода');
+		expect(t('app.title', 'ru')).toBe('Градус');
 		expect(t('nav.home', 'ru')).toBe('Главная');
 		expect(t('nav.forecast', 'ru')).toBe('Прогноз');
 		expect(t('nav.favorites', 'ru')).toBe('Избранное');

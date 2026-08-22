@@ -133,6 +133,7 @@ export interface Translations {
 		updating: string;
 		update: string;
 		dataSource: string;
+		appWebsite: string;
 		weatherIcons: string;
 		version: string;
 		installApp: string;
@@ -357,8 +358,8 @@ export interface Translations {
 export const translations: Record<Language, Translations> = {
 	en: {
 		app: {
-			name: 'Weather',
-			title: 'Weather',
+			name: 'Gradus',
+			title: 'Gradus',
 			description: 'Lightweight weather PWA'
 		},
 		nav: {
@@ -450,7 +451,7 @@ export const translations: Record<Language, Translations> = {
 		},
 		settings: {
 			title: 'Settings',
-			description: 'Weather app settings',
+			description: 'Gradus app settings',
 			theme: 'Theme',
 			themeSelectAria: 'Select theme',
 			themeSystem: 'System',
@@ -471,6 +472,7 @@ export const translations: Record<Language, Translations> = {
 			updating: 'Updating…',
 			update: 'Update',
 			dataSource: 'Data source',
+			appWebsite: 'App website',
 			weatherIcons: 'Weather icons',
 			version: 'Version',
 			installApp: 'Install App',
@@ -532,10 +534,10 @@ export const translations: Record<Language, Translations> = {
 			toHome: 'To home page'
 		},
 		pwa: {
-			installTitle: 'Install Weather App',
+			installTitle: 'Install Gradus',
 			installBtn: 'Install',
-			bannerAndroidText: 'Install Weather for quick access and offline mode',
-			bannerIosText: 'Add Weather to your Home Screen for the best experience',
+			bannerAndroidText: 'Install Gradus for quick access and offline mode',
+			bannerIosText: 'Add Gradus to your Home Screen for the best experience',
 			bannerIosAction: 'How to install',
 			bannerDismiss: 'Dismiss',
 			modalTitle: 'How to install',
@@ -693,8 +695,8 @@ export const translations: Record<Language, Translations> = {
 	},
 	ru: {
 		app: {
-			name: 'Погода',
-			title: 'Погода',
+			name: 'Градус',
+			title: 'Градус',
 			description: 'Легкое погодное PWA-приложение'
 		},
 		nav: {
@@ -786,7 +788,7 @@ export const translations: Record<Language, Translations> = {
 		},
 		settings: {
 			title: 'Настройки',
-			description: 'Настройки приложения Погода',
+			description: 'Настройки приложения Градус',
 			theme: 'Тема',
 			themeSelectAria: 'Выбор темы',
 			themeSystem: 'Системная',
@@ -807,6 +809,7 @@ export const translations: Record<Language, Translations> = {
 			updating: 'Обновляем…',
 			update: 'Обновить',
 			dataSource: 'Данные',
+			appWebsite: 'Сайт приложения',
 			weatherIcons: 'Иконки погоды',
 			version: 'Версия',
 			installApp: 'Установить приложение',
@@ -868,9 +871,9 @@ export const translations: Record<Language, Translations> = {
 			toHome: 'На главную'
 		},
 		pwa: {
-			installTitle: 'Установить приложение Погода',
+			installTitle: 'Установить приложение Градус',
 			installBtn: 'Установить',
-			bannerAndroidText: 'Установите приложение Погода для быстрого доступа и оффлайн-режима',
+			bannerAndroidText: 'Установите приложение Градус для быстрого доступа и оффлайн-режима',
 			bannerIosText: 'Установите на экран «Домой» для удобной работы',
 			bannerIosAction: 'Как установить',
 			bannerDismiss: 'Закрыть',

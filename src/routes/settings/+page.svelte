@@ -453,6 +453,12 @@
 
 	<div class="card group">
 		<div class="row">
+			<span class="row-label">{t('settings.appWebsite', lang)}</span>
+			<a class="row-link" href="https://gradus.website/" target="_blank" rel="noopener noreferrer">
+				gradus.website
+			</a>
+		</div>
+		<div class="row">
 			<span class="row-label">{t('settings.dataSource', lang)}</span>
 			<a class="row-link" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
 				Open-Meteo

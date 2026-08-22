@@ -1,6 +1,6 @@
 {
-	"name": "weather",
-	"description": "PWA погоды с кэшированием, без сервера и API-ключей на SvelteKit 5 и Open-Meteo",
+	"name": "gradus",
+	"description": "Gradus — PWA погоды с кэшированием, без сервера и API-ключей на SvelteKit 5 и Open-Meteo",
 	"version": "0.1.0",
 	"license": "MIT",
 	"author": "zeandre",

@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "release"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check types and Svelte diagnostics
+        run: npm run check
+
+      - name: Run test suite
+        run: npm run test
+
+      - name: Verify app icons and safe-zone constraints
+        run: npm run check:icons
+
+      - name: Build static PWA (root mode)
+        run: npm run build
+
+      - name: Pack build artifacts
+        run: |
+          cd build
+          zip -r "../gradus-${GITHUB_REF_NAME}.zip" .
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --generate-notes \
+            --title "Gradus $GITHUB_REF_NAME" \
+            "gradus-${GITHUB_REF_NAME}.zip"
