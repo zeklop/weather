@@ -33,15 +33,28 @@
 
 	let pushEnabled = $state(false);
 	let pushPending = $state(false);
+	let pushErrorKey = $state<'enable' | 'disable' | null>(null);
 
 	async function togglePush(): Promise<void> {
 		if (pushPending || !location.current) return;
 		pushPending = true;
+		pushErrorKey = null;
 		try {
 			if (!pushEnabled) {
-				pushEnabled = (await pushClient.subscribe(location.current, lang)).success;
+				const res = await pushClient.subscribe(location.current, lang);
+				if (res.success) {
+					pushEnabled = true;
+				} else {
+					console.warn('push subscribe failed:', res.error);
+					pushErrorKey = 'enable';
+				}
 			} else {
-				pushEnabled = !(await pushClient.unsubscribe());
+				const ok = await pushClient.unsubscribe();
+				if (ok) {
+					pushEnabled = false;
+				} else {
+					pushErrorKey = 'disable';
+				}
 			}
 		} finally {
 			pushPending = false;
@@ -305,11 +318,21 @@
 					aria-checked={pushEnabled}
 					aria-label={t('settings.pushNotifications', lang)}
 					disabled={pushPending}
+					aria-busy={pushPending}
 					onclick={togglePush}
 				>
-					<span class="toggle-thumb"></span>
+					{#if pushPending}
+						<span class="spinner toggle-spinner" aria-hidden="true"></span>
+					{:else}
+						<span class="toggle-thumb"></span>
+					{/if}
 				</button>
 			</div>
+			{#if pushErrorKey === 'enable'}
+				<div class="row-note" role="alert">{t('push.errorPrefix', lang)}</div>
+			{:else if pushErrorKey === 'disable'}
+				<div class="row-note" role="alert">{t('push.disableError', lang)}</div>
+			{/if}
 		{/if}
 
 		{#if mounted && settings.alertsEnabled}
@@ -877,6 +900,20 @@
 
 	.toggle-switch.active .toggle-thumb {
 		transform: translateX(20px);
+	}
+
+	.toggle-switch:disabled {
+		cursor: wait;
+	}
+
+	.toggle-spinner {
+		width: 14px;
+		height: 14px;
+		border-color: rgba(255, 255, 255, 0.35);
+		border-top-color: #fff;
+		position: absolute;
+		left: 17px;
+		top: 7px;
 	}
 
 	.quiet-hours-row {

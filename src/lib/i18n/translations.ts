@@ -227,6 +227,7 @@ export interface Translations {
 		enableBtn: string;
 		laterBtn: string;
 		errorPrefix: string;
+		disableError: string;
 	};
 	stats: {
 		title: string;
@@ -586,7 +587,8 @@ export const translations: Record<Language, Translations> = {
 			onboardingText: 'Enable notifications to get timely warnings about upcoming rain, snow, and freeze.',
 			enableBtn: 'Enable',
 			laterBtn: 'Later',
-			errorPrefix: 'Could not enable notifications'
+			errorPrefix: 'Could not enable notifications',
+			disableError: 'Could not disable notifications'
 		},
 		stats: {
 			title: 'Analytics & Subscriptions',
@@ -944,7 +946,8 @@ export const translations: Record<Language, Translations> = {
 			onboardingText: 'Включите уведомления, чтобы вовремя узнавать о дожде, снеге и заморозках.',
 			enableBtn: 'Включить',
 			laterBtn: 'Позже',
-			errorPrefix: 'Не удалось включить оповещения'
+			errorPrefix: 'Не удалось включить оповещения',
+			disableError: 'Не удалось отключить оповещения'
 		},
 		stats: {
 			title: 'Аналитика и подписки',
