@@ -4,13 +4,13 @@ import sharp from 'sharp';
 
 const W = 1280;
 const H = 640;
-const MARGIN = 40;
-const GAP = 40;
+const MARGIN = 30;
+const GAP = 24;
 const BG = '#10141f';
 
-const files = ['gradus-main', 'gradus-forecast', 'gradus-favs'];
+const files = ['gradus-main', 'gradus-forecast', 'gradus-favs', 'gradus-settings'];
 
-const tileW = Math.floor((W - 2 * MARGIN - 2 * GAP) / 3);
+const tileW = Math.floor((W - 2 * MARGIN - 3 * GAP) / 4);
 const tileH = Math.round((tileW * 1848) / 1224);
 const y = Math.round((H - tileH) / 2);
 
@@ -26,7 +26,8 @@ await sharp({
 	create: { width: W, height: H, channels: 4, background: BG }
 })
 	.composite(composites)
-	.png()
-	.toFile('screenshots/social-preview.png');
+	.flatten({ background: BG })
+	.jpeg({ quality: 90 })
+	.toFile('screenshots/social-preview.jpg');
 
-console.log(`screenshots/social-preview.png (${W}x${H})`);
+console.log(`screenshots/social-preview.jpg (${W}x${H})`);
