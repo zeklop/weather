@@ -24,7 +24,26 @@ self.addEventListener('push', function (event) {
 
 self.addEventListener('notificationclick', function (event) {
 	event.notification.close();
-	var targetUrl = (event.notification.data && event.notification.data.url) || './';
+	var rawUrl = (event.notification.data && event.notification.data.url) || './';
+	var targetUrl;
+	try {
+		// App root of THIS install, derived from the SW script location
+		// ('/' or e.g. '/weather/').
+		var appRoot = new URL('./', self.serviceWorker.scriptURL);
+		targetUrl = new URL(rawUrl, self.registration.scope);
+		// A payload path outside this install's root comes from a stale
+		// base_path stored under a different origin (e.g. '/weather/' row opened
+		// on the root domain) and would 404 — clamp to the app root instead.
+		var inInstall =
+			targetUrl.href.indexOf(appRoot.href) === 0 &&
+			(appRoot.pathname !== '/' || targetUrl.pathname === '/');
+		if (!inInstall) {
+			targetUrl = appRoot;
+		}
+		targetUrl = targetUrl.href;
+	} catch (e) {
+		targetUrl = self.registration.scope;
+	}
 
 	event.waitUntil(
 		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
