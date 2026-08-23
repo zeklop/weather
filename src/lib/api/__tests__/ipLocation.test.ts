@@ -70,7 +70,7 @@ describe('lookupCityByIp', () => {
 		expect(await lookupCityByIp()).toBeNull();
 	});
 
-	it('aborts after the timeout', async () => {
+	it('aborts after the timeout (both providers)', async () => {
 		vi.useFakeTimers();
 		vi.stubGlobal(
 			'fetch',
@@ -81,8 +81,34 @@ describe('lookupCityByIp', () => {
 			)
 		);
 		const pending = lookupCityByIp();
-		await vi.advanceTimersByTimeAsync(3100);
+		await vi.advanceTimersByTimeAsync(5100); // primary aborts
+		await vi.advanceTimersByTimeAsync(5100); // fallback aborts
 		expect(await pending).toBeNull();
 		vi.useRealTimers();
+	});
+
+	it('falls back to geojs.io when the primary provider fails', async () => {
+		const GEOJS = {
+			ip: '1.2.3.4',
+			city: 'Cheboksary',
+			country_code: 'RU',
+			latitude: '56.1322', // geojs returns coordinates as strings
+			longitude: '47.2519',
+			timezone: 'Europe/Moscow'
+		};
+		vi.stubGlobal(
+			'fetch',
+			vi
+				.fn()
+				.mockRejectedValueOnce(new Error('blocked'))
+				.mockResolvedValue(new Response(JSON.stringify(GEOJS), { status: 200 }))
+		);
+		expect(await lookupCityByIp()).toEqual({
+			latitude: 56.1322,
+			longitude: 47.2519,
+			city: 'Cheboksary',
+			countryCode: 'RU',
+			timezone: 'Europe/Moscow'
+		});
 	});
 });
