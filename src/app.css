@@ -192,4 +192,26 @@ button {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 	}
+
+	/*
+	 * Loading indicators are functional, not decorative: under reduced motion
+	 * they swap rotation for a minimal opacity pulse so the busy state stays
+	 * perceivable. Selectors match the spinner classes across components.
+	 */
+	button[aria-busy='true'] svg,
+	.spinner,
+	.ptr-spinner,
+	.tool-icon.spinning {
+		animation: app-status-pulse 1.2s ease-in-out infinite !important;
+	}
+}
+
+@keyframes app-status-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.35;
+	}
 }
