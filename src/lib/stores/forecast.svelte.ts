@@ -15,7 +15,7 @@ export type ForecastStore = {
 	readonly refreshing: boolean;
 	readonly error: string | null;
 	load(location?: Location, force?: boolean): void;
-	refresh(): void;
+	refresh(): Promise<void>;
 	destroy(): void;
 };
 
@@ -25,6 +25,9 @@ export type ForecastStoreOptions = {
 	locationStore?: Pick<LocationStore, 'current'>;
 	settingsStore?: Pick<SettingsStore, 'touchLastUpdated'>;
 	onLine?: () => boolean;
+	// Keep the spinner visible at least this long even on fast responses,
+	// so a quick tap-refresh doesn't look like a dead button.
+	minSpinMs?: number;
 };
 
 function defaultStorage(): Storage {
@@ -42,6 +45,7 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 	const locationStore = options.locationStore ?? getLocationStore();
 	const settingsStore = options.settingsStore ?? getSettingsStore();
 	const onLine = options.onLine ?? defaultOnLine;
+	const minSpinMs = options.minSpinMs ?? 0;
 
 	let payload = $state<ForecastPayload | null>(null);
 	let payloadLocation: Location | null = null;
@@ -54,6 +58,9 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 	// city; epoch discards results of fetches superseded by a location change.
 	let fetchingKey: string | null = null;
 	let epoch = 0;
+	// Completion promise of the current fetch — lets callers (pull-to-refresh)
+	// await real network completion instead of guessing with timeouts.
+	let inflight: Promise<void> | null = null;
 
 	function applyEntry(entry: NonNullable<ReturnType<typeof cache.get>>): void {
 		payload = entry.payload;
@@ -69,9 +76,10 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		if (fetchingKey === key) return;
 		const id = ++epoch;
 		fetchingKey = key;
+		const startedAt = Date.now();
 		refreshing = true;
 
-		fetcher(location).then(
+		inflight = fetcher(location).then(
 			(result) => {
 				if (id !== epoch) return;
 				const now = Date.now();
@@ -101,7 +109,14 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		).finally(() => {
 			if (id !== epoch) return;
 			fetchingKey = null;
-			refreshing = false;
+			const remain = minSpinMs - (Date.now() - startedAt);
+			if (remain <= 0) {
+				refreshing = false;
+				return;
+			}
+			setTimeout(() => {
+				if (id === epoch) refreshing = false;
+			}, remain);
 		});
 	}
 
@@ -146,8 +161,9 @@ export function createForecastStore(options: ForecastStoreOptions = {}): Forecas
 		startFetch(location, key);
 	}
 
-	function refresh(): void {
+	function refresh(): Promise<void> {
 		load(payloadLocation ?? locationStore.current, true);
+		return inflight ?? Promise.resolve();
 	}
 
 	function onOnline(): void {

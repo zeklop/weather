@@ -50,7 +50,7 @@
 	const favorites = getFavoritesStore();
 	const settings = getSettingsStore();
 	const lang = $derived(settings.language);
-	const forecastStore = createForecastStore({ locationStore: location });
+	const forecastStore = createForecastStore({ locationStore: location, minSpinMs: 600 });
 	setForecastStore(forecastStore);
 
 	const alertsStore = createAlertsStore({
