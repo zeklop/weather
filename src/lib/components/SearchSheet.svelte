@@ -8,16 +8,57 @@
 	let selectAddsFavorite = $state(false);
 	let previousActiveElement: HTMLElement | null = null;
 
+	// iOS shows the software keyboard only when focus() runs synchronously
+	// inside the tap handler; async focus (effects/microtasks) is ignored.
+	// Focusing a throwaway proxy input during the tap opens the keyboard,
+	// and focus transfers to the real input once the sheet renders.
+	let keyboardProxy: HTMLInputElement | null = null;
+
+	function isAppleTouchDevice(): boolean {
+		if (typeof navigator === 'undefined') return false;
+		const ua = navigator.userAgent;
+		return (
+			/iP(hone|ad|od)/.test(ua) ||
+			(/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1)
+		);
+	}
+
+	function releaseKeyboardProxy(): void {
+		keyboardProxy?.remove();
+		keyboardProxy = null;
+	}
+
+	function acquireKeyboardProxy(): void {
+		if (typeof document === 'undefined' || !isAppleTouchDevice()) return;
+		const proxy = document.createElement('input');
+		proxy.type = 'text';
+		proxy.tabIndex = -1;
+		proxy.setAttribute('aria-hidden', 'true');
+		proxy.style.position = 'fixed';
+		proxy.style.top = '0';
+		proxy.style.left = '0';
+		proxy.style.width = '1px';
+		proxy.style.height = '1px';
+		proxy.style.opacity = '0';
+		proxy.style.fontSize = '16px'; // prevent iOS focus zoom
+		document.body.appendChild(proxy);
+		proxy.focus();
+		keyboardProxy = proxy;
+		setTimeout(releaseKeyboardProxy, 3000); // safety net
+	}
+
 	export function openSearch(options?: { addToFavorites?: boolean }): void {
 		if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
 			previousActiveElement = document.activeElement;
 		}
 		selectAddsFavorite = options?.addToFavorites ?? false;
+		acquireKeyboardProxy();
 		open = true;
 	}
 
 	export function closeSearch(): void {
 		open = false;
+		releaseKeyboardProxy();
 		if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
 			const el = previousActiveElement;
 			previousActiveElement = null;
@@ -146,6 +187,7 @@
 		highlight = -1;
 		queueMicrotask(() => {
 			inputEl?.focus();
+			releaseKeyboardProxy();
 		});
 	});
 
