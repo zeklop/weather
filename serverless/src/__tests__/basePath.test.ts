@@ -88,4 +88,10 @@ describe('cron push base path resolution', () => {
 		expect(payloads.some((p) => p.icon === '/icons/app/icon-192.png' && p.data.url === '/')).toBe(true);
 		expect(payloads.every((p) => p.icon !== '/weather/icons/app/icon-192.png' || p.data.url === '/weather/')).toBe(true);
 	});
+
+	it('prefixes push title with the subscriber city name', async () => {
+		await handleScheduled(makeEnv([makeSub('')]));
+		const payloads = vi.mocked(encryptWebPushPayload).mock.calls.map((c) => JSON.parse(c[0] as string));
+		expect(payloads[0].title).toBe('Test City: Rain');
+	});
 });

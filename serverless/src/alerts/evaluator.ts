@@ -81,12 +81,16 @@ export function evaluateWeatherConditions(
 			icon: 'thunderstorm'
 		});
 	} else if (nextGust1 >= 17) {
+		// Local wall-clock label from "YYYY-MM-DDTHH:00" — e.g. "15:00".
+		const m = /T(\d{2}):\d{2}$/.exec(hourly.time[nowIndex + 1] || '');
+		const at = m ? ` ${lang === 'ru' ? 'около' : 'around'} ${m[1]}:00` : '';
 		alerts.push({
 			id: 'severe_wind',
 			type: 'severe_wind',
 			severity: 'warning',
 			title: lang === 'ru' ? 'Шквалистый ветер' : 'Gale wind warning',
-			message: lang === 'ru' ? `Порывы ветра до ${Math.round(nextGust1)} м/с` : `Wind gusts up to ${Math.round(nextGust1)} m/s`,
+			message:
+				(lang === 'ru' ? `Порывы ветра до ${Math.round(nextGust1)} м/с` : `Wind gusts up to ${Math.round(nextGust1)} m/s`) + at,
 			icon: 'wind'
 		});
 	}

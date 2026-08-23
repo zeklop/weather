@@ -120,7 +120,7 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
 					// Per-subscription base path (set at subscribe time). Legacy rows are
 					// backfilled to APP_BASE_PATH by the one-off migration, so no fallback
 					// here: '' is a legitimate root-domain path and must be preserved.
-					const pushResult = await sendWebPush(sub, targetAlert, publicVapidKey, vapidPrivateKey, sub.base_path ?? '');
+					const pushResult = await sendWebPush(sub, targetAlert, publicVapidKey, vapidPrivateKey, sub.base_path ?? '', sub.city_name);
 					if (pushResult.success) {
 						cityAlertsSent++;
 						pushesSent++;
@@ -176,11 +176,15 @@ export async function sendWebPush(
 	alert: PushPayload,
 	publicVapidKey: string,
 	privateKey: CryptoKey,
-	basePath = ''
+	basePath = '',
+	cityName = ''
 ): Promise<{ success: boolean; statusCode?: number; error?: string }> {
 	try {
+		// City name comes from the subscriber row — stored in that subscriber's
+		// language at subscribe/sync time, so no extra localization needed.
+		const title = cityName ? `${cityName}: ${alert.title}` : alert.title;
 		const payloadJSON = JSON.stringify({
-			title: alert.title,
+			title,
 			body: alert.message,
 			icon: `${basePath}/icons/app/icon-192.png`,
 			badge: `${basePath}/icons/app/icon-192.png`,
