@@ -100,6 +100,7 @@ function buildSubscribeBody(
 export class PushManagerClient {
 	private workerUrl: string;
 	private publicVapidKey: string;
+	private syncController: AbortController | null = null;
 
 	constructor(config?: PushManagerConfig) {
 		// Reads from import.meta.env with graceful fallback
@@ -250,13 +251,19 @@ export class PushManagerClient {
 			const fields = extractSubscriptionFields(subscription);
 			if (!fields) return;
 
+			// Abort an in-flight sync so rapid setting changes cannot land out of
+			// order and overwrite newer values in D1 — the latest call always wins.
+			this.syncController?.abort();
+			this.syncController = new AbortController();
+
 			await fetch(`${this.workerUrl}/api/push/subscribe`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(buildSubscribeBody(fields, location, lang, windUnit))
+				body: JSON.stringify(buildSubscribeBody(fields, location, lang, windUnit)),
+				signal: this.syncController.signal
 			});
 		} catch {
-			// silent fallback
+			// silent fallback (including the aborted stale sync)
 		}
 	}
 }
