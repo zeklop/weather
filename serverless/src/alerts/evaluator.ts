@@ -83,6 +83,7 @@ export function evaluateWeatherConditions(
 	} else if (nextGust1 >= 17) {
 		// Local wall-clock label from "YYYY-MM-DDTHH:00" — e.g. "15:00".
 		const m = /T(\d{2}):\d{2}$/.exec(hourly.time[nowIndex + 1] || '');
+		const hourLabel = m ? `${m[1]}:00` : undefined;
 		const at = m ? ` ${lang === 'ru' ? 'около' : 'around'} ${m[1]}:00` : '';
 		alerts.push({
 			id: 'severe_wind',
@@ -91,6 +92,9 @@ export function evaluateWeatherConditions(
 			title: lang === 'ru' ? 'Шквалистый ветер' : 'Gale wind warning',
 			message:
 				(lang === 'ru' ? `Порывы ветра до ${Math.round(nextGust1)} м/с` : `Wind gusts up to ${Math.round(nextGust1)} m/s`) + at,
+			// Raw values for per-subscriber rendering in the subscriber's wind unit
+			gustMs: nextGust1,
+			hourLabel,
 			icon: 'wind'
 		});
 	}
@@ -102,7 +106,7 @@ export function evaluateWeatherConditions(
 			type: 'frost',
 			severity: 'warning',
 			title: lang === 'ru' ? 'Предупреждение о заморозках' : 'Frost warning',
-			message: lang === 'ru' ? 'Температура перейдет через 0°C, возможна гололедица' : 'Temperature dropping below 0°C, icy roads possible',
+			message: lang === 'ru' ? 'Температура уходит ниже нуля, возможна гололедица' : 'Temperature dropping below freezing, icy roads possible',
 			icon: 'frost'
 		});
 	}

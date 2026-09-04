@@ -1,4 +1,5 @@
 import type { Location } from '$lib/types';
+import type { WindUnit } from '$lib/weather/units';
 
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
 	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -78,6 +79,7 @@ function buildSubscribeBody(
 	fields: SubscriptionFields,
 	location: Location,
 	lang: 'en' | 'ru',
+	windUnit: WindUnit = 'ms',
 	alertTypes?: { rain: boolean; freeze: boolean; severe: boolean; quietHours: boolean }
 ): Record<string, unknown> {
 	return {
@@ -90,6 +92,7 @@ function buildSubscribeBody(
 		language: lang,
 		platform: detectPlatform(),
 		base_path: (import.meta as unknown as { env?: Record<string, string> }).env?.PUBLIC_BASE_PATH || '',
+		wind_unit: windUnit,
 		...(alertTypes ? { alert_types: alertTypes } : {})
 	};
 }
@@ -149,7 +152,8 @@ export class PushManagerClient {
 	async subscribe(
 		location: Location,
 		lang: 'en' | 'ru' = 'en',
-		alertTypes = { rain: true, freeze: true, severe: true, quietHours: true }
+		alertTypes = { rain: true, freeze: true, severe: true, quietHours: true },
+		windUnit: WindUnit = 'ms'
 	): Promise<{ success: boolean; error?: string }> {
 		if (!this.isConfigured) {
 			return { success: false, error: 'Push Worker URL is not configured' };
@@ -194,7 +198,7 @@ export class PushManagerClient {
 			const response = await fetch(`${this.workerUrl}/api/push/subscribe`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(buildSubscribeBody(fields, location, lang, alertTypes))
+				body: JSON.stringify(buildSubscribeBody(fields, location, lang, windUnit, alertTypes))
 			});
 
 			if (!response.ok) {
@@ -234,7 +238,7 @@ export class PushManagerClient {
 		}
 	}
 
-	async syncLocation(location: Location, lang: 'en' | 'ru' = 'en'): Promise<void> {
+	async syncLocation(location: Location, lang: 'en' | 'ru' = 'en', windUnit: WindUnit = 'ms'): Promise<void> {
 		if (!this.isConfigured || !isPushSupported()) return;
 		try {
 			const isSubscribed = localStorage.getItem('weather:pushSubscribed') === 'true';
@@ -249,7 +253,7 @@ export class PushManagerClient {
 			await fetch(`${this.workerUrl}/api/push/subscribe`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(buildSubscribeBody(fields, location, lang))
+				body: JSON.stringify(buildSubscribeBody(fields, location, lang, windUnit))
 			});
 		} catch {
 			// silent fallback

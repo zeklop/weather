@@ -77,13 +77,16 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 			headers: { 'Content-Type': 'application/json' }
 		});
 	}
+	// Cosmetic column: unknown values coerce to the default instead of rejecting
+	// the whole subscription (same style as the language coercion above).
+	const windUnit = body.wind_unit === 'mph' ? 'mph' : 'ms';
 
 	try {
 		await env.DB.prepare(`
 			INSERT INTO subscriptions (
 				endpoint_hash, endpoint, p256dh, auth, city_name, latitude, longitude,
-				timezone, language, platform, alert_types, base_path, created_at, last_seen_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				timezone, language, platform, alert_types, base_path, wind_unit, created_at, last_seen_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(endpoint_hash) DO UPDATE SET
 				city_name = excluded.city_name,
 				latitude = excluded.latitude,
@@ -93,6 +96,7 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 				platform = excluded.platform,
 				alert_types = excluded.alert_types,
 				base_path = excluded.base_path,
+				wind_unit = excluded.wind_unit,
 				last_seen_at = excluded.last_seen_at
 		`).bind(
 			endpointHash,
@@ -107,6 +111,7 @@ export async function handleSubscribe(request: Request, env: Env): Promise<Respo
 			platform,
 			alertTypes,
 			basePath,
+			windUnit,
 			now,
 			now
 		).run();

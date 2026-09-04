@@ -41,7 +41,7 @@
 		pushErrorKey = null;
 		try {
 			if (!pushEnabled) {
-				const res = await pushClient.subscribe(location.current, lang);
+				const res = await pushClient.subscribe(location.current, lang, undefined, settings.windUnit);
 				if (res.success) {
 					pushEnabled = true;
 				} else {

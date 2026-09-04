@@ -51,7 +51,7 @@
 		errorMessage = null;
 
 		try {
-			const res = await pushClient.subscribe(currentLocation, lang);
+			const res = await pushClient.subscribe(currentLocation, lang, undefined, settings.windUnit);
 			if (res.success) {
 				visible = false;
 			} else {

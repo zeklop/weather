@@ -1,4 +1,4 @@
-import type { Env, SubscriptionRecord, PushPayload } from '../types';
+import type { Env, SubscriptionRecord, PushPayload, WeatherAlertMessage } from '../types';
 import { evaluateWeatherConditions, type OpenMeteoForecastResponse } from '../alerts/evaluator';
 import { shouldSendAlertToSubscriber } from '../alerts/dedup';
 import { encryptWebPushPayload } from '../crypto/webpush';
@@ -48,6 +48,25 @@ export function currentHourIndex(hourlyTime: string[], timezone: string, now: nu
  */
 export function buildForecastUrl(city: CityCoord): string {
 	return `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&temperature_unit=celsius&precipitation_unit=mm&forecast_days=2&timezone=auto`;
+}
+
+/**
+ * Re-renders the wind gust message in the subscriber's preferred unit. The
+ * evaluator emits raw gustMs (m/s); other alert types carry no numbers and
+ * pass through unchanged. Unknown stored units degrade to the m/s default.
+ */
+export function alertForSubscriber(
+	alert: WeatherAlertMessage,
+	lang: 'en' | 'ru',
+	windUnit: string
+): WeatherAlertMessage {
+	if (alert.gustMs === undefined || windUnit !== 'mph') return alert;
+	const mph = Math.round(alert.gustMs * 2.2369);
+	const at = alert.hourLabel ? ` ${lang === 'ru' ? 'около' : 'around'} ${alert.hourLabel}` : '';
+	return {
+		...alert,
+		message: (lang === 'ru' ? `Порывы ветра до ${mph} миль/ч` : `Wind gusts up to ${mph} mph`) + at
+	};
 }
 
 /**
@@ -120,7 +139,7 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
 				const alertList = sub.language === 'ru' ? ruAlerts : enAlerts;
 				if (alertList.length === 0) continue;
 
-				const targetAlert = alertList[0];
+				const targetAlert = alertForSubscriber(alertList[0], sub.language === 'ru' ? 'ru' : 'en', sub.wind_unit);
 				const decision = shouldSendAlertToSubscriber(sub, targetAlert, now);
 				if (!decision.send) continue;
 

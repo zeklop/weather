@@ -66,4 +66,28 @@ describe('Weather Alert Evaluator', () => {
 		const alerts = evaluateWeatherConditions(mockForecast, 'ru', 0);
 		expect(alerts.some((a) => a.type === 'frost')).toBe(true);
 	});
+
+	it('severe wind alert carries raw gust value and hour label for unit rendering', () => {
+		const mockForecast: OpenMeteoForecastResponse = {
+			latitude: 56.8,
+			longitude: 60.6,
+			timezone: 'Asia/Yekaterinburg',
+			hourly: {
+				time: ['2026-08-21T12:00', '2026-08-21T13:00', '2026-08-21T14:00'],
+				temperature_2m: [22, 20, 19],
+				precipitation_probability: [10, 10, 10],
+				precipitation: [0, 0, 0],
+				weather_code: [1, 1, 1],
+				wind_speed_10m: [8, 14, 14],
+				wind_gusts_10m: [9, 18.6, 20]
+			}
+		};
+
+		const alerts = evaluateWeatherConditions(mockForecast, 'en', 0);
+		const wind = alerts.find((a) => a.type === 'severe_wind');
+		expect(wind).toBeDefined();
+		expect(wind?.gustMs).toBe(18.6);
+		expect(wind?.hourLabel).toBe('13:00');
+		expect(wind?.message).toContain('19 m/s');
+	});
 });

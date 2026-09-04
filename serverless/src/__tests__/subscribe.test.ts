@@ -79,3 +79,33 @@ describe('subscribe base_path validation', () => {
 		expect(bound[11]).toBe('/weather');
 	});
 });
+
+describe('subscribe wind_unit', () => {
+	beforeEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('persists explicit mph', async () => {
+		let bound: unknown[] = [];
+		const env = makeEnv((args) => (bound = args));
+		const res = await handleSubscribe(makeRequest({ ...makeBody(''), wind_unit: 'mph' }), env);
+		expect(res.status).toBe(200);
+		expect(bound[12]).toBe('mph');
+	});
+
+	it('coerces unknown values to ms instead of rejecting the subscription', async () => {
+		let bound: unknown[] = [];
+		const env = makeEnv((args) => (bound = args));
+		const res = await handleSubscribe(makeRequest({ ...makeBody(''), wind_unit: 'kmh' }), env);
+		expect(res.status).toBe(200);
+		expect(bound[12]).toBe('ms');
+	});
+
+	it('defaults to ms when absent', async () => {
+		let bound: unknown[] = [];
+		const env = makeEnv((args) => (bound = args));
+		const res = await handleSubscribe(makeRequest(makeBody('')), env);
+		expect(res.status).toBe(200);
+		expect(bound[12]).toBe('ms');
+	});
+});

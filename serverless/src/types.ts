@@ -67,6 +67,8 @@ export interface SubscribeRequestBody {
 	platform?: 'ios' | 'android' | 'desktop';
 	/** URL base path of the frontend that made the subscription ("" or "/weather") */
 	base_path?: string;
+	/** Preferred wind unit for alert messages; unknown values coerce to 'ms' */
+	wind_unit?: string;
 	alert_types?: Partial<SubscriptionAlertFlags>;
 }
 
@@ -105,6 +107,8 @@ export interface SubscriptionRecord {
 	alert_types: string;
 	/** NOT NULL in D1; legacy rows are backfilled by the one-off migration */
 	base_path: string;
+	/** Preferred wind unit for alert messages ('ms' default, legacy rows included) */
+	wind_unit: string;
 	created_at: number;
 	last_seen_at: number;
 	last_alert_sent_at: number | null;
@@ -192,4 +196,8 @@ export interface WeatherAlertMessage {
 	message: string;
 	icon: string;
 	url?: string;
+	/** Raw gust value in m/s for per-subscriber unit rendering (severe_wind) */
+	gustMs?: number;
+	/** Local wall-clock hour label like "15:00" for per-subscriber rendering */
+	hourLabel?: string;
 }

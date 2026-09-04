@@ -69,11 +69,12 @@
 		}
 	});
 
-	// Re-syncs subscription city/language to the server; intentionally tracks
-	// `lang` so a language switch updates the stored subscription language.
+	// Re-syncs subscription city/language/wind-unit to the server; intentionally
+	// tracks `lang` and `windUnit` so switching either updates the stored
+	// subscription without a manual re-subscribe.
 	$effect(() => {
 		if (mounted && location.current) {
-			pushClient.syncLocation(location.current, lang);
+			pushClient.syncLocation(location.current, lang, settings.windUnit);
 		}
 	});
 

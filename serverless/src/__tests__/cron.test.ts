@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { buildForecastUrl } from '../routes/cron';
+import { alertForSubscriber, buildForecastUrl } from '../routes/cron';
+import type { WeatherAlertMessage } from '../types';
+
+const windAlert: WeatherAlertMessage = {
+	id: 'severe_wind',
+	type: 'severe_wind',
+	severity: 'warning',
+	title: 'Gale wind warning',
+	message: 'Wind gusts up to 22 m/s around 15:00',
+	icon: 'wind',
+	gustMs: 22.4,
+	hourLabel: '15:00'
+};
 
 describe('buildForecastUrl', () => {
 	it('pins all units explicitly — evaluator thresholds assume m/s, °C, mm', () => {
@@ -16,5 +28,28 @@ describe('buildForecastUrl', () => {
 		);
 		expect(url).toContain('latitude=1.5');
 		expect(url).toContain('longitude=-2.5');
+	});
+});
+
+describe('alertForSubscriber', () => {
+	it('renders mph for mph subscribers and keeps the hour label', () => {
+		const alert = alertForSubscriber(windAlert, 'en', 'mph');
+		expect(alert.message).toBe('Wind gusts up to 50 mph around 15:00');
+	});
+
+	it('renders localized mph in Russian', () => {
+		const alert = alertForSubscriber(windAlert, 'ru', 'mph');
+		expect(alert.message).toBe('Порывы ветра до 50 миль/ч около 15:00');
+	});
+
+	it('passes the default m/s message through untouched', () => {
+		const alert = alertForSubscriber(windAlert, 'en', 'ms');
+		expect(alert.message).toBe(windAlert.message);
+	});
+
+	it('passes through alerts without raw gust values', () => {
+		const rain: WeatherAlertMessage = { ...windAlert, id: 'precip_rain', type: 'precipitation', gustMs: undefined };
+		expect(alertForSubscriber(rain, 'en', 'mph')).toBe(rain);
+		expect(alertForSubscriber(rain, 'ru', 'unknown_unit')).toBe(rain);
 	});
 });
