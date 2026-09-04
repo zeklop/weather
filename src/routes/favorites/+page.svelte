@@ -13,7 +13,7 @@
 	import WeatherIcon from '$lib/components/WeatherIcon.svelte';
 	import { getWeatherVisual } from '$lib/weather/wmo';
 	import { isDay } from '$lib/weather/dayNight';
-	import { formatFavoriteLocalTime } from '$lib/weather/format';
+	import { formatTimeShort } from '$lib/weather/format';
 	import { formatTemp } from '$lib/weather/units';
 	import type { CachedForecast, Location } from '$lib/types';
 
@@ -316,14 +316,11 @@
 						{#if sub !== ''}
 							<span class="fav-sub">{sub}</span>
 						{/if}
-						{#if visual}
-							<span class="fav-condition">{visual.label}</span>
-						{/if}
 					</span>
 					<span class="fav-side">
 						{#if row?.entry}
 							<span class="fav-temp">{formatTemp(row.entry.payload.current.temperature)}</span>
-							<span class="fav-time">{formatFavoriteLocalTime(row.entry.payload.current.time, lang)}</span>
+							<span class="fav-time">{formatTimeShort(row.entry.payload.current.time)}</span>
 						{:else if row?.offline}
 							<span class="fav-error">{t('favorites.noNetwork', lang)}</span>
 						{:else if row?.failed}
@@ -473,26 +470,20 @@
 	}
 
 	.fav-name {
-		display: block;
+		display: -webkit-box; /* clamp to 2 lines: full name beats ellipsis */
 		font-size: 15px;
 		font-weight: 500;
-		white-space: nowrap;
+		line-height: 1.25;
 		overflow: hidden;
-		text-overflow: ellipsis;
+		overflow-wrap: break-word;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
 	}
 
 	.fav-sub {
 		display: block;
 		font-size: 12px;
-		color: var(--text-secondary);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.fav-condition {
-		display: block;
-		font-size: 13px;
 		color: var(--text-secondary);
 		white-space: nowrap;
 		overflow: hidden;

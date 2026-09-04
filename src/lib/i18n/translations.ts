@@ -105,7 +105,6 @@ export interface Translations {
 		emptyTitle: string;
 		emptyHint: string;
 		addCity: string;
-		localTime: string;
 		noNetwork: string;
 		failedToLoad: string;
 		removeFavorite: string;
@@ -474,7 +473,6 @@ export const translations: Record<Language, Translations> = {
 			emptyTitle: 'No saved locations',
 			emptyHint: 'No saved locations yet. Tap below to find and add a city',
 			addCity: 'Add city',
-			localTime: 'local {time}',
 			noNetwork: 'No network',
 			failedToLoad: 'Failed to load',
 			removeFavorite: 'Remove {name} from favorites',
@@ -841,7 +839,6 @@ export const translations: Record<Language, Translations> = {
 			emptyTitle: 'Нет избранных городов',
 			emptyHint: 'У вас пока нет сохранённых городов. Нажмите кнопку ниже, чтобы найти и добавить город',
 			addCity: 'Добавить город',
-			localTime: 'местное {time}',
 			noNetwork: 'Нет сети',
 			failedToLoad: 'Не удалось загрузить',
 			removeFavorite: 'Удалить {name} из избранного',

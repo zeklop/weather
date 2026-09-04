@@ -29,11 +29,6 @@ export function formatTimeShort(isoDateTime: string): string {
 	return formatHour(isoDateTime);
 }
 
-export function formatFavoriteLocalTime(isoDateTime: string, lang: Language = 'en'): string {
-	const prefix = lang === 'ru' ? 'местное' : 'local';
-	return `${prefix} ${formatTimeShort(isoDateTime)}`;
-}
-
 const DAY_SHORT_RU = new Intl.DateTimeFormat('ru-RU', {
 	weekday: 'short',
 	day: 'numeric',
