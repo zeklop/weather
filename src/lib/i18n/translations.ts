@@ -109,6 +109,7 @@ export interface Translations {
 		noNetwork: string;
 		failedToLoad: string;
 		removeFavorite: string;
+		reorder: string;
 	};
 	settings: {
 		title: string;
@@ -476,7 +477,8 @@ export const translations: Record<Language, Translations> = {
 			localTime: 'local {time}',
 			noNetwork: 'No network',
 			failedToLoad: 'Failed to load',
-			removeFavorite: 'Remove {name} from favorites'
+			removeFavorite: 'Remove {name} from favorites',
+			reorder: 'Move {name} (position {position} of {total})'
 		},
 		settings: {
 			title: 'Settings',
@@ -842,7 +844,8 @@ export const translations: Record<Language, Translations> = {
 			localTime: 'местное {time}',
 			noNetwork: 'Нет сети',
 			failedToLoad: 'Не удалось загрузить',
-			removeFavorite: 'Удалить {name} из избранного'
+			removeFavorite: 'Удалить {name} из избранного',
+			reorder: 'Переместить {name} (позиция {position} из {total})'
 		},
 		settings: {
 			title: 'Настройки',

@@ -17,6 +17,7 @@ export type FavoritesStore = {
 	addFavorite(location: Location): void;
 	isFavorite(location: Location): boolean;
 	removeFavorite(id: string): void;
+	moveFavorite(fromIndex: number, toIndex: number): void;
 	renameFavorite(key: string, resolved: ResolvedPlace): void;
 };
 
@@ -140,6 +141,17 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 		persist();
 	}
 
+	function moveFavorite(fromIndex: number, toIndex: number): void {
+		if (fromIndex === toIndex) return;
+		if (fromIndex < 0 || fromIndex >= list.length) return;
+		if (toIndex < 0 || toIndex >= list.length) return;
+		const next = [...list];
+		const [moved] = next.splice(fromIndex, 1);
+		next.splice(toIndex, 0, moved as Location);
+		list = next;
+		persist();
+	}
+
 	// Best-effort rename used by the language-switch relocalization flow:
 	// matches by stable coordinates key, keeps unknown fields as-is.
 	function renameFavorite(key: string, resolved: ResolvedPlace): void {
@@ -159,6 +171,7 @@ export function createFavoritesStore(storage: Storage | null = defaultStorage())
 		addFavorite,
 		isFavorite,
 		removeFavorite,
+		moveFavorite,
 		renameFavorite
 	};
 }

@@ -25,6 +25,17 @@ const SPB: Location = {
 	timezone: 'Europe/Moscow'
 };
 
+const CHEB: Location = {
+	id: '56.1439,47.2489',
+	name: 'Чебоксары',
+	admin1: 'Чувашия',
+	country: 'Россия',
+	countryCode: 'RU',
+	latitude: 56.1439,
+	longitude: 47.2489,
+	timezone: 'Europe/Moscow'
+};
+
 const UNNAMED_LOCATION: Location = {
 	id: '55.75,37.61',
 	name: 'Моё местоположение',
@@ -232,5 +243,32 @@ describe('createFavoritesStore.addFavorite', () => {
 
 		expect(store.list).toEqual([]);
 		expect(store.isFavorite(UNNAMED_LOCATION)).toBe(false);
+	});
+
+	it('moveFavorite reorders the list and persists', () => {
+		const storage = makeMemoryStorage();
+		const store = createFavoritesStore(storage);
+		store.toggleFavorite(MOSCOW);
+		store.toggleFavorite(SPB);
+		store.addFavorite(CHEB);
+
+		store.moveFavorite(0, 2);
+		expect(store.list.map((l) => l.id)).toEqual([SPB.id, CHEB.id, MOSCOW.id]);
+		expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '[]').map((l: Location) => l.id)).toEqual([
+			SPB.id,
+			CHEB.id,
+			MOSCOW.id
+		]);
+	});
+
+	it('moveFavorite ignores out-of-range and no-op moves', () => {
+		const store = createFavoritesStore(makeMemoryStorage());
+		store.toggleFavorite(MOSCOW);
+		store.toggleFavorite(SPB);
+
+		expect(() => store.moveFavorite(-1, 1)).not.toThrow();
+		expect(() => store.moveFavorite(0, 5)).not.toThrow();
+		store.moveFavorite(1, 1);
+		expect(store.list.map((l) => l.id)).toEqual([MOSCOW.id, SPB.id]);
 	});
 });

@@ -148,7 +148,9 @@
 
 	// Client-side only: load every favorite that has no row yet or needs refresh.
 	$effect(() => {
-		const favoriteList = favorites.list;
+		// Order-invariant read: a pure reorder does re-run this effect, but
+		// loadAllFavorites() only fetches stale entries, so no requests fire.
+		void [...favorites.list].map((l) => l.id).sort().join();
 		untrack(() => {
 			loadAllFavorites();
 		});
@@ -164,6 +166,59 @@
 		goto(base + '/');
 	}
 
+	let dragFrom = $state<number | null>(null);
+	let dragTo = $state(0);
+	let dragStartY = 0;
+
+	// During a drag render this preview order; rows are looked up by loc.id
+	// in the rows map, so no data is lost or refetched mid-drag.
+	function preview(items: Array<{ loc: Location; row: Row | undefined }>, from: number, to: number) {
+		const next = [...items];
+		const [moved] = next.splice(from, 1);
+		next.splice(to, 0, moved!);
+		return next;
+	}
+
+	function rowHeight(): number {
+		const row = document.querySelector('.fav-row');
+		return row?.getBoundingClientRect().height ?? 57;
+	}
+
+	function onHandleDown(e: PointerEvent, index: number): void {
+		e.preventDefault(); // no text selection / native scroll intent
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		dragStartY = e.clientY;
+		dragFrom = index;
+		dragTo = index;
+	}
+
+	function onHandleMove(e: PointerEvent): void {
+		if (dragFrom === null) return;
+		const max = favorites.list.length - 1;
+		dragTo = Math.max(0, Math.min(max, dragFrom + Math.round((e.clientY - dragStartY) / rowHeight())));
+	}
+
+	function onHandleUp(): void {
+		if (dragFrom !== null && dragTo !== dragFrom) {
+			favorites.moveFavorite(dragFrom, dragTo);
+		}
+		dragFrom = null;
+	}
+
+	function onHandleCancel(): void {
+		dragFrom = null; // revert preview without committing
+	}
+
+	function onHandleKey(e: KeyboardEvent, index: number): void {
+		if (e.key === 'ArrowUp' && index > 0) {
+			e.preventDefault();
+			favorites.moveFavorite(index, index - 1);
+		} else if (e.key === 'ArrowDown' && index < list.length - 1) {
+			e.preventDefault();
+			favorites.moveFavorite(index, index + 1);
+		}
+	}
+
 	function subLabel(loc: Location): string {
 		const parts = [...new Set([loc.admin1, loc.country])].filter(
 			(value): value is string => value != null && value !== '' && value !== loc.name
@@ -173,6 +228,8 @@
 
 	const list = $derived(favorites.list.map((loc) => ({ loc, row: rows.get(loc.id) })));
 	const busy = $derived(list.some(({ row }) => row !== undefined && row.entry === null && row.fetching));
+	// Declared after `list` on purpose: it reads it, and `$derived` has no hoisting.
+	const displayList = $derived(dragFrom === null ? list : preview(list, dragFrom, dragTo));
 
 	function rowIconName(entry: CachedForecast): string {
 		const v = getWeatherVisual(entry.payload.current.weatherCode);
@@ -222,10 +279,28 @@
 	</div>
 {:else}
 	<div class="card list" aria-busy={busy}>
-		{#each list as { loc, row }}
+		{#each displayList as { loc, row }, i (loc.id)}
 			{@const sub = subLabel(loc)}
 			{@const visual = row?.entry ? getWeatherVisual(row.entry.payload.current.weatherCode, lang) : null}
-			<div class="fav-row">
+			{@const dragging = dragFrom !== null && i === dragTo}
+			<div class="fav-row" class:dragging>
+				<button
+					class="fav-handle"
+					type="button"
+					aria-label={t('favorites.reorder', lang, { name: loc.name, position: i + 1, total: displayList.length })}
+					onpointerdown={(e) => onHandleDown(e, i)}
+					onpointermove={onHandleMove}
+					onpointerup={onHandleUp}
+					onpointercancel={onHandleCancel}
+					onlostpointercapture={onHandleCancel}
+					onkeydown={(e) => onHandleKey(e, i)}
+				>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+						<circle cx="9" cy="6" r="1" /><circle cx="15" cy="6" r="1" />
+						<circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" />
+						<circle cx="9" cy="18" r="1" /><circle cx="15" cy="18" r="1" />
+					</svg>
+				</button>
 				<button class="fav-main" type="button" onclick={() => select(loc)}>
 					<div class="fav-icon">
 						<WeatherIcon name={row?.entry ? rowIconName(row.entry) : 'cloudy'} size={28} />
@@ -338,6 +413,43 @@
 	.fav-main:active {
 		background: var(--divider);
 	}
+
+	.fav-handle {
+		flex-shrink: 0;
+		width: 40px; /* hit target ~44px вместе с gap'ом справа */
+		height: 44px;
+		margin-right: var(--space-1);
+		display: grid;
+		place-items: center;
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		cursor: grab;
+		touch-action: none; /* critical: prevents page scroll while dragging on touch */
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-touch-callout: none; /* no iOS magnifier on long press */
+	}
+
+	.fav-handle svg {
+		width: 18px;
+		height: 18px;
+		pointer-events: none; /* pointerdown must land on the button */
+	}
+
+	.fav-handle:focus-visible {
+		outline: 2px solid var(--accent-strong);
+		border-radius: var(--radius-control);
+	}
+
+	.fav-row.dragging {
+		background: var(--divider);
+		border-radius: var(--radius-control);
+		opacity: 0.85;
+	}
+
+	/* ponytail: no auto-scroll while dragging past viewport edges — revisit if
+	   lists routinely exceed ~10 cities on small screens */
 
 	.fav-icon {
 		display: grid;
