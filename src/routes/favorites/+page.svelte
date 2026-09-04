@@ -147,10 +147,12 @@
 	});
 
 	// Client-side only: load every favorite that has no row yet or needs refresh.
+	// Sorted-id key: a pure reorder yields the same string, so the derived stays
+	// equal and the effect does not re-run; membership changes do (and
+	// loadAllFavorites only fetches stale entries anyway).
+	const favoritesOrderKey = $derived([...favorites.list].map((l) => l.id).sort().join());
 	$effect(() => {
-		// Order-invariant read: a pure reorder does re-run this effect, but
-		// loadAllFavorites() only fetches stale entries, so no requests fire.
-		void [...favorites.list].map((l) => l.id).sort().join();
+		void favoritesOrderKey;
 		untrack(() => {
 			loadAllFavorites();
 		});
@@ -169,25 +171,15 @@
 	let dragFrom = $state<number | null>(null);
 	let dragTo = $state(0);
 	let dragStartY = 0;
-
-	// During a drag render this preview order; rows are looked up by loc.id
-	// in the rows map, so no data is lost or refetched mid-drag.
-	function preview(items: Array<{ loc: Location; row: Row | undefined }>, from: number, to: number) {
-		const next = [...items];
-		const [moved] = next.splice(from, 1);
-		next.splice(to, 0, moved!);
-		return next;
-	}
-
-	function rowHeight(): number {
-		const row = document.querySelector('.fav-row');
-		return row?.getBoundingClientRect().height ?? 57;
-	}
+	let dragRowHeight = 57;
 
 	function onHandleDown(e: PointerEvent, index: number): void {
+		if (e.button !== 0) return; // primary button only; keep the context menu
 		e.preventDefault(); // no text selection / native scroll intent
-		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-		dragStartY = e.clientY;
+		const row = document.querySelector('.fav-row');
+		dragRowHeight = row?.getBoundingClientRect().height ?? 57;
+		// pageY (not clientY): a wheel scroll mid-drag must not skew the delta.
+		dragStartY = e.pageY;
 		dragFrom = index;
 		dragTo = index;
 	}
@@ -195,7 +187,7 @@
 	function onHandleMove(e: PointerEvent): void {
 		if (dragFrom === null) return;
 		const max = favorites.list.length - 1;
-		dragTo = Math.max(0, Math.min(max, dragFrom + Math.round((e.clientY - dragStartY) / rowHeight())));
+		dragTo = Math.max(0, Math.min(max, dragFrom + Math.round((e.pageY - dragStartY) / dragRowHeight)));
 	}
 
 	function onHandleUp(): void {
@@ -228,8 +220,20 @@
 
 	const list = $derived(favorites.list.map((loc) => ({ loc, row: rows.get(loc.id) })));
 	const busy = $derived(list.some(({ row }) => row !== undefined && row.entry === null && row.fetching));
-	// Declared after `list` on purpose: it reads it, and `$derived` has no hoisting.
-	const displayList = $derived(dragFrom === null ? list : preview(list, dragFrom, dragTo));
+	// Visual position for every original row index while dragging. The DOM list
+	// order must stay static mid-gesture: a keyed-each reorder detaches the
+	// captured handle (insertBefore = remove + insert) and drops pointer capture
+	// mid-drag. Rows get CSS `order` instead; the real reorder commits on
+	// pointerup, after capture has ended.
+	const previewOrders = $derived.by(() => {
+		const orders = Array.from({ length: list.length }, (_, i) => i);
+		if (dragFrom === null || dragTo === dragFrom) return orders;
+		const [moved] = orders.splice(dragFrom, 1);
+		orders.splice(dragTo, 0, moved as number);
+		const positions = new Array<number>(orders.length);
+		orders.forEach((origin, position) => (positions[origin] = position));
+		return positions;
+	});
 
 	function rowIconName(entry: CachedForecast): string {
 		const v = getWeatherVisual(entry.payload.current.weatherCode);
@@ -279,20 +283,19 @@
 	</div>
 {:else}
 	<div class="card list" aria-busy={busy}>
-		{#each displayList as { loc, row }, i (loc.id)}
+		{#each list as { loc, row }, i (loc.id)}
 			{@const sub = subLabel(loc)}
 			{@const visual = row?.entry ? getWeatherVisual(row.entry.payload.current.weatherCode, lang) : null}
-			{@const dragging = dragFrom !== null && i === dragTo}
-			<div class="fav-row" class:dragging>
+			{@const dragging = dragFrom === i}
+			<div class="fav-row" class:dragging style:order={previewOrders[i]}>
 				<button
 					class="fav-handle"
 					type="button"
-					aria-label={t('favorites.reorder', lang, { name: loc.name, position: i + 1, total: displayList.length })}
+					aria-label={t('favorites.reorder', lang, { name: loc.name, position: previewOrders[i] + 1, total: list.length })}
 					onpointerdown={(e) => onHandleDown(e, i)}
 					onpointermove={onHandleMove}
 					onpointerup={onHandleUp}
 					onpointercancel={onHandleCancel}
-					onlostpointercapture={onHandleCancel}
 					onkeydown={(e) => onHandleKey(e, i)}
 				>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -382,11 +385,14 @@
 		padding: var(--space-2) var(--space-4);
 		max-width: 100%;
 		min-width: 0;
+		display: flex; /* column + order: drag preview reorders visually, DOM stays put */
+		flex-direction: column;
 	}
 
 	.fav-row {
 		display: flex;
 		align-items: center;
+		flex-shrink: 0;
 		border-bottom: 1px solid var(--divider);
 	}
 
