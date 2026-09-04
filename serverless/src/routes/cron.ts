@@ -41,6 +41,16 @@ export function currentHourIndex(hourlyTime: string[], timezone: string, now: nu
 }
 
 /**
+ * Builds the Open-Meteo forecast request for one city. All units are pinned
+ * explicitly: evaluator thresholds and alert texts assume m/s, °C and mm.
+ * Open-Meteo defaults already bit us once (km/h gusts evaluated as m/s made
+ * the severe_wind threshold fire at ~5 m/s) — never rely on them here.
+ */
+export function buildForecastUrl(city: CityCoord): string {
+	return `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&temperature_unit=celsius&precipitation_unit=mm&forecast_days=2&timezone=auto`;
+}
+
+/**
  * Main Cron Entry point. Called every 30 minutes by Cloudflare Triggers.
  */
 export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: number; pushesSent: number }> {
@@ -83,8 +93,7 @@ export async function handleScheduled(env: Env): Promise<{ citiesEvaluated: numb
 	for (const city of cities) {
 		try {
 			// 2. Fetch Open-Meteo for this city (1 request per unique city)
-			const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m&forecast_days=2&timezone=auto`;
-			const res = await fetch(forecastUrl, { headers: { 'User-Agent': 'WeatherPWA-CloudflareWorker/1.0' } });
+			const res = await fetch(buildForecastUrl(city), { headers: { 'User-Agent': 'WeatherPWA-CloudflareWorker/1.0' } });
 			if (!res.ok) continue;
 
 			const forecast = (await res.json()) as OpenMeteoForecastResponse;
